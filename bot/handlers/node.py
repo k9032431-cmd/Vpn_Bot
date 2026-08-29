@@ -13,15 +13,12 @@ from bot.keyboards.node import (
     node_menu_keyboard,
     node_result_keyboard,
 )
-from bot.middlewares.node_access import NodeAccessMiddleware
 from bot.services.node_installer import install_marzban_node, install_pasarguard_node
 from bot.services.ssh_client import NodeInstallError, SSHTarget
 from bot.states.node_setup import NodeSetupStates
 from bot.texts import node as texts
 
 router = Router(name="node")
-router.message.outer_middleware(NodeAccessMiddleware())
-router.callback_query.outer_middleware(NodeAccessMiddleware())
 
 # Loose hostname/IP check: letters, digits, dots and dashes, no spaces.
 HOST_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9.\-]{0,251}[a-zA-Z0-9]$|^[a-zA-Z0-9]$")

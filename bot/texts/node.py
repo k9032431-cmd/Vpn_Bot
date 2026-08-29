@@ -15,10 +15,6 @@ def node_header(lang: str, node_type: str) -> str:
     return f"{icon} <b>{title}</b>"
 
 
-def access_denied_text(lang: str, user_id: int) -> str:
-    return t(lang, "node_access_denied", user_id=user_id)
-
-
 def node_menu_text(lang: str) -> str:
     return t(lang, "node_menu", icon=e("node", "🖥"))
 

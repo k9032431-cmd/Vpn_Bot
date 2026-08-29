@@ -84,22 +84,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "✅ Taýyn! Interfeýs indi türkmen dilinde.",
     },
     # --- Node flow ---
-    "node_access_denied": {
-        "ru": (
-            "⛔ Раздел Node доступен только сотрудникам компании.\n\n"
-            "Ваш Telegram ID: <code>{user_id}</code> — отправьте его администратору, "
-            "чтобы получить доступ."
-        ),
-        "en": (
-            "⛔ The Node section is only available to company staff.\n\n"
-            "Your Telegram ID: <code>{user_id}</code> — send it to the admin to get access."
-        ),
-        "tk": (
-            "⛔ Node bölümi diňe kompaniýanyň işgärleri üçin elýeterli.\n\n"
-            "Siziň Telegram ID-ňiz: <code>{user_id}</code> — hukuk almak üçin ony "
-            "administratora iberiň."
-        ),
-    },
     "title_marzban": {"ru": "Marzban Node", "en": "Marzban Node", "tk": "Marzban Node"},
     "title_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "node_menu": {
