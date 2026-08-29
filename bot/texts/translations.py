@@ -3,6 +3,10 @@ from __future__ import annotations
 DEFAULT_LANGUAGE = "ru"
 LANGUAGES = ("ru", "en", "tk")
 
+# Decorative divider used on "screen" texts (menus, results) to separate the
+# intro from the call-to-action, keeping the layout consistent everywhere.
+DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+
 # Each language's own name, shown on the language-picker buttons — always in
 # that language itself, never translated into the currently active one.
 LANGUAGE_LABELS = {
@@ -22,9 +26,27 @@ def resolve_language(code: str | None) -> str:
 
 _STRINGS: dict[str, dict[str, str]] = {
     "welcome": {
-        "ru": "{icon} <b>ArsiCloudBot</b>\n<i>Ваш помощник по VPN — всегда под рукой</i>\n\nВыберите раздел 👇",
-        "en": "{icon} <b>ArsiCloudBot</b>\n<i>Your VPN companion — always at hand</i>\n\nChoose a section 👇",
-        "tk": "{icon} <b>ArsiCloudBot</b>\n<i>VPN kömekçiňiz — hemişe elýeterli</i>\n\nBölümi saýlaň 👇",
+        "ru": (
+            "{icon} <b>ArsiCloudBot</b> ✨\n\n"
+            "<i>Умный помощник для управления VPN: ноды, облако, шифрование и "
+            "безопасность — всё в одном месте.</i>\n\n"
+            "{div}\n"
+            "👇 Выберите раздел, чтобы начать"
+        ),
+        "en": (
+            "{icon} <b>ArsiCloudBot</b> ✨\n\n"
+            "<i>Your smart VPN companion: nodes, cloud, encryption and security — "
+            "all in one place.</i>\n\n"
+            "{div}\n"
+            "👇 Choose a section to get started"
+        ),
+        "tk": (
+            "{icon} <b>ArsiCloudBot</b> ✨\n\n"
+            "<i>VPN dolandyryşy üçin akylly kömekçiňiz: node-lar, bulut, şifrleme "
+            "we howpsuzlyk — bary-ýogy bir ýerde.</i>\n\n"
+            "{div}\n"
+            "👇 Başlamak üçin bölümi saýlaň"
+        ),
     },
     # --- Button labels ---
     "btn_node": {"ru": "🖥 Node", "en": "🖥 Node", "tk": "🖥 Node"},
@@ -43,58 +65,166 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_main_menu": {"ru": "🏠 Главное меню", "en": "🏠 Main menu", "tk": "🏠 Baş menýu"},
     # --- Section placeholders ---
     "section_cloud_vpn": {
-        "ru": "{icon} <b>Cloud VPN</b>\n<i>Скоро здесь можно будет управлять облачными VPN-подключениями.</i>",
-        "en": "{icon} <b>Cloud VPN</b>\n<i>Soon you'll be able to manage cloud VPN connections here.</i>",
-        "tk": "{icon} <b>Cloud VPN</b>\n<i>Ýakynda bu ýerde bulut VPN birikmelerini dolandyryp bolar.</i>",
+        "ru": (
+            "{icon} <b>Cloud VPN</b> 🌩️\n\n"
+            "<i>Управление облачными VPN-подключениями появится здесь совсем скоро.</i>\n\n"
+            "{div}\n🛠️ Уже в разработке"
+        ),
+        "en": (
+            "{icon} <b>Cloud VPN</b> 🌩️\n\n"
+            "<i>Cloud VPN connection management is coming here very soon.</i>\n\n"
+            "{div}\n🛠️ Already in the works"
+        ),
+        "tk": (
+            "{icon} <b>Cloud VPN</b> 🌩️\n\n"
+            "<i>Bulut VPN birikmelerini dolandyrmak ýakynda bu ýerde peýda bolar.</i>\n\n"
+            "{div}\n🛠️ Eýýäm işlenilýär"
+        ),
     },
     "section_cloud_account": {
-        "ru": "{icon} <b>Cloud Account</b>\n<i>Управление аккаунтом появится совсем скоро.</i>",
-        "en": "{icon} <b>Cloud Account</b>\n<i>Account management is coming very soon.</i>",
-        "tk": "{icon} <b>Cloud Account</b>\n<i>Hasaby dolandyrmak ýakyn wagtda goşular.</i>",
+        "ru": (
+            "{icon} <b>Cloud Account</b> 🗂️\n\n"
+            "<i>Управление вашим аккаунтом появится совсем скоро.</i>\n\n"
+            "{div}\n🛠️ Уже в разработке"
+        ),
+        "en": (
+            "{icon} <b>Cloud Account</b> 🗂️\n\n"
+            "<i>Account management is coming very soon.</i>\n\n"
+            "{div}\n🛠️ Already in the works"
+        ),
+        "tk": (
+            "{icon} <b>Cloud Account</b> 🗂️\n\n"
+            "<i>Hasabyňyzy dolandyrmak ýakyn wagtda goşular.</i>\n\n"
+            "{div}\n🛠️ Eýýäm işlenilýär"
+        ),
     },
     "section_crypt": {
-        "ru": "{icon} <b>Crypt / Decrypt</b>\n<i>Шифрование и дешифрование данных — уже в работе.</i>",
-        "en": "{icon} <b>Crypt / Decrypt</b>\n<i>Data encryption and decryption — already in the works.</i>",
-        "tk": "{icon} <b>Crypt / Decrypt</b>\n<i>Maglumatlary şifrlemek we deşifrlemek — eýýäm işlenilýär.</i>",
+        "ru": (
+            "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
+            "<i>Шифрование и дешифрование данных — уже в работе.</i>\n\n"
+            "{div}\n🛠️ Скоро будет доступно"
+        ),
+        "en": (
+            "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
+            "<i>Data encryption and decryption tools are already in the works.</i>\n\n"
+            "{div}\n🛠️ Coming soon"
+        ),
+        "tk": (
+            "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
+            "<i>Maglumatlary şifrlemek we deşifrlemek eýýäm işlenilýär.</i>\n\n"
+            "{div}\n🛠️ Ýakynda elýeterli bolar"
+        ),
     },
     "section_info": {
-        "ru": "{icon} <b>ArsiCloudBot</b>\n<i>Помощник по управлению VPN</i>\n\nВерсия <code>0.1.0</code>",
-        "en": "{icon} <b>ArsiCloudBot</b>\n<i>Your VPN management companion</i>\n\nVersion <code>0.1.0</code>",
-        "tk": "{icon} <b>ArsiCloudBot</b>\n<i>VPN dolandyryş kömekçisi</i>\n\nWersiýa <code>0.1.0</code>",
+        "ru": (
+            "{icon} <b>ArsiCloudBot</b> 🌟\n\n"
+            "<i>Ваш помощник по управлению VPN — просто, быстро и безопасно.</i>\n\n"
+            "{div}\n🏷️ Версия <code>0.1.0</code>"
+        ),
+        "en": (
+            "{icon} <b>ArsiCloudBot</b> 🌟\n\n"
+            "<i>Your VPN management companion — simple, fast and secure.</i>\n\n"
+            "{div}\n🏷️ Version <code>0.1.0</code>"
+        ),
+        "tk": (
+            "{icon} <b>ArsiCloudBot</b> 🌟\n\n"
+            "<i>VPN dolandyryş kömekçiňiz — ýönekeý, çalt we howpsuz.</i>\n\n"
+            "{div}\n🏷️ Wersiýa <code>0.1.0</code>"
+        ),
     },
     "section_sos_contact": {
-        "ru": "{icon} <b>SOS</b>\n<i>Что-то пошло не так? Мы рядом.</i>\n\nНапишите нам: {contact}",
-        "en": "{icon} <b>SOS</b>\n<i>Something went wrong? We're here.</i>\n\nContact us: {contact}",
-        "tk": "{icon} <b>SOS</b>\n<i>Bir zat nädogry gitdimi? Biz ýanyňyzda.</i>\n\nBize ýazyň: {contact}",
+        "ru": (
+            "{icon} <b>SOS</b> 🚨\n\n"
+            "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
+            "{div}\n📩 Напишите нам: {contact}"
+        ),
+        "en": (
+            "{icon} <b>SOS</b> 🚨\n\n"
+            "<i>Something's not working? We're always here.</i>\n\n"
+            "{div}\n📩 Contact us: {contact}"
+        ),
+        "tk": (
+            "{icon} <b>SOS</b> 🚨\n\n"
+            "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
+            "{div}\n📩 Bize ýazyň: {contact}"
+        ),
     },
     "section_sos_empty": {
-        "ru": "{icon} <b>SOS</b>\n<i>Что-то пошло не так? Мы рядом.</i>\n\nПоддержка скоро будет здесь.",
-        "en": "{icon} <b>SOS</b>\n<i>Something went wrong? We're here.</i>\n\nSupport contact is coming soon.",
-        "tk": "{icon} <b>SOS</b>\n<i>Bir zat nädogry gitdimi? Biz ýanyňyzda.</i>\n\nGoldaw ýakynda goşular.",
+        "ru": (
+            "{icon} <b>SOS</b> 🚨\n\n"
+            "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
+            "{div}\n📩 Поддержка появится здесь совсем скоро"
+        ),
+        "en": (
+            "{icon} <b>SOS</b> 🚨\n\n"
+            "<i>Something's not working? We're always here.</i>\n\n"
+            "{div}\n📩 Support contact is coming very soon"
+        ),
+        "tk": (
+            "{icon} <b>SOS</b> 🚨\n\n"
+            "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
+            "{div}\n📩 Goldaw ýakynda bu ýerde peýda bolar"
+        ),
     },
     # --- Language picker ---
     "language_prompt": {
-        "ru": "{icon} <b>Язык</b>\n<i>Выберите язык интерфейса:</i>",
-        "en": "{icon} <b>Language</b>\n<i>Choose your interface language:</i>",
-        "tk": "{icon} <b>Dil</b>\n<i>Interfeýsiň dilini saýlaň:</i>",
+        "ru": (
+            "{icon} <b>Язык интерфейса</b> 🗣️\n\n"
+            "<i>Выберите, на каком языке вам удобнее общаться с ботом.</i>\n\n"
+            "{div}\n👇 Доступные языки"
+        ),
+        "en": (
+            "{icon} <b>Interface language</b> 🗣️\n\n"
+            "<i>Choose the language you'd like the bot to speak.</i>\n\n"
+            "{div}\n👇 Available languages"
+        ),
+        "tk": (
+            "{icon} <b>Interfeýsiň dili</b> 🗣️\n\n"
+            "<i>Bot bilen haýsy dilde gürleşmek isleýändigiňizi saýlaň.</i>\n\n"
+            "{div}\n👇 Elýeterli diller"
+        ),
     },
     "language_saved": {
-        "ru": "✅ Готово! Теперь интерфейс на русском.",
-        "en": "✅ Done! The interface is now in English.",
-        "tk": "✅ Taýyn! Interfeýs indi türkmen dilinde.",
+        "ru": "✅ <b>Готово!</b>\n\nИнтерфейс переключён на русский язык 🇷🇺",
+        "en": "✅ <b>Done!</b>\n\nThe interface is now in English 🇬🇧",
+        "tk": "✅ <b>Taýyn!</b>\n\nInterfeýs indi türkmen dilinde 🇹🇲",
     },
     # --- Node flow ---
     "title_marzban": {"ru": "Marzban Node", "en": "Marzban Node", "tk": "Marzban Node"},
     "title_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "node_menu": {
-        "ru": "{icon} <b>Node</b>\n<i>Какую ноду разворачиваем?</i>",
-        "en": "{icon} <b>Node</b>\n<i>Which node are we deploying?</i>",
-        "tk": "{icon} <b>Node</b>\n<i>Haýsy node-y ornaşdyrýarys?</i>",
+        "ru": (
+            "{icon} <b>Node</b> ⚙️\n\n"
+            "<i>Разверните VPN-ноду на своём сервере за пару минут — бот сделает всё сам.</i>\n\n"
+            "{div}\n👇 Выберите платформу"
+        ),
+        "en": (
+            "{icon} <b>Node</b> ⚙️\n\n"
+            "<i>Deploy a VPN node on your server in a couple of minutes — the bot handles the rest.</i>\n\n"
+            "{div}\n👇 Choose a platform"
+        ),
+        "tk": (
+            "{icon} <b>Node</b> ⚙️\n\n"
+            "<i>Serweriňizde birnäçe minutda VPN node ornaşdyryň — galanyny bot eder.</i>\n\n"
+            "{div}\n👇 Platformany saýlaň"
+        ),
     },
     "node_cancelled": {
-        "ru": "{icon} <b>Node</b>\n<i>Установка отменена.</i>",
-        "en": "{icon} <b>Node</b>\n<i>Installation cancelled.</i>",
-        "tk": "{icon} <b>Node</b>\n<i>Ornaşdyrma ýatyryldy.</i>",
+        "ru": (
+            "{icon} <b>Node</b>\n\n"
+            "🚫 <i>Установка отменена — данные не сохранены.</i>\n\n"
+            "{div}\n👇 Можно начать заново в любой момент"
+        ),
+        "en": (
+            "{icon} <b>Node</b>\n\n"
+            "🚫 <i>Installation cancelled — nothing was saved.</i>\n\n"
+            "{div}\n👇 You can start again anytime"
+        ),
+        "tk": (
+            "{icon} <b>Node</b>\n\n"
+            "🚫 <i>Ornaşdyrma ýatyryldy — hiç zat ýatda saklanmady.</i>\n\n"
+            "{div}\n👇 Islän wagtyňyz täzeden başlap bilersiňiz"
+        ),
     },
     "step_ip": {
         "ru": "{header}\n<i>Шаг 1 из 3</i>\n\n{icon} Пришлите IP-адрес или домен сервера.",
@@ -182,9 +312,27 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "confirmation": {
-        "ru": "{header}\n\nСервер: <code>{host}</code>\nПользователь: <code>{user}</code>\n\nВсё готово — начинаем установку?",
-        "en": "{header}\n\nServer: <code>{host}</code>\nUser: <code>{user}</code>\n\nAll set — start the installation?",
-        "tk": "{header}\n\nServer: <code>{host}</code>\nUlanyjy: <code>{user}</code>\n\nHemme zat taýyn — ornaşdyrmaga başlaýarysmy?",
+        "ru": (
+            "{header}\n\n"
+            "📋 <b>Проверьте данные:</b>\n"
+            "🌍 Сервер: <code>{host}</code>\n"
+            "👤 Пользователь: <code>{user}</code>\n\n"
+            "{div}\n🚀 Всё готово — начинаем установку?"
+        ),
+        "en": (
+            "{header}\n\n"
+            "📋 <b>Please confirm:</b>\n"
+            "🌍 Server: <code>{host}</code>\n"
+            "👤 User: <code>{user}</code>\n\n"
+            "{div}\n🚀 Ready — start the installation?"
+        ),
+        "tk": (
+            "{header}\n\n"
+            "📋 <b>Maglumatlary barlaň:</b>\n"
+            "🌍 Server: <code>{host}</code>\n"
+            "👤 Ulanyjy: <code>{user}</code>\n\n"
+            "{div}\n🚀 Taýyn — ornaşdyrmaga başlaýarysmy?"
+        ),
     },
     "installing_started": {
         "ru": "{icon} Начинаю установку...",
@@ -192,44 +340,56 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} Ornaşdyrma başlanýar...",
     },
     "error": {
-        "ru": "{icon} Не получилось установить ноду.\n\n{reason}",
-        "en": "{icon} Couldn't install the node.\n\n{reason}",
-        "tk": "{icon} Node ornaşdyrylyp bilinmedi.\n\n{reason}",
+        "ru": (
+            "{icon} <b>Не получилось установить ноду</b>\n\n"
+            "{reason}\n\n"
+            "{div}\n🔁 Попробуйте ещё раз или обратитесь в поддержку"
+        ),
+        "en": (
+            "{icon} <b>Couldn't install the node</b>\n\n"
+            "{reason}\n\n"
+            "{div}\n🔁 Try again, or reach out to support"
+        ),
+        "tk": (
+            "{icon} <b>Node ornaşdyrylyp bilinmedi</b>\n\n"
+            "{reason}\n\n"
+            "{div}\n🔁 Täzeden synanyşyň ýa-da goldawa ýüz tutuň"
+        ),
     },
     "unexpected_error": {
-        "ru": "{icon} Непредвиденная ошибка: {reason}",
-        "en": "{icon} Unexpected error: {reason}",
-        "tk": "{icon} Garaşylmadyk ýalňyşlyk: {reason}",
+        "ru": "{icon} <b>Непредвиденная ошибка</b>\n\n{reason}",
+        "en": "{icon} <b>Unexpected error</b>\n\n{reason}",
+        "tk": "{icon} <b>Garaşylmadyk ýalňyşlyk</b>\n\n{reason}",
     },
     "result_header": {
-        "ru": "{icon} {header} готова на <code>{host}</code>",
-        "en": "{icon} {header} is ready on <code>{host}</code>",
-        "tk": "{icon} {header} <code>{host}</code> serwerde taýyn",
+        "ru": "{icon} {header} успешно запущена на <code>{host}</code> 🎉",
+        "en": "{icon} {header} is up and running on <code>{host}</code> 🎉",
+        "tk": "{icon} {header} <code>{host}</code> serwerde üstünlikli işledildi 🎉",
     },
     "result_dir": {
-        "ru": "Папка: <code>{dir}</code>",
-        "en": "Folder: <code>{dir}</code>",
-        "tk": "Bukja: <code>{dir}</code>",
+        "ru": "📁 Папка: <code>{dir}</code>",
+        "en": "📁 Folder: <code>{dir}</code>",
+        "tk": "📁 Bukja: <code>{dir}</code>",
     },
     "result_status": {
-        "ru": "Статус: <code>{status}</code>",
-        "en": "Status: <code>{status}</code>",
-        "tk": "Ýagdaýy: <code>{status}</code>",
+        "ru": "📶 Статус: <code>{status}</code>",
+        "en": "📶 Status: <code>{status}</code>",
+        "tk": "📶 Ýagdaýy: <code>{status}</code>",
     },
     "result_pasarguard_intro": {
-        "ru": "Добавьте ноду в панели PasarGuard:",
-        "en": "Add this node in the PasarGuard panel:",
-        "tk": "Bu node-y PasarGuard panelinde goşuň:",
+        "ru": "🛡 <b>Добавьте ноду в панели PasarGuard:</b>",
+        "en": "🛡 <b>Add this node in the PasarGuard panel:</b>",
+        "tk": "🛡 <b>Bu node-y PasarGuard panelinde goşuň:</b>",
     },
     "result_pasarguard_creds": {
-        "ru": "Порт <code>{port}</code> · API_KEY <code>{key}</code>",
-        "en": "Port <code>{port}</code> · API_KEY <code>{key}</code>",
-        "tk": "Port <code>{port}</code> · API_KEY <code>{key}</code>",
+        "ru": "🔌 Порт <code>{port}</code> · 🔑 API_KEY <code>{key}</code>",
+        "en": "🔌 Port <code>{port}</code> · 🔑 API_KEY <code>{key}</code>",
+        "tk": "🔌 Port <code>{port}</code> · 🔑 API_KEY <code>{key}</code>",
     },
     "result_pasarguard_cert_intro": {
-        "ru": "Сертификат ноды:",
-        "en": "Node certificate:",
-        "tk": "Node sertifikaty:",
+        "ru": "📜 Сертификат ноды:",
+        "en": "📜 Node certificate:",
+        "tk": "📜 Node sertifikaty:",
     },
     # --- Install progress ---
     "progress_connecting": {

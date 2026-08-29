@@ -4,7 +4,7 @@ from bot.config import config
 
 from .premium_emoji import e
 from .support import format_support_contact
-from .translations import t
+from .translations import DIVIDER, t
 
 _SECTION_ICON = {
     "cloud_vpn": ("cloud_vpn", "☁️"),
@@ -15,7 +15,7 @@ _SECTION_ICON = {
 
 
 def welcome_text(lang: str) -> str:
-    return t(lang, "welcome", icon=e("welcome", "👋"))
+    return t(lang, "welcome", icon=e("welcome", "👋"), div=DIVIDER)
 
 
 def section_text(lang: str, section: str) -> str | None:
@@ -25,19 +25,19 @@ def section_text(lang: str, section: str) -> str | None:
     if icon_info is None:
         return None
     key, fallback = icon_info
-    return t(lang, f"section_{section}", icon=e(key, fallback))
+    return t(lang, f"section_{section}", icon=e(key, fallback), div=DIVIDER)
 
 
 def sos_text(lang: str) -> str:
     icon = e("sos", "🆘")
     contact = format_support_contact(config.support_contact)
     if contact:
-        return t(lang, "section_sos_contact", icon=icon, contact=contact)
-    return t(lang, "section_sos_empty", icon=icon)
+        return t(lang, "section_sos_contact", icon=icon, contact=contact, div=DIVIDER)
+    return t(lang, "section_sos_empty", icon=icon, div=DIVIDER)
 
 
 def language_prompt_text(lang: str) -> str:
-    return t(lang, "language_prompt", icon=e("language", "🌐"))
+    return t(lang, "language_prompt", icon=e("language", "🌐"), div=DIVIDER)
 
 
 def language_saved_text(lang: str) -> str:

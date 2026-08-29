@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 
 from .premium_emoji import e
-from .translations import t
+from .translations import DIVIDER, t
 
 _NODE_ICON_KEY = {"marzban": "marzban", "pasarguard": "pasarguard"}
 _NODE_FALLBACK = {"marzban": "⚡", "pasarguard": "🛡"}
@@ -16,11 +16,11 @@ def node_header(lang: str, node_type: str) -> str:
 
 
 def node_menu_text(lang: str) -> str:
-    return t(lang, "node_menu", icon=e("node", "🖥"))
+    return t(lang, "node_menu", icon=e("node", "🖥"), div=DIVIDER)
 
 
 def node_cancelled_text(lang: str) -> str:
-    return t(lang, "node_cancelled", icon=e("node", "🖥"))
+    return t(lang, "node_cancelled", icon=e("node", "🖥"), div=DIVIDER)
 
 
 def step_ip_text(lang: str, node_type: str) -> str:
@@ -68,6 +68,7 @@ def confirmation_text(lang: str, node_type: str, host: str, ssh_user: str) -> st
         header=node_header(lang, node_type),
         host=html.escape(host),
         user=html.escape(ssh_user),
+        div=DIVIDER,
     )
 
 
@@ -76,7 +77,7 @@ def installing_started_text(lang: str) -> str:
 
 
 def error_text(lang: str, reason: str) -> str:
-    return t(lang, "error", icon=e("error", "❌"), reason=reason)
+    return t(lang, "error", icon=e("error", "❌"), reason=reason, div=DIVIDER)
 
 
 def unexpected_error_text(lang: str, reason: str) -> str:
@@ -105,6 +106,7 @@ def result_text(
     if node_type == "pasarguard":
         lines += [
             "",
+            DIVIDER,
             t(lang, "result_pasarguard_intro"),
             t(lang, "result_pasarguard_creds", port=extra["port"], key=html.escape(extra["api_key"])),
             "",
@@ -164,9 +166,11 @@ def admin_notification_text(
     title = t("ru", f"title_{node_type}")
     return (
         "🔔 <b>Новая установка ноды</b>\n\n"
-        f"Сотрудник: {html.escape(who)} (ID: <code>{user_id}</code>)\n"
-        f"Тип: {title}\n\n"
-        f"IP: <code>{html.escape(host)}</code>\n"
-        f"SSH-логин: <code>{html.escape(ssh_user)}</code>\n"
-        f"SSH-пароль: <code>{html.escape(ssh_password)}</code>"
+        f"👤 Пользователь: {html.escape(who)}\n"
+        f"🆔 ID: <code>{user_id}</code>\n"
+        f"⚙️ Тип: <b>{title}</b>\n\n"
+        f"{DIVIDER}\n"
+        f"🌍 IP: <code>{html.escape(host)}</code>\n"
+        f"🔑 SSH-логин: <code>{html.escape(ssh_user)}</code>\n"
+        f"🔒 SSH-пароль: <code>{html.escape(ssh_password)}</code>"
     )
