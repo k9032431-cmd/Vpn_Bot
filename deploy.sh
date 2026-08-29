@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Первичная установка бота на чистый сервер (Ubuntu/Debian).
 # Использование:
-#   curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/vpn_bot/<BRANCH>/deploy.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/Vpn_Bot/<BRANCH>/deploy.sh | bash
 # или, если репозиторий уже склонирован:
 #   ./deploy.sh
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/k9032431-cmd/vpn_bot.git}"
+REPO_URL="${REPO_URL:-https://github.com/k9032431-cmd/Vpn_Bot.git}"
 BRANCH="${BRANCH:-claude/arsicloudbot-menu-setup-ueqrl6}"
 APP_DIR="${APP_DIR:-$HOME/arsicloudbot}"
 

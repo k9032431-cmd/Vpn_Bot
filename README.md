@@ -45,7 +45,7 @@ update.sh              # обновление бота после изменен
 Подключитесь к серверу по SSH (Ubuntu/Debian) и выполните:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/vpn_bot/claude/arsicloudbot-menu-setup-ueqrl6/deploy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/Vpn_Bot/claude/arsicloudbot-menu-setup-ueqrl6/deploy.sh | bash
 ```
 
 Скрипт сам:
@@ -59,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/vpn_bot/claude/arsiclo
 
 ```bash
 git clone --branch claude/arsicloudbot-menu-setup-ueqrl6 \
-  https://github.com/k9032431-cmd/vpn_bot.git ~/arsicloudbot
+  https://github.com/k9032431-cmd/Vpn_Bot.git ~/arsicloudbot
 cd ~/arsicloudbot
 cp .env.example .env
 nano .env               # вписать BOT_TOKEN
@@ -95,7 +95,7 @@ cd ~/arsicloudbot
 
 ```bash
 rm -rf ~/arsicloudbot
-curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/vpn_bot/claude/arsicloudbot-menu-setup-ueqrl6/deploy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/k9032431-cmd/Vpn_Bot/claude/arsicloudbot-menu-setup-ueqrl6/deploy.sh | bash
 ```
 
 ### Полезные команды Docker
