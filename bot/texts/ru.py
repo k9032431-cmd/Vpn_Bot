@@ -6,7 +6,6 @@ WELCOME_TEXT = (
 )
 
 SECTION_TEXTS = {
-    "node": "🖥 <b>Node</b>\n\nРаздел управления нодами в разработке.",
     "cloud_vpn": "☁️ <b>Cloud VPN</b>\n\nРаздел управления облачным VPN в разработке.",
     "cloud_account": "👤 <b>Cloud Account</b>\n\nРаздел управления аккаунтом в разработке.",
     "crypt": "🔐 <b>Crypt/Decrypt</b>\n\nРаздел шифрования/дешифрования данных в разработке.",

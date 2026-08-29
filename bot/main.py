@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from bot.config import config
-from bot.handlers import menu, start
+from bot.handlers import menu, node, start
 
 
 async def main() -> None:
@@ -19,6 +19,7 @@ async def main() -> None:
     dp = Dispatcher()
 
     dp.include_router(start.router)
+    dp.include_router(node.router)
     dp.include_router(menu.router)
 
     await bot.delete_webhook(drop_pending_updates=True)
