@@ -56,6 +56,10 @@ IDS: dict[str, str] = {
     "launch": "",
     # globe — IP-адрес / домен сервера
     "globe": "",
+    # panel — заголовок и кнопка раздела Panel
+    "panel": "",
+    # threexui — заголовок панели 3X-UI
+    "threexui": "",
 }
 
 

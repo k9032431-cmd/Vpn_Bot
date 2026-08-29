@@ -61,6 +61,24 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_install": {"ru": "✅ Установить", "en": "✅ Install", "tk": "✅ Ornaşdyr"},
     "btn_node_menu": {"ru": "🖥 В меню Node", "en": "🖥 Node menu", "tk": "🖥 Node menýusy"},
     "btn_main_menu": {"ru": "🏠 Главное меню", "en": "🏠 Main menu", "tk": "🏠 Baş menýu"},
+    "btn_panel": {"ru": "🎛 Panel", "en": "🎛 Panel", "tk": "🎛 Panel"},
+    "btn_panel_marzban": {"ru": "⚡ Marzban", "en": "⚡ Marzban", "tk": "⚡ Marzban"},
+    "btn_panel_pasarguard": {"ru": "🛡 PasarGuard", "en": "🛡 PasarGuard", "tk": "🛡 PasarGuard"},
+    "btn_panel_3xui": {"ru": "3️⃣ 3X-UI", "en": "3️⃣ 3X-UI", "tk": "3️⃣ 3X-UI"},
+    "btn_panel_stats": {"ru": "📊 Статистика", "en": "📊 Statistics", "tk": "📊 Statistika"},
+    "btn_panel_users": {"ru": "👥 Пользователи", "en": "👥 Users", "tk": "👥 Ulanyjylar"},
+    "btn_panel_disconnect": {
+        "ru": "🔌 Отключить панель",
+        "en": "🔌 Disconnect panel",
+        "tk": "🔌 Paneli aýyr",
+    },
+    "btn_panel_disconnect_confirm": {
+        "ru": "✅ Да, отключить",
+        "en": "✅ Yes, disconnect",
+        "tk": "✅ Hawa, aýyr",
+    },
+    "btn_panel_dashboard": {"ru": "⬅️ К панели", "en": "⬅️ Back to panel", "tk": "⬅️ Panele gaýt"},
+    "btn_panel_menu": {"ru": "🎛 Меню Panel", "en": "🎛 Panel menu", "tk": "🎛 Panel menýusy"},
     # --- Section placeholders ---
     "section_cloud_vpn": {
         "ru": (
@@ -510,6 +528,214 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "Не удалось запустить контейнер pg-node.",
         "en": "Couldn't start the pg-node container.",
         "tk": "pg-node konteýnerini işe girizip bolmady.",
+    },
+    # --- Panel flow ---
+    "title_panel_marzban": {"ru": "Marzban", "en": "Marzban", "tk": "Marzban"},
+    "title_panel_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
+    "title_panel_3xui": {"ru": "3X-UI", "en": "3X-UI", "tk": "3X-UI"},
+    "panel_menu": {
+        "ru": (
+            "{icon} <b>Panel</b>\n\n"
+            "<i>Подключите свою панель и управляйте ей прямо здесь.</i>\n\n"
+            "👇 Выберите панель"
+        ),
+        "en": (
+            "{icon} <b>Panel</b>\n\n"
+            "<i>Connect your panel and manage it right here.</i>\n\n"
+            "👇 Choose your panel"
+        ),
+        "tk": (
+            "{icon} <b>Panel</b>\n\n"
+            "<i>Paneliňizi birikdiriň we ony şu ýerden dolandyryň.</i>\n\n"
+            "👇 Paneli saýlaň"
+        ),
+    },
+    "panel_cancelled": {
+        "ru": (
+            "{icon} <b>Panel</b>\n\n"
+            "🚫 <i>Подключение отменено — данные не сохранены.</i>\n\n"
+            "👇 Можно начать заново в любой момент"
+        ),
+        "en": (
+            "{icon} <b>Panel</b>\n\n"
+            "🚫 <i>Connection cancelled — nothing was saved.</i>\n\n"
+            "👇 You can start again anytime"
+        ),
+        "tk": (
+            "{icon} <b>Panel</b>\n\n"
+            "🚫 <i>Birikdirme ýatyryldy — hiç zat ýatda saklanmady.</i>\n\n"
+            "👇 Islän wagtyňyz täzeden başlap bilersiňiz"
+        ),
+    },
+    "step_panel_url": {
+        "ru": (
+            "{header}\n<i>Шаг 1 из 3</i>\n\n"
+            "🌍 Пришлите ссылку на панель — например: <code>https://panel.example.com:8000</code>"
+        ),
+        "en": (
+            "{header}\n<i>Step 1 of 3</i>\n\n"
+            "🌍 Send the panel URL — for example: <code>https://panel.example.com:8000</code>"
+        ),
+        "tk": (
+            "{header}\n<i>1-nji ädim / 3</i>\n\n"
+            "🌍 Panel salgysyny iberiň — mysal üçin: <code>https://panel.example.com:8000</code>"
+        ),
+    },
+    "invalid_panel_url": {
+        "ru": "Похоже, это не ссылка. Попробуйте ещё раз — например: <code>https://panel.example.com:8000</code>",
+        "en": "That doesn't look like a URL. Try again — for example: <code>https://panel.example.com:8000</code>",
+        "tk": "Bu salga meňzänok. Täzeden synanyşyň — mysal üçin: <code>https://panel.example.com:8000</code>",
+    },
+    "step_panel_username": {
+        "ru": "{header}\n<i>Шаг 2 из 3</i>\n\n👤 Пришлите логин администратора панели.",
+        "en": "{header}\n<i>Step 2 of 3</i>\n\n👤 Send the panel admin username.",
+        "tk": "{header}\n<i>2-nji ädim / 3</i>\n\n👤 Panel administratorynyň logini iberiň.",
+    },
+    "invalid_panel_username": {
+        "ru": "Логин не может быть пустым. Отправьте его ещё раз.",
+        "en": "The username can't be empty. Send it again.",
+        "tk": "Login boş bolup bilmez. Ony täzeden iberiň.",
+    },
+    "step_panel_password": {
+        "ru": (
+            "{header}\n<i>Шаг 3 из 3</i>\n\n"
+            "Пароль от <b>{username}</b>, пожалуйста.\n\n"
+            "{icon} <i>Сообщение с паролем удалится сразу после отправки — он нужен только "
+            "для подключения к панели и нигде не хранится в чате.</i>"
+        ),
+        "en": (
+            "{header}\n<i>Step 3 of 3</i>\n\n"
+            "Password for <b>{username}</b>, please.\n\n"
+            "{icon} <i>The message with the password will be deleted right after you send it — "
+            "it's only used to connect to the panel and never kept in the chat.</i>"
+        ),
+        "tk": (
+            "{header}\n<i>3-nji ädim / 3</i>\n\n"
+            "<b>{username}</b> üçin parol, haýyş edýäris.\n\n"
+            "{icon} <i>Parol bilen habar iberilenden soň derrew öçüriler — ol diňe panele "
+            "birikmek üçin gerek we çatda saklanmaýar.</i>"
+        ),
+    },
+    "empty_panel_password": {
+        "ru": "Пароль не может быть пустым. Отправьте его ещё раз.",
+        "en": "The password can't be empty. Send it again.",
+        "tk": "Parol boş bolup bilmez. Ony täzeden iberiň.",
+    },
+    "panel_connecting": {
+        "ru": "🔌 Подключаюсь к панели...",
+        "en": "🔌 Connecting to the panel...",
+        "tk": "🔌 Panele birikilýär...",
+    },
+    "panel_login_error": {
+        "ru": (
+            "{icon} <b>Не удалось подключиться к панели</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Проверьте ссылку, логин и пароль и попробуйте снова"
+        ),
+        "en": (
+            "{icon} <b>Couldn't connect to the panel</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Check the URL, username and password, then try again"
+        ),
+        "tk": (
+            "{icon} <b>Panele birikip bolmady</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Salgyny, logini we paroly barlaň-da, täzeden synanyşyň"
+        ),
+    },
+    "panel_err_wrong_credentials": {
+        "ru": "Неверный логин или пароль.",
+        "en": "Wrong username or password.",
+        "tk": "Login ýa-da parol nädogry.",
+    },
+    "panel_err_connect_failed": {
+        "ru": "Не удалось связаться с панелью — проверьте ссылку и доступность сервера.",
+        "en": "Couldn't reach the panel — check the URL and that the server is reachable.",
+        "tk": "Panel bilen habarlaşyp bolmady — salgyny we serweriň elýeterligini barlaň.",
+    },
+    "panel_err_bad_response": {
+        "ru": "Панель ответила в неожиданном формате.",
+        "en": "The panel responded in an unexpected format.",
+        "tk": "Panel garaşylmadyk formatda jogap berdi.",
+    },
+    "panel_err_http": {
+        "ru": "Панель ответила с ошибкой (код {status}).",
+        "en": "The panel responded with an error (code {status}).",
+        "tk": "Panel ýalňyşlyk bilen jogap berdi (kod {status}).",
+    },
+    "panel_connected": {
+        "ru": "{icon} {header} успешно подключена 🚀\n\n🌍 <code>{url}</code>",
+        "en": "{icon} {header} connected successfully 🚀\n\n🌍 <code>{url}</code>",
+        "tk": "{icon} {header} üstünlikli birikdirildi 🚀\n\n🌍 <code>{url}</code>",
+    },
+    "panel_dashboard": {
+        "ru": "{header}\n\n🌍 <code>{url}</code>\n\n👇 Что делаем?",
+        "en": "{header}\n\n🌍 <code>{url}</code>\n\n👇 What next?",
+        "tk": "{header}\n\n🌍 <code>{url}</code>\n\n👇 Näme edeliň?",
+    },
+    "panel_stats_marzban": {
+        "ru": (
+            "{header}\n📊 <b>Статистика</b>\n\n"
+            "🏷 Версия: <code>{version}</code>\n"
+            "👥 Всего пользователей: <b>{total}</b>\n"
+            "🟢 Активных: {active} · 🔴 Отключённых: {disabled}\n"
+            "⌛ Истёкших: {expired} · 🚧 Лимит исчерпан: {limited} · ⏸ На паузе: {on_hold}\n"
+            "📶 Онлайн сейчас: <b>{online}</b>\n\n"
+            "⬇️ Скачано: {down}\n⬆️ Загружено: {up}"
+        ),
+        "en": (
+            "{header}\n📊 <b>Statistics</b>\n\n"
+            "🏷 Version: <code>{version}</code>\n"
+            "👥 Total users: <b>{total}</b>\n"
+            "🟢 Active: {active} · 🔴 Disabled: {disabled}\n"
+            "⌛ Expired: {expired} · 🚧 Limited: {limited} · ⏸ On hold: {on_hold}\n"
+            "📶 Online now: <b>{online}</b>\n\n"
+            "⬇️ Downloaded: {down}\n⬆️ Uploaded: {up}"
+        ),
+        "tk": (
+            "{header}\n📊 <b>Statistika</b>\n\n"
+            "🏷 Wersiýa: <code>{version}</code>\n"
+            "👥 Jemi ulanyjy: <b>{total}</b>\n"
+            "🟢 Işjeň: {active} · 🔴 Öçürilen: {disabled}\n"
+            "⌛ Möhleti geçen: {expired} · 🚧 Limiti dolan: {limited} · ⏸ Duruzlan: {on_hold}\n"
+            "📶 Häzir onlaýn: <b>{online}</b>\n\n"
+            "⬇️ Ýüklenen: {down}\n⬆️ Iberilen: {up}"
+        ),
+    },
+    "panel_stats_3xui": {
+        "ru": "{header}\n📊 <b>Статистика</b>\n\n📡 Inbound'ов: <b>{inbounds_count}</b>\n👥 Клиентов: <b>{clients_count}</b>",
+        "en": "{header}\n📊 <b>Statistics</b>\n\n📡 Inbounds: <b>{inbounds_count}</b>\n👥 Clients: <b>{clients_count}</b>",
+        "tk": "{header}\n📊 <b>Statistika</b>\n\n📡 Inbound sany: <b>{inbounds_count}</b>\n👥 Müşderi sany: <b>{clients_count}</b>",
+    },
+    "panel_users_list_header": {
+        "ru": "{header}\n👥 <b>Пользователи</b>\n\nПоказаны первые {count}:",
+        "en": "{header}\n👥 <b>Users</b>\n\nShowing the first {count}:",
+        "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\nIlkinji {count} görkezilýär:",
+    },
+    "panel_users_list_empty": {
+        "ru": "{header}\n👥 <b>Пользователи</b>\n\nПока пользователей нет.",
+        "en": "{header}\n👥 <b>Users</b>\n\nNo users yet.",
+        "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\nHeniz ulanyjy ýok.",
+    },
+    "panel_disconnect_confirm": {
+        "ru": (
+            "{header}\n\n"
+            "⚠️ Точно отключить эту панель? Доступ через бота закроется, пока вы не "
+            "подключите её заново."
+        ),
+        "en": (
+            "{header}\n\n"
+            "⚠️ Disconnect this panel? Bot access will stop until you connect it again."
+        ),
+        "tk": (
+            "{header}\n\n"
+            "⚠️ Bu paneli aýyrmakçymysyňyz? Täzeden birikdirilýänçä bot arkaly giriş ýapylar."
+        ),
+    },
+    "panel_disconnected": {
+        "ru": "🔌 Панель отключена.\n\n👇 Можно подключить другую в любой момент",
+        "en": "🔌 Panel disconnected.\n\n👇 You can connect another one anytime",
+        "tk": "🔌 Panel aýryldy.\n\n👇 Islän wagtyňyz başga birini birikdirip bilersiňiz",
     },
 }
 

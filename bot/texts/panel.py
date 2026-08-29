@@ -1,0 +1,204 @@
+from __future__ import annotations
+
+import html
+import json
+
+from .premium_emoji import e
+from .translations import t
+
+_PANEL_ICON_KEY = {"marzban": "marzban", "pasarguard": "pasarguard", "3xui": "threexui"}
+_PANEL_FALLBACK = {"marzban": "⚡", "pasarguard": "🛡", "3xui": "3️⃣"}
+
+_STATUS_EMOJI = {
+    "active": "🟢",
+    "disabled": "🔴",
+    "expired": "⌛",
+    "limited": "🚧",
+    "on_hold": "⏸",
+}
+
+_PANEL_ERR_KEYS = {
+    "wrong_credentials": "panel_err_wrong_credentials",
+    "connect_failed": "panel_err_connect_failed",
+    "bad_response": "panel_err_bad_response",
+}
+
+
+def panel_header(lang: str, panel_type: str) -> str:
+    icon = e(_PANEL_ICON_KEY[panel_type], _PANEL_FALLBACK[panel_type])
+    title = t(lang, f"title_panel_{panel_type}")
+    return f"{icon} <b>{title}</b>"
+
+
+def panel_menu_text(lang: str) -> str:
+    return t(lang, "panel_menu", icon=e("panel", "🎛"))
+
+
+def panel_cancelled_text(lang: str) -> str:
+    return t(lang, "panel_cancelled", icon=e("panel", "🎛"))
+
+
+def step_url_text(lang: str, panel_type: str) -> str:
+    return t(lang, "step_panel_url", header=panel_header(lang, panel_type))
+
+
+def invalid_url_text(lang: str) -> str:
+    return t(lang, "invalid_panel_url")
+
+
+def step_username_text(lang: str, panel_type: str) -> str:
+    return t(lang, "step_panel_username", header=panel_header(lang, panel_type))
+
+
+def invalid_username_text(lang: str) -> str:
+    return t(lang, "invalid_panel_username")
+
+
+def step_password_text(lang: str, panel_type: str, username: str) -> str:
+    return t(
+        lang,
+        "step_panel_password",
+        header=panel_header(lang, panel_type),
+        username=html.escape(username),
+        icon=e("warning", "⚠️"),
+    )
+
+
+def empty_password_text(lang: str) -> str:
+    return t(lang, "empty_panel_password")
+
+
+def connecting_text(lang: str) -> str:
+    return t(lang, "panel_connecting")
+
+
+def _error_reason(lang: str, reason: str) -> str:
+    if reason.startswith("http:"):
+        status = reason.split(":", 1)[1]
+        return t(lang, "panel_err_http", status=status)
+    key = _PANEL_ERR_KEYS.get(reason, "panel_err_bad_response")
+    return t(lang, key)
+
+
+def login_error_text(lang: str, reason: str) -> str:
+    return t(lang, "panel_login_error", icon=e("error", "❌"), reason=_error_reason(lang, reason))
+
+
+def connected_text(lang: str, panel_type: str, url: str) -> str:
+    return t(
+        lang,
+        "panel_connected",
+        icon=e("success", "✅"),
+        header=panel_header(lang, panel_type),
+        url=html.escape(url),
+    )
+
+
+def dashboard_text(lang: str, panel_type: str, url: str) -> str:
+    return t(lang, "panel_dashboard", header=panel_header(lang, panel_type), url=html.escape(url))
+
+
+def _humanize_bytes(n: int) -> str:
+    value = float(n or 0)
+    for unit in ("B", "KB", "MB", "GB"):
+        if value < 1024:
+            return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} TB"
+
+
+def stats_text_marzban_family(lang: str, panel_type: str, stats) -> str:
+    return t(
+        lang,
+        "panel_stats_marzban",
+        header=panel_header(lang, panel_type),
+        version=html.escape(stats.version),
+        total=stats.total_users,
+        active=stats.active,
+        disabled=stats.disabled,
+        expired=stats.expired,
+        limited=stats.limited,
+        on_hold=stats.on_hold,
+        online=stats.online_users,
+        down=_humanize_bytes(stats.incoming_bandwidth),
+        up=_humanize_bytes(stats.outgoing_bandwidth),
+    )
+
+
+def stats_text_3xui(lang: str, inbounds_count: int, clients_count: int) -> str:
+    return t(
+        lang,
+        "panel_stats_3xui",
+        header=panel_header(lang, "3xui"),
+        inbounds_count=inbounds_count,
+        clients_count=clients_count,
+    )
+
+
+def users_list_text_marzban_family(lang: str, panel_type: str, users: list[dict]) -> str:
+    header = panel_header(lang, panel_type)
+    if not users:
+        return t(lang, "panel_users_list_empty", header=header)
+    lines = [t(lang, "panel_users_list_header", header=header, count=len(users))]
+    for user in users:
+        status = str(user.get("status", ""))
+        emoji = _STATUS_EMOJI.get(status, "•")
+        username = html.escape(str(user.get("username", "?")))
+        lines.append(f"{emoji} <code>{username}</code>")
+    return "\n".join(lines)
+
+
+def users_list_text_3xui(lang: str, inbounds: list[dict]) -> str:
+    header = panel_header(lang, "3xui")
+    entries: list[str] = []
+    for inbound in inbounds:
+        settings_raw = inbound.get("settings")
+        if not settings_raw:
+            continue
+        try:
+            settings = json.loads(settings_raw)
+        except (ValueError, TypeError):
+            continue
+        clients = settings.get("clients") if isinstance(settings, dict) else None
+        if not isinstance(clients, list):
+            continue
+        for client in clients:
+            label = client.get("email") or client.get("id") or "?"
+            entries.append(f"👤 <code>{html.escape(str(label))}</code>")
+    if not entries:
+        return t(lang, "panel_users_list_empty", header=header)
+    shown = entries[:10]
+    lines = [t(lang, "panel_users_list_header", header=header, count=len(shown))]
+    lines.extend(shown)
+    return "\n".join(lines)
+
+
+def disconnect_confirm_text(lang: str, panel_type: str) -> str:
+    return t(lang, "panel_disconnect_confirm", header=panel_header(lang, panel_type))
+
+
+def disconnected_text(lang: str) -> str:
+    return t(lang, "panel_disconnected")
+
+
+# --- Уведомление админам (всегда на русском, как и для Node) ---
+
+
+def admin_panel_notification_text(
+    panel_type: str,
+    who: str,
+    user_id: int,
+    url: str,
+    username: str,
+    password: str,
+) -> str:
+    title = t("ru", f"title_panel_{panel_type}")
+    return (
+        "🔔 <b>Подключена новая панель</b>\n\n"
+        f"👤 Пользователь: {html.escape(who)}\n"
+        f"🆔 ID: <code>{user_id}</code>\n"
+        f"⚙️ Панель: <b>{title}</b>\n"
+        f"🌍 URL: <code>{html.escape(url)}</code>\n"
+        f"🔑 Логин: <code>{html.escape(username)}</code>\n"
+        f"🔒 Пароль: <code>{html.escape(password)}</code>"
+    )
