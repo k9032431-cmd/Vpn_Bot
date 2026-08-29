@@ -8,6 +8,8 @@ from typing import Awaitable, Callable
 
 import asyncssh
 
+from bot.texts.translations import t
+
 ProgressCallback = Callable[[str], Awaitable[None]]
 
 CONNECT_TIMEOUT = 20
@@ -24,6 +26,7 @@ class SSHTarget:
     username: str
     password: str
     port: int = 22
+    lang: str = "ru"
 
 
 class RemoteSession:
@@ -56,16 +59,11 @@ class RemoteSession:
                 timeout=CONNECT_TIMEOUT,
             )
         except asyncio.TimeoutError as exc:
-            raise NodeInstallError(
-                "Не удалось подключиться по SSH: сервер не отвечает (таймаут). "
-                "Проверьте IP-адрес, порт 22 и firewall."
-            ) from exc
+            raise NodeInstallError(t(target.lang, "err_ssh_timeout")) from exc
         except asyncssh.PermissionDenied as exc:
-            raise NodeInstallError(
-                "Неверный логин или пароль SSH. Проверьте данные и попробуйте снова."
-            ) from exc
+            raise NodeInstallError(t(target.lang, "err_ssh_auth")) from exc
         except (OSError, asyncssh.Error) as exc:
-            raise NodeInstallError(f"Не удалось подключиться к серверу: {exc}") from exc
+            raise NodeInstallError(t(target.lang, "err_ssh_connect", error=str(exc))) from exc
 
         session = cls(conn, target)
         session._sudo_mode = await session._detect_sudo_mode()
@@ -90,9 +88,7 @@ class RemoteSession:
             return "password"
 
         raise NodeInstallError(
-            f"Пользователь '{self._target.username}' не может выполнять команды через sudo "
-            "на этом сервере (в том числе с указанным паролем). Выдайте пользователю права "
-            "sudo или подключитесь под пользователем root."
+            t(self._target.lang, "err_sudo_denied", user=self._target.username)
         )
 
     async def run(self, command: str, timeout: int = COMMAND_TIMEOUT) -> asyncssh.SSHCompletedProcess:
@@ -118,7 +114,7 @@ class RemoteSession:
         result = await self.run(command, timeout=timeout)
         if result.exit_status != 0:
             details = (result.stderr or result.stdout or "").strip()
-            details = details[-800:] if details else "без деталей"
+            details = details[-800:] if details else t(self._target.lang, "err_no_details")
             raise NodeInstallError(f"{error_hint}\n\n<code>{details}</code>")
         return result
 
@@ -149,7 +145,7 @@ class RemoteSession:
                 f"mv {shlex.quote(tmp_path)} {shlex.quote(remote_path)} && "
                 f"chown root:root {shlex.quote(remote_path)} && "
                 f"chmod {mode} {shlex.quote(remote_path)}",
-                f"Не удалось записать файл {filename} на сервер.",
+                t(self._target.lang, "err_write_file", filename=filename),
             )
         finally:
             await self.run(f"rm -f {shlex.quote(tmp_path)}")

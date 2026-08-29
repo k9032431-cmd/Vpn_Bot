@@ -3,22 +3,22 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from bot.keyboards.main_menu import back_keyboard, main_menu_keyboard
-from bot.texts.ru import SECTION_TEXTS, WELCOME_TEXT
+from bot.texts.main import section_text, welcome_text
 
 router = Router(name="menu")
 
 
 @router.callback_query(F.data == "menu:back")
-async def cb_back(callback: CallbackQuery, state: FSMContext) -> None:
+async def cb_back(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.edit_text(WELCOME_TEXT, reply_markup=main_menu_keyboard())
+    await callback.message.edit_text(welcome_text(lang), reply_markup=main_menu_keyboard(lang))
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("menu:"))
-async def cb_section(callback: CallbackQuery, state: FSMContext) -> None:
+async def cb_section(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     section = callback.data.split(":", 1)[1]
-    text = SECTION_TEXTS.get(section)
+    text = section_text(lang, section)
     if text is None:
         await callback.answer()
         return
@@ -26,5 +26,5 @@ async def cb_section(callback: CallbackQuery, state: FSMContext) -> None:
     # (e.g. a pending IP/password prompt), so a stray text message later
     # can't be misread as SSH credentials.
     await state.clear()
-    await callback.message.edit_text(text, reply_markup=back_keyboard())
+    await callback.message.edit_text(text, reply_markup=back_keyboard(lang))
     await callback.answer()

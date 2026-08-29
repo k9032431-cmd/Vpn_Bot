@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass, field
 
 from bot.texts import node as texts
+from bot.texts.translations import t
 
 from .ssh_client import NodeInstallError, ProgressCallback, RemoteSession, SSHTarget
 
@@ -55,15 +56,15 @@ class NodeInstallResult:
     extra: dict = field(default_factory=dict)
 
 
-async def _ensure_docker(session: RemoteSession, progress: ProgressCallback) -> None:
+async def _ensure_docker(session: RemoteSession, progress: ProgressCallback, lang: str) -> None:
     check = await session.run("command -v docker")
     if check.exit_status == 0:
         await session.run_checked(
             "systemctl enable --now docker 2>/dev/null || service docker start",
-            "Docker установлен на сервере, но не удалось его запустить.",
+            t(lang, "err_docker_start"),
         )
     else:
-        await progress(texts.progress_installing_docker())
+        await progress(texts.progress_installing_docker(lang))
         await session.run(
             "command -v curl >/dev/null 2>&1 || "
             "(apt-get update -y && apt-get install -y curl) || "
@@ -71,22 +72,22 @@ async def _ensure_docker(session: RemoteSession, progress: ProgressCallback) -> 
         )
         await session.run_checked(
             "curl -fsSL https://get.docker.com | sh",
-            "Не удалось установить Docker автоматически. Установите его вручную и повторите попытку.",
+            t(lang, "err_docker_install"),
             timeout=900,
         )
         await session.run_checked(
             "systemctl enable --now docker",
-            "Docker установлен, но не удалось его запустить.",
+            t(lang, "err_docker_after_install"),
         )
 
     compose_check = await session.run("docker compose version")
     if compose_check.exit_status != 0:
-        await progress(texts.progress_installing_compose())
+        await progress(texts.progress_installing_compose(lang))
         await session.run_checked(
             "(apt-get update -y && apt-get install -y docker-compose-plugin) || "
             "(yum install -y docker-compose-plugin) || "
             "(dnf install -y docker-compose-plugin)",
-            "Не удалось установить docker compose plugin.",
+            t(lang, "err_compose_install"),
         )
 
 
@@ -94,26 +95,27 @@ async def install_marzban_node(
     target: SSHTarget,
     cert_pem: str,
     progress: ProgressCallback,
+    lang: str,
 ) -> NodeInstallResult:
-    await progress(texts.progress_connecting())
+    await progress(texts.progress_connecting(lang))
     session = await RemoteSession.connect(target)
     try:
-        await progress(texts.progress_checking_docker())
-        await _ensure_docker(session, progress)
+        await progress(texts.progress_checking_docker(lang))
+        await _ensure_docker(session, progress, lang)
 
-        await progress(texts.progress_uploading_marzban())
+        await progress(texts.progress_uploading_marzban(lang))
         await session.deploy_file(cert_pem, MARZBAN_CERT_FILENAME, MARZBAN_DIR, mode="600")
         await session.deploy_file(MARZBAN_COMPOSE, "docker-compose.yml", MARZBAN_DIR, mode="644")
 
-        await progress(texts.progress_launching("marzban-node"))
+        await progress(texts.progress_launching(lang, "marzban-node"))
         await session.run_checked(
             f"cd {shlex.quote(MARZBAN_DIR)} && docker compose up -d --force-recreate",
-            "Не удалось запустить контейнер marzban-node.",
+            t(lang, "err_marzban_up"),
             timeout=300,
         )
 
         status = await session.run("docker ps --filter name=marzban-node --format '{{.Status}}'")
-        container_status = (status.stdout or "").strip() or "неизвестно"
+        container_status = (status.stdout or "").strip() or "?"
 
         return NodeInstallResult(
             node_type="marzban",
@@ -128,19 +130,18 @@ async def install_marzban_node(
 async def install_pasarguard_node(
     target: SSHTarget,
     progress: ProgressCallback,
+    lang: str,
 ) -> NodeInstallResult:
-    await progress(texts.progress_connecting())
+    await progress(texts.progress_connecting(lang))
     session = await RemoteSession.connect(target)
     try:
-        await progress(texts.progress_checking_docker())
-        await _ensure_docker(session, progress)
+        await progress(texts.progress_checking_docker(lang))
+        await _ensure_docker(session, progress, lang)
 
         certs_dir = f"{PASARGUARD_DIR}/certs"
-        await session.run_checked(
-            f"mkdir -p {shlex.quote(certs_dir)}", "Не удалось создать директорию ноды."
-        )
+        await session.run_checked(f"mkdir -p {shlex.quote(certs_dir)}", t(lang, "err_mkdir"))
 
-        await progress(texts.progress_generating_pasarguard_cert())
+        await progress(texts.progress_generating_pasarguard_cert(lang))
         cert_check = await session.run(f"test -f {shlex.quote(certs_dir)}/ssl_cert.pem")
         if cert_check.exit_status != 0:
             await session.run_checked(
@@ -149,7 +150,7 @@ async def install_pasarguard_node(
                 f"-out {shlex.quote(certs_dir)}/ssl_cert.pem "
                 f'-subj "/CN={target.host}" '
                 f'-addext "subjectAltName=IP:{target.host}"',
-                "Не удалось сгенерировать сертификат ноды.",
+                t(lang, "err_cert_gen"),
             )
 
         # Reuse an existing API_KEY across redeploys so the panel <-> node
@@ -174,19 +175,19 @@ async def install_pasarguard_node(
             "API_KEY = {api_key}\n"
         ).format(port=PASARGUARD_PORT, certs_dir=certs_dir, api_key=api_key)
 
-        await progress(texts.progress_uploading_pasarguard())
+        await progress(texts.progress_uploading_pasarguard(lang))
         await session.deploy_file(PASARGUARD_COMPOSE, "docker-compose.yml", PASARGUARD_DIR, mode="644")
         await session.deploy_file(env_content, ".env", PASARGUARD_DIR, mode="600")
 
-        await progress(texts.progress_launching("pg-node"))
+        await progress(texts.progress_launching(lang, "pg-node"))
         await session.run_checked(
             f"cd {shlex.quote(PASARGUARD_DIR)} && docker compose up -d --force-recreate",
-            "Не удалось запустить контейнер pg-node.",
+            t(lang, "err_pasarguard_up"),
             timeout=300,
         )
 
         status = await session.run("docker ps --filter name=pg-node --format '{{.Status}}'")
-        container_status = (status.stdout or "").strip() or "неизвестно"
+        container_status = (status.stdout or "").strip() or "?"
 
         cert_result = await session.run(f"cat {shlex.quote(certs_dir)}/ssl_cert.pem")
         node_cert = (cert_result.stdout or "").strip()
