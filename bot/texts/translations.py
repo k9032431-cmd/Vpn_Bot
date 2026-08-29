@@ -27,21 +27,21 @@ def resolve_language(code: str | None) -> str:
 _STRINGS: dict[str, dict[str, str]] = {
     "welcome": {
         "ru": (
-            "{icon} <b>ArsiCloudBot</b> ✨\n\n"
+            "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
             "<i>Умный помощник для управления VPN: ноды, облако, шифрование и "
             "безопасность — всё в одном месте.</i>\n\n"
             "{div}\n"
             "👇 Выберите раздел, чтобы начать"
         ),
         "en": (
-            "{icon} <b>ArsiCloudBot</b> ✨\n\n"
+            "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
             "<i>Your smart VPN companion: nodes, cloud, encryption and security — "
             "all in one place.</i>\n\n"
             "{div}\n"
             "👇 Choose a section to get started"
         ),
         "tk": (
-            "{icon} <b>ArsiCloudBot</b> ✨\n\n"
+            "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
             "<i>VPN dolandyryşy üçin akylly kömekçiňiz: node-lar, bulut, şifrleme "
             "we howpsuzlyk — bary-ýogy bir ýerde.</i>\n\n"
             "{div}\n"
@@ -56,6 +56,11 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_language": {"ru": "🌐 Язык", "en": "🌐 Language", "tk": "🌐 Dil"},
     "btn_info": {"ru": "ℹ️ Инфо", "en": "ℹ️ Info", "tk": "ℹ️ Maglumat"},
     "btn_sos": {"ru": "🆘 SOS", "en": "🆘 SOS", "tk": "🆘 SOS"},
+    "sos_greeting": {
+        "ru": "Здравствуйте! У меня вопрос:",
+        "en": "Hello! I have a question:",
+        "tk": "Salam! Bir soragym bar:",
+    },
     "btn_back": {"ru": "⬅️ Назад", "en": "⬅️ Back", "tk": "⬅️ Yza"},
     "btn_cancel": {"ru": "❌ Отмена", "en": "❌ Cancel", "tk": "❌ Ýatyr"},
     "btn_marzban": {"ru": "⚡ Marzban Node", "en": "⚡ Marzban Node", "tk": "⚡ Marzban Node"},
@@ -66,34 +71,34 @@ _STRINGS: dict[str, dict[str, str]] = {
     # --- Section placeholders ---
     "section_cloud_vpn": {
         "ru": (
-            "{icon} <b>Cloud VPN</b> 🌩️\n\n"
+            "{icon} <b>Cloud VPN</b> 📶\n\n"
             "<i>Управление облачными VPN-подключениями появится здесь совсем скоро.</i>\n\n"
             "{div}\n🛠️ Уже в разработке"
         ),
         "en": (
-            "{icon} <b>Cloud VPN</b> 🌩️\n\n"
+            "{icon} <b>Cloud VPN</b> 📶\n\n"
             "<i>Cloud VPN connection management is coming here very soon.</i>\n\n"
             "{div}\n🛠️ Already in the works"
         ),
         "tk": (
-            "{icon} <b>Cloud VPN</b> 🌩️\n\n"
+            "{icon} <b>Cloud VPN</b> 📶\n\n"
             "<i>Bulut VPN birikmelerini dolandyrmak ýakynda bu ýerde peýda bolar.</i>\n\n"
             "{div}\n🛠️ Eýýäm işlenilýär"
         ),
     },
     "section_cloud_account": {
         "ru": (
-            "{icon} <b>Cloud Account</b> 🗂️\n\n"
+            "{icon} <b>Cloud Account</b> 🔑\n\n"
             "<i>Управление вашим аккаунтом появится совсем скоро.</i>\n\n"
             "{div}\n🛠️ Уже в разработке"
         ),
         "en": (
-            "{icon} <b>Cloud Account</b> 🗂️\n\n"
+            "{icon} <b>Cloud Account</b> 🔑\n\n"
             "<i>Account management is coming very soon.</i>\n\n"
             "{div}\n🛠️ Already in the works"
         ),
         "tk": (
-            "{icon} <b>Cloud Account</b> 🗂️\n\n"
+            "{icon} <b>Cloud Account</b> 🔑\n\n"
             "<i>Hasabyňyzy dolandyrmak ýakyn wagtda goşular.</i>\n\n"
             "{div}\n🛠️ Eýýäm işlenilýär"
         ),
@@ -117,51 +122,51 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "section_info": {
         "ru": (
-            "{icon} <b>ArsiCloudBot</b> 🌟\n\n"
+            "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
             "<i>Ваш помощник по управлению VPN — просто, быстро и безопасно.</i>\n\n"
             "{div}\n🏷️ Версия <code>0.1.0</code>"
         ),
         "en": (
-            "{icon} <b>ArsiCloudBot</b> 🌟\n\n"
+            "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
             "<i>Your VPN management companion — simple, fast and secure.</i>\n\n"
             "{div}\n🏷️ Version <code>0.1.0</code>"
         ),
         "tk": (
-            "{icon} <b>ArsiCloudBot</b> 🌟\n\n"
+            "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
             "<i>VPN dolandyryş kömekçiňiz — ýönekeý, çalt we howpsuz.</i>\n\n"
             "{div}\n🏷️ Wersiýa <code>0.1.0</code>"
         ),
     },
     "section_sos_contact": {
         "ru": (
-            "{icon} <b>SOS</b> 🚨\n\n"
+            "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
             "{div}\n📩 Напишите нам: {contact}"
         ),
         "en": (
-            "{icon} <b>SOS</b> 🚨\n\n"
+            "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Something's not working? We're always here.</i>\n\n"
             "{div}\n📩 Contact us: {contact}"
         ),
         "tk": (
-            "{icon} <b>SOS</b> 🚨\n\n"
+            "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
             "{div}\n📩 Bize ýazyň: {contact}"
         ),
     },
     "section_sos_empty": {
         "ru": (
-            "{icon} <b>SOS</b> 🚨\n\n"
+            "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
             "{div}\n📩 Поддержка появится здесь совсем скоро"
         ),
         "en": (
-            "{icon} <b>SOS</b> 🚨\n\n"
+            "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Something's not working? We're always here.</i>\n\n"
             "{div}\n📩 Support contact is coming very soon"
         ),
         "tk": (
-            "{icon} <b>SOS</b> 🚨\n\n"
+            "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
             "{div}\n📩 Goldaw ýakynda bu ýerde peýda bolar"
         ),
@@ -169,17 +174,17 @@ _STRINGS: dict[str, dict[str, str]] = {
     # --- Language picker ---
     "language_prompt": {
         "ru": (
-            "{icon} <b>Язык интерфейса</b> 🗣️\n\n"
+            "{icon} <b>Язык интерфейса</b> 📡\n\n"
             "<i>Выберите, на каком языке вам удобнее общаться с ботом.</i>\n\n"
             "{div}\n👇 Доступные языки"
         ),
         "en": (
-            "{icon} <b>Interface language</b> 🗣️\n\n"
+            "{icon} <b>Interface language</b> 📡\n\n"
             "<i>Choose the language you'd like the bot to speak.</i>\n\n"
             "{div}\n👇 Available languages"
         ),
         "tk": (
-            "{icon} <b>Interfeýsiň dili</b> 🗣️\n\n"
+            "{icon} <b>Interfeýsiň dili</b> 📡\n\n"
             "<i>Bot bilen haýsy dilde gürleşmek isleýändigiňizi saýlaň.</i>\n\n"
             "{div}\n👇 Elýeterli diller"
         ),
@@ -194,17 +199,17 @@ _STRINGS: dict[str, dict[str, str]] = {
     "title_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "node_menu": {
         "ru": (
-            "{icon} <b>Node</b> ⚙️\n\n"
+            "{icon} <b>Node</b> 🖧\n\n"
             "<i>Разверните VPN-ноду на своём сервере за пару минут — бот сделает всё сам.</i>\n\n"
             "{div}\n👇 Выберите платформу"
         ),
         "en": (
-            "{icon} <b>Node</b> ⚙️\n\n"
+            "{icon} <b>Node</b> 🖧\n\n"
             "<i>Deploy a VPN node on your server in a couple of minutes — the bot handles the rest.</i>\n\n"
             "{div}\n👇 Choose a platform"
         ),
         "tk": (
-            "{icon} <b>Node</b> ⚙️\n\n"
+            "{icon} <b>Node</b> 🖧\n\n"
             "<i>Serweriňizde birnäçe minutda VPN node ornaşdyryň — galanyny bot eder.</i>\n\n"
             "{div}\n👇 Platformany saýlaň"
         ),
@@ -362,9 +367,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Garaşylmadyk ýalňyşlyk</b>\n\n{reason}",
     },
     "result_header": {
-        "ru": "{icon} {header} успешно запущена на <code>{host}</code> 🎉",
-        "en": "{icon} {header} is up and running on <code>{host}</code> 🎉",
-        "tk": "{icon} {header} <code>{host}</code> serwerde üstünlikli işledildi 🎉",
+        "ru": "{icon} {header} успешно запущена на <code>{host}</code> 🚀",
+        "en": "{icon} {header} is up and running on <code>{host}</code> 🚀",
+        "tk": "{icon} {header} <code>{host}</code> serwerde üstünlikli işledildi 🚀",
     },
     "result_dir": {
         "ru": "📁 Папка: <code>{dir}</code>",
