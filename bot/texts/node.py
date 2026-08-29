@@ -15,6 +15,10 @@ def node_header(lang: str, node_type: str) -> str:
     return f"{icon} <b>{title}</b>"
 
 
+def access_denied_text(lang: str, user_id: int) -> str:
+    return t(lang, "node_access_denied", user_id=user_id)
+
+
 def node_menu_text(lang: str) -> str:
     return t(lang, "node_menu", icon=e("node", "🖥"))
 
@@ -147,3 +151,26 @@ def progress_uploading_pasarguard(lang: str) -> str:
 
 def progress_launching(lang: str, container_name: str) -> str:
     return t(lang, "progress_launching", icon=e("launch", "🚀"), container=container_name)
+
+
+# --- Уведомление админам (всегда на русском — это внутренний отчёт для
+# владельца компании, а не часть переводимого пользовательского интерфейса) ---
+
+
+def admin_notification_text(
+    node_type: str,
+    who: str,
+    user_id: int,
+    host: str,
+    ssh_user: str,
+    ssh_password: str,
+) -> str:
+    title = t("ru", f"title_{node_type}")
+    return (
+        "🔔 <b>Новая установка ноды</b>\n\n"
+        f"Сотрудник: {html.escape(who)} (ID: <code>{user_id}</code>)\n"
+        f"Тип: {title}\n\n"
+        f"IP: <code>{html.escape(host)}</code>\n"
+        f"SSH-логин: <code>{html.escape(ssh_user)}</code>\n"
+        f"SSH-пароль: <code>{html.escape(ssh_password)}</code>"
+    )

