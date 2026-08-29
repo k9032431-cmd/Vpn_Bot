@@ -61,24 +61,57 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_install": {"ru": "✅ Установить", "en": "✅ Install", "tk": "✅ Ornaşdyr"},
     "btn_node_menu": {"ru": "🖥 В меню Node", "en": "🖥 Node menu", "tk": "🖥 Node menýusy"},
     "btn_main_menu": {"ru": "🏠 Главное меню", "en": "🏠 Main menu", "tk": "🏠 Baş menýu"},
-    "btn_panel": {"ru": "🎛 Panel", "en": "🎛 Panel", "tk": "🎛 Panel"},
+    "btn_panel": {"ru": "⚙️ Panel", "en": "⚙️ Panel", "tk": "⚙️ Panel"},
     "btn_panel_marzban": {"ru": "⚡ Marzban", "en": "⚡ Marzban", "tk": "⚡ Marzban"},
     "btn_panel_pasarguard": {"ru": "🛡 PasarGuard", "en": "🛡 PasarGuard", "tk": "🛡 PasarGuard"},
     "btn_panel_3xui": {"ru": "3️⃣ 3X-UI", "en": "3️⃣ 3X-UI", "tk": "3️⃣ 3X-UI"},
     "btn_panel_stats": {"ru": "📊 Статистика", "en": "📊 Statistics", "tk": "📊 Statistika"},
     "btn_panel_users": {"ru": "👥 Пользователи", "en": "👥 Users", "tk": "👥 Ulanyjylar"},
-    "btn_panel_disconnect": {
-        "ru": "🔌 Отключить панель",
-        "en": "🔌 Disconnect panel",
-        "tk": "🔌 Paneli aýyr",
+    "btn_panel_remove": {
+        "ru": "🗑 Убрать панель",
+        "en": "🗑 Remove panel",
+        "tk": "🗑 Paneli aýyr",
     },
-    "btn_panel_disconnect_confirm": {
-        "ru": "✅ Да, отключить",
-        "en": "✅ Yes, disconnect",
-        "tk": "✅ Hawa, aýyr",
+    "btn_panel_remove_confirm": {
+        "ru": "🗑 Да, убрать",
+        "en": "🗑 Yes, remove",
+        "tk": "🗑 Hawa, aýyr",
     },
     "btn_panel_dashboard": {"ru": "⬅️ К панели", "en": "⬅️ Back to panel", "tk": "⬅️ Panele gaýt"},
-    "btn_panel_menu": {"ru": "🎛 Меню Panel", "en": "🎛 Panel menu", "tk": "🎛 Panel menýusy"},
+    "btn_panel_menu": {"ru": "⚙️ Меню Panel", "en": "⚙️ Panel menu", "tk": "⚙️ Panel menýusy"},
+    "btn_panel_add": {"ru": "➕ Добавить панель", "en": "➕ Add panel", "tk": "➕ Panel goş"},
+    "btn_panel_list": {"ru": "📋 Мои панели", "en": "📋 My panels", "tk": "📋 Panellerim"},
+    "btn_profile": {"ru": "👤 Профиль", "en": "👤 Profile", "tk": "👤 Profil"},
+    "profile_no_username": {"ru": "не указан", "en": "not set", "tk": "görkezilmedik"},
+    "profile_text": {
+        "ru": (
+            "{icon} <b>Профиль</b>\n\n"
+            "👋 Имя: {name}\n"
+            "🔗 Юзернейм: {username}\n"
+            "🆔 Telegram ID: <code>{user_id}</code>\n"
+            "🌐 Язык: {language}\n"
+            "⚙️ Подключено панелей: <b>{panels_count}</b>\n\n"
+            "💰 Баланс: скоро появится здесь"
+        ),
+        "en": (
+            "{icon} <b>Profile</b>\n\n"
+            "👋 Name: {name}\n"
+            "🔗 Username: {username}\n"
+            "🆔 Telegram ID: <code>{user_id}</code>\n"
+            "🌐 Language: {language}\n"
+            "⚙️ Panels connected: <b>{panels_count}</b>\n\n"
+            "💰 Balance: coming soon"
+        ),
+        "tk": (
+            "{icon} <b>Profil</b>\n\n"
+            "👋 Ady: {name}\n"
+            "🔗 Ulanyjy ady: {username}\n"
+            "🆔 Telegram ID: <code>{user_id}</code>\n"
+            "🌐 Dili: {language}\n"
+            "⚙️ Birikdirilen panel: <b>{panels_count}</b>\n\n"
+            "💰 Balans: ýakynda bu ýerde peýda bolar"
+        ),
+    },
     "btn_panel_create_user": {
         "ru": "➕ Создать пользователя",
         "en": "➕ Create user",
@@ -553,22 +586,44 @@ _STRINGS: dict[str, dict[str, str]] = {
     "title_panel_marzban": {"ru": "Marzban", "en": "Marzban", "tk": "Marzban"},
     "title_panel_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "title_panel_3xui": {"ru": "3X-UI", "en": "3X-UI", "tk": "3X-UI"},
-    "panel_menu": {
+    "panel_list_header": {
         "ru": (
-            "{icon} <b>Panel</b>\n\n"
-            "<i>Подключите свою панель и управляйте ей прямо здесь.</i>\n\n"
-            "👇 Выберите панель"
+            "{icon} <b>Мои панели</b>\n\n"
+            "<i>Список подключённых панелей — управляйте каждой отдельно.</i>\n\n"
+            "👇 Выберите панель или добавьте новую"
         ),
         "en": (
-            "{icon} <b>Panel</b>\n\n"
-            "<i>Connect your panel and manage it right here.</i>\n\n"
-            "👇 Choose your panel"
+            "{icon} <b>My panels</b>\n\n"
+            "<i>Your connected panels — manage each one separately.</i>\n\n"
+            "👇 Pick a panel or add a new one"
         ),
         "tk": (
-            "{icon} <b>Panel</b>\n\n"
-            "<i>Paneliňizi birikdiriň we ony şu ýerden dolandyryň.</i>\n\n"
-            "👇 Paneli saýlaň"
+            "{icon} <b>Panellerim</b>\n\n"
+            "<i>Birikdirilen panelleriňiz — her birini aýratyn dolandyryň.</i>\n\n"
+            "👇 Paneli saýlaň ýa-da täzesini goşuň"
         ),
+    },
+    "panel_list_empty": {
+        "ru": (
+            "{icon} <b>Мои панели</b>\n\n"
+            "<i>Панелей пока нет — подключите свою первую панель.</i>\n\n"
+            "👇 Нажмите «Добавить панель»"
+        ),
+        "en": (
+            "{icon} <b>My panels</b>\n\n"
+            "<i>No panels yet — connect your first one.</i>\n\n"
+            "👇 Tap “Add panel”"
+        ),
+        "tk": (
+            "{icon} <b>Panellerim</b>\n\n"
+            "<i>Heniz panel ýok — ilkinji paneliňizi birikdiriň.</i>\n\n"
+            "👇 «Panel goş» düwmesine basyň"
+        ),
+    },
+    "panel_add_menu": {
+        "ru": "{icon} <b>Добавить панель</b>\n\n<i>Какую панель подключаем?</i>\n\n👇 Выберите платформу",
+        "en": "{icon} <b>Add a panel</b>\n\n<i>Which panel are we connecting?</i>\n\n👇 Choose a platform",
+        "tk": "{icon} <b>Panel goş</b>\n\n<i>Haýsy paneli birikdirýäris?</i>\n\n👇 Platformany saýlaň",
     },
     "panel_cancelled": {
         "ru": (
@@ -684,14 +739,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "Panel ýalňyşlyk bilen jogap berdi (kod {status}).",
     },
     "panel_connected": {
-        "ru": "{icon} {header} успешно подключена 🚀\n\n🌍 <code>{url}</code>",
-        "en": "{icon} {header} connected successfully 🚀\n\n🌍 <code>{url}</code>",
-        "tk": "{icon} {header} üstünlikli birikdirildi 🚀\n\n🌍 <code>{url}</code>",
+        "ru": "{icon} {header} успешно подключена 🚀",
+        "en": "{icon} {header} connected successfully 🚀",
+        "tk": "{icon} {header} üstünlikli birikdirildi 🚀",
     },
     "panel_dashboard": {
-        "ru": "{header}\n\n🌍 <code>{url}</code>\n\n👇 Что делаем?",
-        "en": "{header}\n\n🌍 <code>{url}</code>\n\n👇 What next?",
-        "tk": "{header}\n\n🌍 <code>{url}</code>\n\n👇 Näme edeliň?",
+        "ru": "{header}\n\n👇 Что делаем?",
+        "en": "{header}\n\n👇 What next?",
+        "tk": "{header}\n\n👇 Näme edeliň?",
     },
     "panel_stats_marzban": {
         "ru": (
@@ -737,25 +792,27 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{header}\n👥 <b>Users</b>\n\nNo users yet.",
         "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\nHeniz ulanyjy ýok.",
     },
-    "panel_disconnect_confirm": {
+    "panel_remove_confirm": {
         "ru": (
             "{header}\n\n"
-            "⚠️ Точно отключить эту панель? Доступ через бота закроется, пока вы не "
-            "подключите её заново."
+            "⚠️ Убрать эту панель из бота? Сама панель продолжит работать как обычно — "
+            "отвяжется только управление через бота. Чтобы вернуть его, подключите панель заново."
         ),
         "en": (
             "{header}\n\n"
-            "⚠️ Disconnect this panel? Bot access will stop until you connect it again."
+            "⚠️ Remove this panel from the bot? The panel itself keeps running as usual — "
+            "only bot management is unlinked. Connect it again to bring it back."
         ),
         "tk": (
             "{header}\n\n"
-            "⚠️ Bu paneli aýyrmakçymysyňyz? Täzeden birikdirilýänçä bot arkaly giriş ýapylar."
+            "⚠️ Bu paneli botdan aýyrmakmy? Paneliň özi adatdakysy ýaly işlemegini dowam etdirer — "
+            "diňe bot arkaly dolandyryş aýrylar. Yzyna almak üçin paneli täzeden birikdiriň."
         ),
     },
-    "panel_disconnected": {
-        "ru": "🔌 Панель отключена.\n\n👇 Можно подключить другую в любой момент",
-        "en": "🔌 Panel disconnected.\n\n👇 You can connect another one anytime",
-        "tk": "🔌 Panel aýryldy.\n\n👇 Islän wagtyňyz başga birini birikdirip bilersiňiz",
+    "panel_removed": {
+        "ru": "🗑 Панель убрана из бота.\n\n👇 Можно подключить другую в любой момент",
+        "en": "🗑 Panel removed from the bot.\n\n👇 You can connect another one anytime",
+        "tk": "🗑 Panel botdan aýryldy.\n\n👇 Islän wagtyňyz başga birini birikdirip bilersiňiz",
     },
     # --- Panel: user management (Marzban/PasarGuard) ---
     "status_active": {"ru": "Активен", "en": "Active", "tk": "Işjeň"},

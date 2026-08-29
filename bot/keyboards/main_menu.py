@@ -10,6 +10,7 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_node"), callback_data="menu:node")
     builder.button(text=t(lang, "btn_panel"), callback_data="menu:panel")
+    builder.button(text=t(lang, "btn_profile"), callback_data="menu:profile")
     builder.button(text=t(lang, "btn_cloud_vpn"), callback_data="menu:cloud_vpn")
     builder.button(text=t(lang, "btn_cloud_account"), callback_data="menu:cloud_account")
     builder.button(text=t(lang, "btn_crypt"), callback_data="menu:crypt")
@@ -24,7 +25,7 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     else:
         builder.button(text=t(lang, "btn_sos"), callback_data="menu:sos")
 
-    builder.adjust(2, 2, 2, 2)
+    builder.adjust(2, 2, 2, 2, 1)
     return builder.as_markup()
 
 

@@ -9,13 +9,14 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.config import config
 from bot.keyboards.panel import (
+    panel_add_menu_keyboard,
     panel_cancel_keyboard,
     panel_create_user_confirm_keyboard,
     panel_dashboard_back_keyboard,
     panel_dashboard_keyboard,
-    panel_disconnect_confirm_keyboard,
     panel_error_keyboard,
-    panel_menu_keyboard,
+    panel_list_keyboard,
+    panel_remove_confirm_keyboard,
     panel_user_cancel_keyboard,
     panel_user_delete_confirm_keyboard,
     panel_user_detail_keyboard,
@@ -99,21 +100,39 @@ def parse_limit_and_expire(text: str) -> tuple[int | None, int | None] | None:
     return data_limit, expire
 
 
+async def _show_panel_list(callback: CallbackQuery, lang: str) -> None:
+    panels = await panel_store.list(callback.from_user.id)
+    await callback.message.edit_text(
+        texts.panel_list_header_text(lang, bool(panels)),
+        reply_markup=panel_list_keyboard(lang, panels),
+    )
+
+
+# --- Panel list & adding a new panel ---
+
+
 @router.callback_query(F.data == "menu:panel")
 async def cb_panel_menu(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    connection = await panel_store.get(callback.from_user.id)
-    if connection:
-        await callback.message.edit_text(
-            texts.dashboard_text(lang, connection["type"], connection["url"]),
-            reply_markup=panel_dashboard_keyboard(lang),
-        )
-    else:
-        await callback.message.edit_text(texts.panel_menu_text(lang), reply_markup=panel_menu_keyboard(lang))
+    await _show_panel_list(callback, lang)
     await callback.answer()
 
 
-@router.callback_query(F.data.in_({f"panel:{name}" for name in PANEL_TYPES}))
+@router.callback_query(F.data == "pdash:list")
+async def cb_back_to_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    await _show_panel_list(callback, lang)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "padd:menu")
+async def cb_add_menu(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    await callback.message.edit_text(texts.panel_add_menu_text(lang), reply_markup=panel_add_menu_keyboard(lang))
+    await callback.answer()
+
+
+@router.callback_query(F.data.in_({f"padd:{name}" for name in PANEL_TYPES}))
 async def cb_panel_choose_type(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     panel_type = callback.data.split(":", 1)[1]
     await state.clear()
@@ -128,7 +147,7 @@ async def cb_panel_choose_type(callback: CallbackQuery, state: FSMContext, lang:
 @router.callback_query(F.data == "panelsetup:cancel")
 async def cb_cancel_setup(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.edit_text(texts.panel_cancelled_text(lang), reply_markup=panel_menu_keyboard(lang))
+    await _show_panel_list(callback, lang)
     await callback.answer()
 
 
@@ -193,123 +212,140 @@ async def process_password(message: Message, state: FSMContext, lang: str, bot: 
         )
         return
 
-    await panel_store.set(message.from_user.id, data["panel_type"], data["url"], data["username"], password)
+    panel_id = await panel_store.add(
+        message.from_user.id, data["panel_type"], data["url"], data["username"], password
+    )
     await _notify_admins(bot, message.from_user, data["panel_type"], data["url"], data["username"], password)
 
     await state.clear()
     await status_message.edit_text(
         texts.connected_text(lang, data["panel_type"], data["url"]),
-        reply_markup=panel_dashboard_keyboard(lang),
+        reply_markup=panel_dashboard_keyboard(lang, panel_id),
     )
 
 
-@router.callback_query(F.data == "paneldash:back")
-async def cb_dashboard_back(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+# --- A specific panel's dashboard ---
+
+
+@router.callback_query(F.data.startswith("pview:"))
+async def cb_panel_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
-        await callback.message.edit_text(texts.panel_menu_text(lang), reply_markup=panel_menu_keyboard(lang))
-    else:
-        await callback.message.edit_text(
-            texts.dashboard_text(lang, connection["type"], connection["url"]),
-            reply_markup=panel_dashboard_keyboard(lang),
-        )
+    panel_id = callback.data.split(":", 1)[1]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.message.edit_text(
+        texts.dashboard_text(lang, panel), reply_markup=panel_dashboard_keyboard(lang, panel_id)
+    )
     await callback.answer()
 
 
-@router.callback_query(F.data == "paneldash:stats")
+@router.callback_query(F.data.startswith("pdash:stats:"))
 async def cb_dashboard_stats(callback: CallbackQuery, lang: str) -> None:
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
-        await callback.message.edit_text(texts.panel_menu_text(lang), reply_markup=panel_menu_keyboard(lang))
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
         await callback.answer()
         return
     await callback.answer()
 
     try:
-        if connection["type"] in MANAGEABLE_TYPES:
-            token = await marzban_login(connection["url"], connection["username"], connection["password"])
-            stats = await marzban_get_system_stats(connection["url"], token)
-            text = texts.stats_text_marzban_family(lang, connection["type"], stats)
+        if panel["type"] in MANAGEABLE_TYPES:
+            token = await marzban_login(panel["url"], panel["username"], panel["password"])
+            stats = await marzban_get_system_stats(panel["url"], token)
+            text = texts.stats_text_marzban_family(lang, panel, stats)
         else:
-            cookies = await threexui_login(connection["url"], connection["username"], connection["password"])
-            inbounds = await threexui_get_inbounds(connection["url"], cookies)
-            text = texts.stats_text_3xui(lang, len(inbounds), count_3xui_clients(inbounds))
+            cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+            inbounds = await threexui_get_inbounds(panel["url"], cookies)
+            text = texts.stats_text_3xui(lang, panel, len(inbounds), count_3xui_clients(inbounds))
     except PanelAPIError as exc:
         text = texts.login_error_text(lang, str(exc))
 
-    await callback.message.edit_text(text, reply_markup=panel_dashboard_back_keyboard(lang))
+    await callback.message.edit_text(text, reply_markup=panel_dashboard_back_keyboard(lang, panel_id))
 
 
-@router.callback_query(F.data == "paneldash:users")
-async def cb_dashboard_users(callback: CallbackQuery, lang: str) -> None:
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
-        await callback.message.edit_text(texts.panel_menu_text(lang), reply_markup=panel_menu_keyboard(lang))
-        await callback.answer()
+async def _render_users_screen(callback: CallbackQuery, lang: str, panel_id: str) -> None:
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
         return
-    await callback.answer()
 
     try:
-        if connection["type"] in MANAGEABLE_TYPES:
-            token = await marzban_login(connection["url"], connection["username"], connection["password"])
-            users = await marzban_get_users(connection["url"], token, limit=10)
-            text = texts.users_list_text_marzban_family(lang, connection["type"], users)
+        if panel["type"] in MANAGEABLE_TYPES:
+            token = await marzban_login(panel["url"], panel["username"], panel["password"])
+            users = await marzban_get_users(panel["url"], token, limit=10)
+            text = texts.users_list_text_marzban_family(lang, panel, users)
             usernames = [str(u["username"]) for u in users if u.get("username")]
-            keyboard = panel_users_keyboard(lang, usernames, manageable=True)
+            keyboard = panel_users_keyboard(lang, panel_id, usernames, manageable=True)
         else:
-            cookies = await threexui_login(connection["url"], connection["username"], connection["password"])
-            inbounds = await threexui_get_inbounds(connection["url"], cookies)
-            text = texts.users_list_text_3xui(lang, inbounds)
-            keyboard = panel_dashboard_back_keyboard(lang)
+            cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+            inbounds = await threexui_get_inbounds(panel["url"], cookies)
+            text = texts.users_list_text_3xui(lang, panel, inbounds)
+            keyboard = panel_dashboard_back_keyboard(lang, panel_id)
     except PanelAPIError as exc:
         text = texts.login_error_text(lang, str(exc))
-        keyboard = panel_dashboard_back_keyboard(lang)
+        keyboard = panel_dashboard_back_keyboard(lang, panel_id)
 
     await callback.message.edit_text(text, reply_markup=keyboard)
 
 
-@router.callback_query(F.data == "paneldash:disconnect")
-async def cb_dashboard_disconnect_ask(callback: CallbackQuery, lang: str) -> None:
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
-        await callback.message.edit_text(texts.panel_menu_text(lang), reply_markup=panel_menu_keyboard(lang))
+@router.callback_query(F.data.startswith("pdash:users:"))
+async def cb_dashboard_users(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_users_screen(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pdash:rmask:"))
+async def cb_dashboard_remove_ask(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
         await callback.answer()
         return
     await callback.message.edit_text(
-        texts.disconnect_confirm_text(lang, connection["type"]),
-        reply_markup=panel_disconnect_confirm_keyboard(lang),
+        texts.remove_confirm_text(lang, panel), reply_markup=panel_remove_confirm_keyboard(lang, panel_id)
     )
     await callback.answer()
 
 
-@router.callback_query(F.data == "paneldash:disconnect_confirm")
-async def cb_dashboard_disconnect_confirm(callback: CallbackQuery, lang: str) -> None:
-    await panel_store.remove(callback.from_user.id)
-    await callback.message.edit_text(texts.disconnected_text(lang), reply_markup=panel_menu_keyboard(lang))
+@router.callback_query(F.data.startswith("pdash:rmcnf:"))
+async def cb_dashboard_remove_confirm(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    await panel_store.remove(callback.from_user.id, panel_id)
+    panels = await panel_store.list(callback.from_user.id)
+    await callback.message.edit_text(texts.removed_text(lang), reply_markup=panel_list_keyboard(lang, panels))
     await callback.answer()
 
 
 # --- User management (Marzban / PasarGuard only) ---
 
 
-@router.callback_query(F.data == "paneluser:cancel")
+@router.callback_query(F.data.startswith("puser:cancel:"))
 async def cb_user_action_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await cb_dashboard_users(callback, lang)
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_users_screen(callback, lang, panel_id)
+    await callback.answer()
 
 
-@router.callback_query(F.data == "paneldash:create_user")
+@router.callback_query(F.data.startswith("pdash:newuser:"))
 async def cb_create_user_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection or connection["type"] not in MANAGEABLE_TYPES:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
         await callback.answer()
         return
     await state.clear()
+    await state.update_data(panel_id=panel_id)
     await state.set_state(PanelUserCreateStates.waiting_username)
     await callback.message.edit_text(
-        texts.create_user_step_username_text(lang, connection["type"]),
-        reply_markup=panel_user_cancel_keyboard(lang),
+        texts.create_user_step_username_text(lang, panel),
+        reply_markup=panel_user_cancel_keyboard(lang, panel_id),
     )
     await callback.answer()
 
@@ -317,32 +353,40 @@ async def cb_create_user_start(callback: CallbackQuery, state: FSMContext, lang:
 @router.message(PanelUserCreateStates.waiting_username)
 async def process_new_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
     if not NEW_USERNAME_RE.match(username):
-        await message.answer(texts.invalid_new_username_text(lang), reply_markup=panel_user_cancel_keyboard(lang))
+        await message.answer(
+            texts.invalid_new_username_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
+        )
         return
 
-    connection = await panel_store.get(message.from_user.id)
-    if not connection:
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
         await state.clear()
         return
 
     await state.update_data(new_username=username)
     await state.set_state(PanelUserCreateStates.waiting_limits)
     await message.answer(
-        texts.create_user_step_limits_text(lang, connection["type"], username),
-        reply_markup=panel_user_cancel_keyboard(lang),
+        texts.create_user_step_limits_text(lang, panel, username),
+        reply_markup=panel_user_cancel_keyboard(lang, panel_id),
     )
 
 
 @router.message(PanelUserCreateStates.waiting_limits)
 async def process_new_user_limits(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
     parsed = parse_limit_and_expire(message.text or "")
     if parsed is None:
-        await message.answer(texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang))
+        await message.answer(
+            texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
+        )
         return
 
-    connection = await panel_store.get(message.from_user.id)
-    if not connection:
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
         await state.clear()
         return
 
@@ -350,27 +394,28 @@ async def process_new_user_limits(message: Message, state: FSMContext, lang: str
     data = await state.update_data(data_limit=data_limit, expire=expire)
     await state.set_state(PanelUserCreateStates.confirming)
     await message.answer(
-        texts.create_user_confirm_text(lang, connection["type"], data["new_username"], data_limit, expire),
-        reply_markup=panel_create_user_confirm_keyboard(lang),
+        texts.create_user_confirm_text(lang, panel, data["new_username"], data_limit, expire),
+        reply_markup=panel_create_user_confirm_keyboard(lang, panel_id),
     )
 
 
-@router.callback_query(PanelUserCreateStates.confirming, F.data == "paneluser:create_confirm")
+@router.callback_query(PanelUserCreateStates.confirming, F.data.startswith("puser:createcnf:"))
 async def cb_create_user_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
-    connection = await panel_store.get(callback.from_user.id)
+    panel_id = data.get("panel_id", "")
+    panel = await panel_store.get(callback.from_user.id, panel_id)
     await state.clear()
-    if not connection:
+    if not panel:
         await callback.answer()
         return
     await callback.answer()
 
     try:
-        token = await marzban_login(connection["url"], connection["username"], connection["password"])
-        inbounds = await marzban_get_inbounds(connection["url"], token)
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await marzban_get_inbounds(panel["url"], token)
         proxies = {protocol: {} for protocol in inbounds}
         result = await marzban_create_user(
-            connection["url"],
+            panel["url"],
             token,
             data["new_username"],
             proxies,
@@ -380,172 +425,175 @@ async def cb_create_user_confirm(callback: CallbackQuery, state: FSMContext, lan
         )
     except PanelAPIError as exc:
         await callback.message.edit_text(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang)
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
         return
 
-    sub_link = _full_sub_link(connection["url"], result.get("subscription_url"))
+    sub_link = _full_sub_link(panel["url"], result.get("subscription_url"))
     await callback.message.edit_text(
         texts.create_user_success_text(lang, data["new_username"], sub_link),
-        reply_markup=panel_dashboard_back_keyboard(lang),
+        reply_markup=panel_dashboard_back_keyboard(lang, panel_id),
     )
 
 
-@router.callback_query(F.data.startswith("paneluser:view:"))
+@router.callback_query(F.data.startswith("puser:view:"))
 async def cb_user_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    username = callback.data.split(":", 2)[2]
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection or connection["type"] not in MANAGEABLE_TYPES:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
         await callback.answer()
         return
     await callback.answer()
 
     try:
-        token = await marzban_login(connection["url"], connection["username"], connection["password"])
-        user = await marzban_get_user(connection["url"], token, username)
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        user = await marzban_get_user(panel["url"], token, username)
     except PanelAPIError as exc:
         await callback.message.edit_text(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang)
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
         return
 
-    user["subscription_url"] = _full_sub_link(connection["url"], user.get("subscription_url"))
+    user["subscription_url"] = _full_sub_link(panel["url"], user.get("subscription_url"))
     await callback.message.edit_text(
-        texts.user_detail_text(lang, connection["type"], user),
-        reply_markup=panel_user_detail_keyboard(lang, username, str(user.get("status", ""))),
+        texts.user_detail_text(lang, panel, user),
+        reply_markup=panel_user_detail_keyboard(lang, panel_id, username, str(user.get("status", ""))),
     )
 
 
-@router.callback_query(F.data.startswith("paneluser:toggle:"))
+@router.callback_query(F.data.startswith("puser:toggle:"))
 async def cb_user_toggle(callback: CallbackQuery, lang: str) -> None:
-    username = callback.data.split(":", 2)[2]
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
         await callback.answer()
         return
     await callback.answer()
 
     try:
-        token = await marzban_login(connection["url"], connection["username"], connection["password"])
-        current = await marzban_get_user(connection["url"], token, username)
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        current = await marzban_get_user(panel["url"], token, username)
         new_status = "disabled" if current.get("status") == "active" else "active"
-        await marzban_modify_user(connection["url"], token, username, status=new_status)
+        await marzban_modify_user(panel["url"], token, username, status=new_status)
     except PanelAPIError as exc:
         await callback.message.edit_text(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang)
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
         return
 
     await callback.message.edit_text(
         texts.toggle_success_text(lang, username, new_status),
-        reply_markup=panel_user_detail_keyboard(lang, username, new_status),
+        reply_markup=panel_user_detail_keyboard(lang, panel_id, username, new_status),
     )
 
 
-@router.callback_query(F.data.startswith("paneluser:reset:"))
+@router.callback_query(F.data.startswith("puser:reset:"))
 async def cb_user_reset(callback: CallbackQuery, lang: str) -> None:
-    username = callback.data.split(":", 2)[2]
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
         await callback.answer()
         return
     await callback.answer()
 
     try:
-        token = await marzban_login(connection["url"], connection["username"], connection["password"])
-        await marzban_reset_user_usage(connection["url"], token, username)
-        current = await marzban_get_user(connection["url"], token, username)
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        await marzban_reset_user_usage(panel["url"], token, username)
+        current = await marzban_get_user(panel["url"], token, username)
     except PanelAPIError as exc:
         await callback.message.edit_text(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang)
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
         return
 
     await callback.message.edit_text(
         texts.reset_success_text(lang, username),
-        reply_markup=panel_user_detail_keyboard(lang, username, str(current.get("status", ""))),
+        reply_markup=panel_user_detail_keyboard(lang, panel_id, username, str(current.get("status", ""))),
     )
 
 
-@router.callback_query(F.data.startswith("paneluser:edit:"))
+@router.callback_query(F.data.startswith("puser:edit:"))
 async def cb_user_edit_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    username = callback.data.split(":", 2)[2]
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
         await callback.answer()
         return
     await state.clear()
-    await state.update_data(edit_username=username)
+    await state.update_data(panel_id=panel_id, edit_username=username)
     await state.set_state(PanelUserEditStates.waiting_limits)
     await callback.message.edit_text(
-        texts.edit_user_prompt_text(lang, connection["type"], username),
-        reply_markup=panel_user_cancel_keyboard(lang),
+        texts.edit_user_prompt_text(lang, panel, username),
+        reply_markup=panel_user_cancel_keyboard(lang, panel_id),
     )
     await callback.answer()
 
 
 @router.message(PanelUserEditStates.waiting_limits)
 async def process_edit_user_limits(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
     parsed = parse_limit_and_expire(message.text or "")
     if parsed is None:
-        await message.answer(texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang))
+        await message.answer(
+            texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
+        )
         return
 
-    data = await state.get_data()
     username = data.get("edit_username")
-    connection = await panel_store.get(message.from_user.id)
+    panel = await panel_store.get(message.from_user.id, panel_id)
     await state.clear()
-    if not connection or not username:
+    if not panel or not username:
         return
 
     data_limit, expire = parsed
     try:
-        token = await marzban_login(connection["url"], connection["username"], connection["password"])
-        await marzban_modify_user(connection["url"], token, username, data_limit=data_limit, expire=expire)
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        await marzban_modify_user(panel["url"], token, username, data_limit=data_limit, expire=expire)
     except PanelAPIError as exc:
         await message.answer(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang)
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
         return
 
     await message.answer(
-        texts.edit_user_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang)
+        texts.edit_user_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
     )
 
 
-@router.callback_query(F.data.startswith("paneluser:delete_ask:"))
+@router.callback_query(F.data.startswith("puser:delask:"))
 async def cb_user_delete_ask(callback: CallbackQuery, lang: str) -> None:
-    username = callback.data.split(":", 2)[2]
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
         await callback.answer()
         return
     await callback.message.edit_text(
-        texts.delete_confirm_user_text(lang, connection["type"], username),
-        reply_markup=panel_user_delete_confirm_keyboard(lang, username),
+        texts.delete_confirm_user_text(lang, panel, username),
+        reply_markup=panel_user_delete_confirm_keyboard(lang, panel_id, username),
     )
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("paneluser:delete_confirm:"))
+@router.callback_query(F.data.startswith("puser:delcnf:"))
 async def cb_user_delete_confirm(callback: CallbackQuery, lang: str) -> None:
-    username = callback.data.split(":", 2)[2]
-    connection = await panel_store.get(callback.from_user.id)
-    if not connection:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
         await callback.answer()
         return
     await callback.answer()
 
     try:
-        token = await marzban_login(connection["url"], connection["username"], connection["password"])
-        await marzban_delete_user(connection["url"], token, username)
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        await marzban_delete_user(panel["url"], token, username)
     except PanelAPIError as exc:
         await callback.message.edit_text(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang)
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
         return
 
     await callback.message.edit_text(
-        texts.delete_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang)
+        texts.delete_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
     )

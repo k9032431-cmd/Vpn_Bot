@@ -60,6 +60,8 @@ IDS: dict[str, str] = {
     "panel": "",
     # threexui — заголовок панели 3X-UI
     "threexui": "",
+    # profile — заголовок и кнопка раздела Профиль
+    "profile": "",
 }
 
 

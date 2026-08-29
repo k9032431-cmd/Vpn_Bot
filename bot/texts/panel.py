@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import html
 import json
+from urllib.parse import urlparse
 
 from .premium_emoji import e
 from .translations import t
@@ -25,22 +26,43 @@ _PANEL_ERR_KEYS = {
 }
 
 
-def panel_header(lang: str, panel_type: str) -> str:
+def _host_label(url: str) -> str:
+    return urlparse(url).netloc or url
+
+
+def panel_list_label(lang: str, panel: dict) -> str:
+    # Button captions can't use premium emoji (Telegram limitation), so
+    # this always uses the plain unicode fallback.
+    icon = _PANEL_FALLBACK[panel["type"]]
+    title = t(lang, f"title_panel_{panel['type']}")
+    return f"{icon} {title} — {_host_label(panel['url'])}"
+
+
+def panel_header(lang: str, panel_type: str, url: str) -> str:
+    # Includes the host so multiple panels of the same type (e.g. two
+    # Marzban instances) are still distinguishable on screen.
     icon = e(_PANEL_ICON_KEY[panel_type], _PANEL_FALLBACK[panel_type])
     title = t(lang, f"title_panel_{panel_type}")
-    return f"{icon} <b>{title}</b>"
+    return f"{icon} <b>{title}</b> — <code>{html.escape(_host_label(url))}</code>"
 
 
-def panel_menu_text(lang: str) -> str:
-    return t(lang, "panel_menu", icon=e("panel", "🎛"))
+def panel_list_header_text(lang: str, has_panels: bool) -> str:
+    key = "panel_list_header" if has_panels else "panel_list_empty"
+    return t(lang, key, icon=e("panel", "⚙️"))
+
+
+def panel_add_menu_text(lang: str) -> str:
+    return t(lang, "panel_add_menu", icon=e("panel", "⚙️"))
 
 
 def panel_cancelled_text(lang: str) -> str:
-    return t(lang, "panel_cancelled", icon=e("panel", "🎛"))
+    return t(lang, "panel_cancelled", icon=e("panel", "⚙️"))
 
 
 def step_url_text(lang: str, panel_type: str) -> str:
-    return t(lang, "step_panel_url", header=panel_header(lang, panel_type))
+    icon = e(_PANEL_ICON_KEY[panel_type], _PANEL_FALLBACK[panel_type])
+    title = t(lang, f"title_panel_{panel_type}")
+    return t(lang, "step_panel_url", header=f"{icon} <b>{title}</b>")
 
 
 def invalid_url_text(lang: str) -> str:
@@ -48,7 +70,9 @@ def invalid_url_text(lang: str) -> str:
 
 
 def step_username_text(lang: str, panel_type: str) -> str:
-    return t(lang, "step_panel_username", header=panel_header(lang, panel_type))
+    icon = e(_PANEL_ICON_KEY[panel_type], _PANEL_FALLBACK[panel_type])
+    title = t(lang, f"title_panel_{panel_type}")
+    return t(lang, "step_panel_username", header=f"{icon} <b>{title}</b>")
 
 
 def invalid_username_text(lang: str) -> str:
@@ -56,10 +80,12 @@ def invalid_username_text(lang: str) -> str:
 
 
 def step_password_text(lang: str, panel_type: str, username: str) -> str:
+    icon = e(_PANEL_ICON_KEY[panel_type], _PANEL_FALLBACK[panel_type])
+    title = t(lang, f"title_panel_{panel_type}")
     return t(
         lang,
         "step_panel_password",
-        header=panel_header(lang, panel_type),
+        header=f"{icon} <b>{title}</b>",
         username=html.escape(username),
         icon=e("warning", "⚠️"),
     )
@@ -96,13 +122,12 @@ def connected_text(lang: str, panel_type: str, url: str) -> str:
         lang,
         "panel_connected",
         icon=e("success", "✅"),
-        header=panel_header(lang, panel_type),
-        url=html.escape(url),
+        header=panel_header(lang, panel_type, url),
     )
 
 
-def dashboard_text(lang: str, panel_type: str, url: str) -> str:
-    return t(lang, "panel_dashboard", header=panel_header(lang, panel_type), url=html.escape(url))
+def dashboard_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_dashboard", header=panel_header(lang, panel["type"], panel["url"]))
 
 
 def _humanize_bytes(n: int) -> str:
@@ -114,11 +139,11 @@ def _humanize_bytes(n: int) -> str:
     return f"{value:.1f} TB"
 
 
-def stats_text_marzban_family(lang: str, panel_type: str, stats) -> str:
+def stats_text_marzban_family(lang: str, panel: dict, stats) -> str:
     return t(
         lang,
         "panel_stats_marzban",
-        header=panel_header(lang, panel_type),
+        header=panel_header(lang, panel["type"], panel["url"]),
         version=html.escape(stats.version),
         total=stats.total_users,
         active=stats.active,
@@ -132,46 +157,27 @@ def stats_text_marzban_family(lang: str, panel_type: str, stats) -> str:
     )
 
 
-def stats_text_3xui(lang: str, inbounds_count: int, clients_count: int) -> str:
+def stats_text_3xui(lang: str, panel: dict, inbounds_count: int, clients_count: int) -> str:
     return t(
         lang,
         "panel_stats_3xui",
-        header=panel_header(lang, "3xui"),
+        header=panel_header(lang, panel["type"], panel["url"]),
         inbounds_count=inbounds_count,
         clients_count=clients_count,
     )
 
 
-def users_list_text_marzban_family(lang: str, panel_type: str, users: list[dict]) -> str:
+def users_list_text_marzban_family(lang: str, panel: dict, users: list[dict]) -> str:
     # Usernames are shown as tappable buttons (see panel_users_keyboard),
     # so this is just the screen's header/count line.
-    header = panel_header(lang, panel_type)
+    header = panel_header(lang, panel["type"], panel["url"])
     if not users:
         return t(lang, "panel_users_list_empty", header=header)
     return t(lang, "panel_users_list_header", header=header, count=len(users))
 
 
-def status_label(lang: str, status: str) -> str:
-    return t(lang, f"status_{status}") if status in _STATUS_EMOJI else status
-
-
-def format_limit(lang: str, data_limit: int | None) -> str:
-    if not data_limit:
-        return t(lang, "limit_unlimited")
-    gb = data_limit / (1024**3)
-    gb_text = f"{gb:.0f}" if gb == int(gb) else f"{gb:.1f}"
-    return t(lang, "limit_gb", gb=gb_text)
-
-
-def format_expire(lang: str, expire: int | None) -> str:
-    if not expire:
-        return t(lang, "expire_never")
-    dt = datetime.datetime.fromtimestamp(expire, tz=datetime.timezone.utc)
-    return dt.strftime("%Y-%m-%d")
-
-
-def users_list_text_3xui(lang: str, inbounds: list[dict]) -> str:
-    header = panel_header(lang, "3xui")
+def users_list_text_3xui(lang: str, panel: dict, inbounds: list[dict]) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
     entries: list[str] = []
     for inbound in inbounds:
         settings_raw = inbound.get("settings")
@@ -195,22 +201,49 @@ def users_list_text_3xui(lang: str, inbounds: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def status_label(lang: str, status: str) -> str:
+    return t(lang, f"status_{status}") if status in _STATUS_EMOJI else status
+
+
+def format_limit(lang: str, data_limit: int | None) -> str:
+    if not data_limit:
+        return t(lang, "limit_unlimited")
+    gb = data_limit / (1024**3)
+    gb_text = f"{gb:.0f}" if gb == int(gb) else f"{gb:.1f}"
+    return t(lang, "limit_gb", gb=gb_text)
+
+
+def format_expire(lang: str, expire: int | None) -> str:
+    if not expire:
+        return t(lang, "expire_never")
+    dt = datetime.datetime.fromtimestamp(expire, tz=datetime.timezone.utc)
+    return dt.strftime("%Y-%m-%d")
+
+
+def remove_confirm_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_remove_confirm", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def removed_text(lang: str) -> str:
+    return t(lang, "panel_removed")
+
+
 # --- Управление пользователями (Marzban/PasarGuard) ---
 
 
-def create_user_step_username_text(lang: str, panel_type: str) -> str:
-    return t(lang, "panel_create_user_step_username", header=panel_header(lang, panel_type))
+def create_user_step_username_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_create_user_step_username", header=panel_header(lang, panel["type"], panel["url"]))
 
 
 def invalid_new_username_text(lang: str) -> str:
     return t(lang, "panel_create_user_invalid_username")
 
 
-def create_user_step_limits_text(lang: str, panel_type: str, username: str) -> str:
+def create_user_step_limits_text(lang: str, panel: dict, username: str) -> str:
     return t(
         lang,
         "panel_create_user_step_limits",
-        header=panel_header(lang, panel_type),
+        header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(username),
     )
 
@@ -220,12 +253,12 @@ def invalid_limits_text(lang: str) -> str:
 
 
 def create_user_confirm_text(
-    lang: str, panel_type: str, username: str, data_limit: int | None, expire: int | None
+    lang: str, panel: dict, username: str, data_limit: int | None, expire: int | None
 ) -> str:
     return t(
         lang,
         "panel_create_user_confirm",
-        header=panel_header(lang, panel_type),
+        header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(username),
         limit=format_limit(lang, data_limit),
         expire=format_expire(lang, expire),
@@ -242,11 +275,11 @@ def create_user_success_text(lang: str, username: str, sub_link: str) -> str:
     )
 
 
-def edit_user_prompt_text(lang: str, panel_type: str, username: str) -> str:
+def edit_user_prompt_text(lang: str, panel: dict, username: str) -> str:
     return t(
         lang,
         "panel_edit_user_prompt",
-        header=panel_header(lang, panel_type),
+        header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(username),
     )
 
@@ -255,13 +288,13 @@ def edit_user_success_text(lang: str, username: str) -> str:
     return t(lang, "panel_edit_user_success", icon=e("success", "✅"), username=html.escape(username))
 
 
-def user_detail_text(lang: str, panel_type: str, user: dict) -> str:
+def user_detail_text(lang: str, panel: dict, user: dict) -> str:
     status = str(user.get("status", ""))
     username = str(user.get("username", "?"))
     return t(
         lang,
         "panel_user_detail",
-        header=panel_header(lang, panel_type),
+        header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(username),
         status_emoji=_STATUS_EMOJI.get(status, "•"),
         status_label=status_label(lang, status),
@@ -276,11 +309,11 @@ def user_not_found_text(lang: str) -> str:
     return t(lang, "panel_user_not_found")
 
 
-def delete_confirm_user_text(lang: str, panel_type: str, username: str) -> str:
+def delete_confirm_user_text(lang: str, panel: dict, username: str) -> str:
     return t(
         lang,
         "panel_delete_confirm_user",
-        header=panel_header(lang, panel_type),
+        header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(username),
     )
 
@@ -301,14 +334,6 @@ def toggle_success_text(lang: str, username: str, new_status: str) -> str:
 
 def reset_success_text(lang: str, username: str) -> str:
     return t(lang, "panel_reset_success", icon=e("success", "✅"), username=html.escape(username))
-
-
-def disconnect_confirm_text(lang: str, panel_type: str) -> str:
-    return t(lang, "panel_disconnect_confirm", header=panel_header(lang, panel_type))
-
-
-def disconnected_text(lang: str) -> str:
-    return t(lang, "panel_disconnected")
 
 
 # --- Уведомление админам (всегда на русском, как и для Node) ---
