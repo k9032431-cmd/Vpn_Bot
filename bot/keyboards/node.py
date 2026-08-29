@@ -4,8 +4,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 def node_menu_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text="Marzban Node", callback_data="node:marzban")
-    builder.button(text="PasarGuard", callback_data="node:pasarguard")
+    builder.button(text="⚡ Marzban Node", callback_data="node:marzban")
+    builder.button(text="🛡 PasarGuard", callback_data="node:pasarguard")
     builder.button(text="⬅️ Назад", callback_data="menu:back")
     builder.adjust(1, 1, 1)
     return builder.as_markup()

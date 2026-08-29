@@ -4,6 +4,8 @@ import shlex
 import uuid
 from dataclasses import dataclass, field
 
+from bot.texts import node as texts
+
 from .ssh_client import NodeInstallError, ProgressCallback, RemoteSession, SSHTarget
 
 __all__ = [
@@ -61,7 +63,7 @@ async def _ensure_docker(session: RemoteSession, progress: ProgressCallback) -> 
             "Docker установлен на сервере, но не удалось его запустить.",
         )
     else:
-        await progress("🐳 Docker не найден на сервере, устанавливаю (может занять пару минут)...")
+        await progress(texts.progress_installing_docker())
         await session.run(
             "command -v curl >/dev/null 2>&1 || "
             "(apt-get update -y && apt-get install -y curl) || "
@@ -79,7 +81,7 @@ async def _ensure_docker(session: RemoteSession, progress: ProgressCallback) -> 
 
     compose_check = await session.run("docker compose version")
     if compose_check.exit_status != 0:
-        await progress("🔧 Устанавливаю плагин docker compose...")
+        await progress(texts.progress_installing_compose())
         await session.run_checked(
             "(apt-get update -y && apt-get install -y docker-compose-plugin) || "
             "(yum install -y docker-compose-plugin) || "
@@ -93,17 +95,17 @@ async def install_marzban_node(
     cert_pem: str,
     progress: ProgressCallback,
 ) -> NodeInstallResult:
-    await progress("🔌 Подключаюсь по SSH...")
+    await progress(texts.progress_connecting())
     session = await RemoteSession.connect(target)
     try:
-        await progress("🐳 Проверяю Docker...")
+        await progress(texts.progress_checking_docker())
         await _ensure_docker(session, progress)
 
-        await progress("📁 Загружаю сертификат панели и конфигурацию на сервер...")
+        await progress(texts.progress_uploading_marzban())
         await session.deploy_file(cert_pem, MARZBAN_CERT_FILENAME, MARZBAN_DIR, mode="600")
         await session.deploy_file(MARZBAN_COMPOSE, "docker-compose.yml", MARZBAN_DIR, mode="644")
 
-        await progress("🚀 Запускаю контейнер marzban-node...")
+        await progress(texts.progress_launching("marzban-node"))
         await session.run_checked(
             f"cd {shlex.quote(MARZBAN_DIR)} && docker compose up -d --force-recreate",
             "Не удалось запустить контейнер marzban-node.",
@@ -127,10 +129,10 @@ async def install_pasarguard_node(
     target: SSHTarget,
     progress: ProgressCallback,
 ) -> NodeInstallResult:
-    await progress("🔌 Подключаюсь по SSH...")
+    await progress(texts.progress_connecting())
     session = await RemoteSession.connect(target)
     try:
-        await progress("🐳 Проверяю Docker...")
+        await progress(texts.progress_checking_docker())
         await _ensure_docker(session, progress)
 
         certs_dir = f"{PASARGUARD_DIR}/certs"
@@ -138,7 +140,7 @@ async def install_pasarguard_node(
             f"mkdir -p {shlex.quote(certs_dir)}", "Не удалось создать директорию ноды."
         )
 
-        await progress("🔑 Проверяю/генерирую сертификат ноды...")
+        await progress(texts.progress_generating_pasarguard_cert())
         cert_check = await session.run(f"test -f {shlex.quote(certs_dir)}/ssl_cert.pem")
         if cert_check.exit_status != 0:
             await session.run_checked(
@@ -172,11 +174,11 @@ async def install_pasarguard_node(
             "API_KEY = {api_key}\n"
         ).format(port=PASARGUARD_PORT, certs_dir=certs_dir, api_key=api_key)
 
-        await progress("📁 Настраиваю docker-compose и .env...")
+        await progress(texts.progress_uploading_pasarguard())
         await session.deploy_file(PASARGUARD_COMPOSE, "docker-compose.yml", PASARGUARD_DIR, mode="644")
         await session.deploy_file(env_content, ".env", PASARGUARD_DIR, mode="600")
 
-        await progress("🚀 Запускаю контейнер pg-node...")
+        await progress(texts.progress_launching("pg-node"))
         await session.run_checked(
             f"cd {shlex.quote(PASARGUARD_DIR)} && docker compose up -d --force-recreate",
             "Не удалось запустить контейнер pg-node.",
