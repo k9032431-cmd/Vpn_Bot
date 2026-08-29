@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit, urlunsplit
 
 import aiohttp
 
@@ -12,17 +12,27 @@ REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=15)
 class PanelAPIError(Exception):
     """Raised when a panel login or API call fails.
 
-    ``str(exc)`` is one of a small set of reason codes (see below) that the
-    texts layer translates into a human message — never a raw technical
-    string, so it's safe to show directly to the user.
+    ``str(exc)`` is one of a small set of reason codes, or ``detail:<msg>``
+    carrying the panel's own error message — the texts layer translates
+    these into a human message, so it's always safe to show directly.
     """
 
 
 def normalize_panel_url(raw: str) -> str:
-    url = raw.strip().rstrip("/")
+    url = raw.strip()
     if not url.lower().startswith(("http://", "https://")):
         url = f"https://{url}"
-    return url
+    # Users commonly paste the browser URL of Marzban/PasarGuard's web
+    # dashboard (e.g. https://host/dashboard/#/ or .../dashboard/#/login)
+    # rather than the bare panel URL the API actually lives at — strip
+    # that part off, keeping any reverse-proxy subpath before it.
+    split = urlsplit(url)
+    path = split.path
+    idx = path.lower().find("/dashboard")
+    if idx != -1:
+        path = path[:idx]
+    path = path.rstrip("/")
+    return urlunsplit((split.scheme, split.netloc, path, "", ""))
 
 
 def is_valid_panel_url(value: str) -> bool:
@@ -54,6 +64,33 @@ async def _request_json(
         raise PanelAPIError("connect_failed") from exc
 
 
+def _extract_detail(payload: object) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    detail = payload.get("detail")
+    if isinstance(detail, str) and detail:
+        return detail
+    if isinstance(detail, list) and detail:
+        parts = [item.get("msg") for item in detail if isinstance(item, dict) and item.get("msg")]
+        if parts:
+            return "; ".join(str(p) for p in parts)
+    return None
+
+
+async def _marzban_call(
+    session: aiohttp.ClientSession, method: str, url: str, **kwargs
+) -> object:
+    status, payload = await _request_json(session, method, url, **kwargs)
+    if status == 401:
+        raise PanelAPIError("wrong_credentials")
+    if status >= 400:
+        detail = _extract_detail(payload)
+        if detail:
+            raise PanelAPIError(f"detail:{detail}")
+        raise PanelAPIError(f"http:{status}")
+    return payload
+
+
 # --- Marzban / PasarGuard (API-compatible: PasarGuard is a Marzban fork) ---
 
 
@@ -73,17 +110,13 @@ class MarzbanFamilyStats:
 
 async def marzban_login(url: str, username: str, password: str) -> str:
     async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
-        status, payload = await _request_json(
+        payload = await _marzban_call(
             session,
             "POST",
             f"{url}/api/admin/token",
             data={"username": username, "password": password, "grant_type": "password"},
         )
-    if status == 401:
-        raise PanelAPIError("wrong_credentials")
-    if status != 200:
-        raise PanelAPIError(f"http:{status}")
-    token = (payload or {}).get("access_token") if isinstance(payload, dict) else None
+    token = payload.get("access_token") if isinstance(payload, dict) else None
     if not token:
         raise PanelAPIError("bad_response")
     return token
@@ -92,9 +125,9 @@ async def marzban_login(url: str, username: str, password: str) -> str:
 async def marzban_get_system_stats(url: str, token: str) -> MarzbanFamilyStats:
     headers = {"Authorization": f"Bearer {token}"}
     async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
-        status, payload = await _request_json(session, "GET", f"{url}/api/system", headers=headers)
-    if status != 200 or not isinstance(payload, dict):
-        raise PanelAPIError(f"http:{status}" if status != 200 else "bad_response")
+        payload = await _marzban_call(session, "GET", f"{url}/api/system", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
     return MarzbanFamilyStats(
         version=str(payload.get("version", "?")),
         total_users=int(payload.get("total_user", 0) or 0),
@@ -112,13 +145,93 @@ async def marzban_get_system_stats(url: str, token: str) -> MarzbanFamilyStats:
 async def marzban_get_users(url: str, token: str, limit: int = 10) -> list[dict]:
     headers = {"Authorization": f"Bearer {token}"}
     async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
-        status, payload = await _request_json(
+        payload = await _marzban_call(
             session, "GET", f"{url}/api/users", headers=headers, params={"limit": limit}
         )
-    if status != 200 or not isinstance(payload, dict):
-        raise PanelAPIError(f"http:{status}" if status != 200 else "bad_response")
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
     users = payload.get("users", [])
     return users if isinstance(users, list) else []
+
+
+async def marzban_get_user(url: str, token: str, username: str) -> dict:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/user/{username}", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return payload
+
+
+async def marzban_get_inbounds(url: str, token: str) -> dict[str, list[str]]:
+    """Returns {protocol: [inbound_tag, ...]} for every protocol configured
+    on the panel — used to give a newly created user access to everything
+    the panel actually has, without the caller needing to know the tags."""
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/inbounds", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    result: dict[str, list[str]] = {}
+    for protocol, inbounds in payload.items():
+        if not isinstance(inbounds, list):
+            continue
+        tags = [ib.get("tag") for ib in inbounds if isinstance(ib, dict) and ib.get("tag")]
+        if tags:
+            result[protocol] = tags
+    return result
+
+
+async def marzban_create_user(
+    url: str,
+    token: str,
+    username: str,
+    proxies: dict[str, dict],
+    inbounds: dict[str, list[str]],
+    data_limit: int | None,
+    expire: int | None,
+) -> dict:
+    headers = {"Authorization": f"Bearer {token}"}
+    body = {
+        "username": username,
+        "proxies": proxies,
+        "inbounds": inbounds,
+        "data_limit": data_limit,
+        "expire": expire,
+    }
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "POST", f"{url}/api/user", headers=headers, json=body)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return payload
+
+
+async def marzban_modify_user(url: str, token: str, username: str, **fields) -> dict:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(
+            session, "PUT", f"{url}/api/user/{username}", headers=headers, json=fields
+        )
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return payload
+
+
+async def marzban_delete_user(url: str, token: str, username: str) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "DELETE", f"{url}/api/user/{username}", headers=headers)
+
+
+async def marzban_reset_user_usage(url: str, token: str, username: str) -> dict:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(
+            session, "POST", f"{url}/api/user/{username}/reset", headers=headers
+        )
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return payload
 
 
 # --- 3X-UI (cookie-based session, optional CSRF token on newer builds) ---

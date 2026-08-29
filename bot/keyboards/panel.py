@@ -52,3 +52,54 @@ def panel_disconnect_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder.button(text=t(lang, "btn_panel_dashboard"), callback_data="paneldash:back")
     builder.adjust(1, 1)
     return builder.as_markup()
+
+
+def panel_users_keyboard(lang: str, usernames: list[str], manageable: bool) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    if manageable:
+        for name in usernames:
+            builder.button(text=f"👤 {name}", callback_data=f"paneluser:view:{name}")
+            rows.append(1)
+        builder.button(text=t(lang, "btn_panel_create_user"), callback_data="paneldash:create_user")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_panel_dashboard"), callback_data="paneldash:back")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def panel_user_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cancel"), callback_data="paneluser:cancel")
+    return builder.as_markup()
+
+
+def panel_create_user_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_create_confirm"), callback_data="paneluser:create_confirm")
+    builder.button(text=t(lang, "btn_cancel"), callback_data="paneluser:cancel")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_user_detail_keyboard(lang: str, username: str, status: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    toggle_key = "btn_panel_user_disable" if status == "active" else "btn_panel_user_enable"
+    builder.button(text=t(lang, toggle_key), callback_data=f"paneluser:toggle:{username}")
+    builder.button(text=t(lang, "btn_panel_user_reset"), callback_data=f"paneluser:reset:{username}")
+    builder.button(text=t(lang, "btn_panel_user_edit"), callback_data=f"paneluser:edit:{username}")
+    builder.button(text=t(lang, "btn_panel_user_delete"), callback_data=f"paneluser:delete_ask:{username}")
+    builder.button(text=t(lang, "btn_panel_users"), callback_data="paneldash:users")
+    builder.adjust(2, 2, 1)
+    return builder.as_markup()
+
+
+def panel_user_delete_confirm_keyboard(lang: str, username: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_panel_user_delete_confirm"), callback_data=f"paneluser:delete_confirm:{username}"
+    )
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"paneluser:view:{username}")
+    builder.adjust(1, 1)
+    return builder.as_markup()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import html
 import json
 
@@ -73,6 +74,8 @@ def connecting_text(lang: str) -> str:
 
 
 def _error_reason(lang: str, reason: str) -> str:
+    if reason.startswith("detail:"):
+        return html.escape(reason.split(":", 1)[1])
     if reason.startswith("http:"):
         status = reason.split(":", 1)[1]
         return t(lang, "panel_err_http", status=status)
@@ -82,6 +85,10 @@ def _error_reason(lang: str, reason: str) -> str:
 
 def login_error_text(lang: str, reason: str) -> str:
     return t(lang, "panel_login_error", icon=e("error", "❌"), reason=_error_reason(lang, reason))
+
+
+def action_error_text(lang: str, reason: str) -> str:
+    return t(lang, "panel_action_error", icon=e("error", "❌"), reason=_error_reason(lang, reason))
 
 
 def connected_text(lang: str, panel_type: str, url: str) -> str:
@@ -136,16 +143,31 @@ def stats_text_3xui(lang: str, inbounds_count: int, clients_count: int) -> str:
 
 
 def users_list_text_marzban_family(lang: str, panel_type: str, users: list[dict]) -> str:
+    # Usernames are shown as tappable buttons (see panel_users_keyboard),
+    # so this is just the screen's header/count line.
     header = panel_header(lang, panel_type)
     if not users:
         return t(lang, "panel_users_list_empty", header=header)
-    lines = [t(lang, "panel_users_list_header", header=header, count=len(users))]
-    for user in users:
-        status = str(user.get("status", ""))
-        emoji = _STATUS_EMOJI.get(status, "•")
-        username = html.escape(str(user.get("username", "?")))
-        lines.append(f"{emoji} <code>{username}</code>")
-    return "\n".join(lines)
+    return t(lang, "panel_users_list_header", header=header, count=len(users))
+
+
+def status_label(lang: str, status: str) -> str:
+    return t(lang, f"status_{status}") if status in _STATUS_EMOJI else status
+
+
+def format_limit(lang: str, data_limit: int | None) -> str:
+    if not data_limit:
+        return t(lang, "limit_unlimited")
+    gb = data_limit / (1024**3)
+    gb_text = f"{gb:.0f}" if gb == int(gb) else f"{gb:.1f}"
+    return t(lang, "limit_gb", gb=gb_text)
+
+
+def format_expire(lang: str, expire: int | None) -> str:
+    if not expire:
+        return t(lang, "expire_never")
+    dt = datetime.datetime.fromtimestamp(expire, tz=datetime.timezone.utc)
+    return dt.strftime("%Y-%m-%d")
 
 
 def users_list_text_3xui(lang: str, inbounds: list[dict]) -> str:
@@ -171,6 +193,114 @@ def users_list_text_3xui(lang: str, inbounds: list[dict]) -> str:
     lines = [t(lang, "panel_users_list_header", header=header, count=len(shown))]
     lines.extend(shown)
     return "\n".join(lines)
+
+
+# --- Управление пользователями (Marzban/PasarGuard) ---
+
+
+def create_user_step_username_text(lang: str, panel_type: str) -> str:
+    return t(lang, "panel_create_user_step_username", header=panel_header(lang, panel_type))
+
+
+def invalid_new_username_text(lang: str) -> str:
+    return t(lang, "panel_create_user_invalid_username")
+
+
+def create_user_step_limits_text(lang: str, panel_type: str, username: str) -> str:
+    return t(
+        lang,
+        "panel_create_user_step_limits",
+        header=panel_header(lang, panel_type),
+        username=html.escape(username),
+    )
+
+
+def invalid_limits_text(lang: str) -> str:
+    return t(lang, "panel_invalid_limits")
+
+
+def create_user_confirm_text(
+    lang: str, panel_type: str, username: str, data_limit: int | None, expire: int | None
+) -> str:
+    return t(
+        lang,
+        "panel_create_user_confirm",
+        header=panel_header(lang, panel_type),
+        username=html.escape(username),
+        limit=format_limit(lang, data_limit),
+        expire=format_expire(lang, expire),
+    )
+
+
+def create_user_success_text(lang: str, username: str, sub_link: str) -> str:
+    return t(
+        lang,
+        "panel_create_user_success",
+        icon=e("success", "✅"),
+        username=html.escape(username),
+        sub_link=html.escape(sub_link),
+    )
+
+
+def edit_user_prompt_text(lang: str, panel_type: str, username: str) -> str:
+    return t(
+        lang,
+        "panel_edit_user_prompt",
+        header=panel_header(lang, panel_type),
+        username=html.escape(username),
+    )
+
+
+def edit_user_success_text(lang: str, username: str) -> str:
+    return t(lang, "panel_edit_user_success", icon=e("success", "✅"), username=html.escape(username))
+
+
+def user_detail_text(lang: str, panel_type: str, user: dict) -> str:
+    status = str(user.get("status", ""))
+    username = str(user.get("username", "?"))
+    return t(
+        lang,
+        "panel_user_detail",
+        header=panel_header(lang, panel_type),
+        username=html.escape(username),
+        status_emoji=_STATUS_EMOJI.get(status, "•"),
+        status_label=status_label(lang, status),
+        used=_humanize_bytes(int(user.get("used_traffic", 0) or 0)),
+        limit=format_limit(lang, user.get("data_limit")),
+        expire=format_expire(lang, user.get("expire")),
+        sub_link=html.escape(str(user.get("subscription_url") or "—")),
+    )
+
+
+def user_not_found_text(lang: str) -> str:
+    return t(lang, "panel_user_not_found")
+
+
+def delete_confirm_user_text(lang: str, panel_type: str, username: str) -> str:
+    return t(
+        lang,
+        "panel_delete_confirm_user",
+        header=panel_header(lang, panel_type),
+        username=html.escape(username),
+    )
+
+
+def delete_success_text(lang: str, username: str) -> str:
+    return t(lang, "panel_delete_success", icon=e("success", "✅"), username=html.escape(username))
+
+
+def toggle_success_text(lang: str, username: str, new_status: str) -> str:
+    return t(
+        lang,
+        "panel_toggle_success",
+        icon=e("success", "✅"),
+        username=html.escape(username),
+        status_label=status_label(lang, new_status),
+    )
+
+
+def reset_success_text(lang: str, username: str) -> str:
+    return t(lang, "panel_reset_success", icon=e("success", "✅"), username=html.escape(username))
 
 
 def disconnect_confirm_text(lang: str, panel_type: str) -> str:

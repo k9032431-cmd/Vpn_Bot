@@ -79,6 +79,26 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "btn_panel_dashboard": {"ru": "⬅️ К панели", "en": "⬅️ Back to panel", "tk": "⬅️ Panele gaýt"},
     "btn_panel_menu": {"ru": "🎛 Меню Panel", "en": "🎛 Panel menu", "tk": "🎛 Panel menýusy"},
+    "btn_panel_create_user": {
+        "ru": "➕ Создать пользователя",
+        "en": "➕ Create user",
+        "tk": "➕ Ulanyjy döret",
+    },
+    "btn_panel_create_confirm": {"ru": "✅ Создать", "en": "✅ Create", "tk": "✅ Döret"},
+    "btn_panel_user_enable": {"ru": "✅ Включить", "en": "✅ Enable", "tk": "✅ Işjeňleşdir"},
+    "btn_panel_user_disable": {"ru": "⛔ Отключить", "en": "⛔ Disable", "tk": "⛔ Öçür"},
+    "btn_panel_user_reset": {
+        "ru": "🔄 Сбросить трафик",
+        "en": "🔄 Reset traffic",
+        "tk": "🔄 Traffigi arassala",
+    },
+    "btn_panel_user_edit": {"ru": "✏️ Изменить", "en": "✏️ Edit", "tk": "✏️ Üýtget"},
+    "btn_panel_user_delete": {"ru": "🗑 Удалить", "en": "🗑 Delete", "tk": "🗑 Poz"},
+    "btn_panel_user_delete_confirm": {
+        "ru": "🗑 Да, удалить",
+        "en": "🗑 Yes, delete",
+        "tk": "🗑 Hawa, poz",
+    },
     # --- Section placeholders ---
     "section_cloud_vpn": {
         "ru": (
@@ -736,6 +756,145 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "🔌 Панель отключена.\n\n👇 Можно подключить другую в любой момент",
         "en": "🔌 Panel disconnected.\n\n👇 You can connect another one anytime",
         "tk": "🔌 Panel aýryldy.\n\n👇 Islän wagtyňyz başga birini birikdirip bilersiňiz",
+    },
+    # --- Panel: user management (Marzban/PasarGuard) ---
+    "status_active": {"ru": "Активен", "en": "Active", "tk": "Işjeň"},
+    "status_disabled": {"ru": "Отключён", "en": "Disabled", "tk": "Öçürilen"},
+    "status_expired": {"ru": "Истёк", "en": "Expired", "tk": "Möhleti geçen"},
+    "status_limited": {"ru": "Лимит исчерпан", "en": "Limit reached", "tk": "Limiti gutardy"},
+    "status_on_hold": {"ru": "На паузе", "en": "On hold", "tk": "Duruzlan"},
+    "limit_unlimited": {"ru": "без ограничений", "en": "unlimited", "tk": "çäksiz"},
+    "expire_never": {"ru": "бессрочно", "en": "never expires", "tk": "möhletsiz"},
+    "limit_gb": {"ru": "{gb} ГБ", "en": "{gb} GB", "tk": "{gb} GB"},
+    "expire_days": {"ru": "{days} дн.", "en": "{days} days", "tk": "{days} gün"},
+    "panel_create_user_step_username": {
+        "ru": (
+            "{header}\n\n➕ <b>Новый пользователь</b>\n<i>Шаг 1 из 2</i>\n\n"
+            "👤 Отправьте имя пользователя (латиница, цифры, «_», 3–32 символа)"
+        ),
+        "en": (
+            "{header}\n\n➕ <b>New user</b>\n<i>Step 1 of 2</i>\n\n"
+            "👤 Send the username (letters, digits, «_», 3–32 characters)"
+        ),
+        "tk": (
+            "{header}\n\n➕ <b>Täze ulanyjy</b>\n<i>1-nji ädim / 2</i>\n\n"
+            "👤 Ulanyjy adyny iberiň (latyn harplar, sanlar, «_», 3–32 belgi)"
+        ),
+    },
+    "panel_create_user_invalid_username": {
+        "ru": "Некорректное имя — используйте латинские буквы, цифры и «_», от 3 до 32 символов.",
+        "en": "Invalid username — use letters, digits and «_», 3 to 32 characters.",
+        "tk": "Nädogry at — latyn harplary, sanlary we «_» ulanyň, 3–32 belgi.",
+    },
+    "panel_create_user_step_limits": {
+        "ru": (
+            "{header}\n\n➕ <b>Новый пользователь: {username}</b>\n<i>Шаг 2 из 2</i>\n\n"
+            "📦 Отправьте лимит трафика в ГБ и срок в днях через пробел.\n"
+            "<i>Например: <code>50 30</code>. Значение 0 — без ограничений.</i>"
+        ),
+        "en": (
+            "{header}\n\n➕ <b>New user: {username}</b>\n<i>Step 2 of 2</i>\n\n"
+            "📦 Send the traffic limit in GB and validity in days, separated by a space.\n"
+            "<i>For example: <code>50 30</code>. Use 0 for unlimited.</i>"
+        ),
+        "tk": (
+            "{header}\n\n➕ <b>Täze ulanyjy: {username}</b>\n<i>2-nji ädim / 2</i>\n\n"
+            "📦 Traffik limitini (GB) we möhletini (gün) boşluk bilen iberiň.\n"
+            "<i>Mysal: <code>50 30</code>. 0 — çäksiz diýmek.</i>"
+        ),
+    },
+    "panel_invalid_limits": {
+        "ru": "Не понял формат. Отправьте два числа через пробел — лимит в ГБ и срок в днях, например: <code>50 30</code>",
+        "en": "Couldn't parse that. Send two numbers separated by a space — GB limit and days, e.g.: <code>50 30</code>",
+        "tk": "Format düşnüksiz. Boşluk bilen iki san iberiň — GB limit we gün, mysal: <code>50 30</code>",
+    },
+    "panel_create_user_confirm": {
+        "ru": (
+            "{header}\n\n📋 <b>Проверьте данные:</b>\n"
+            "👤 Имя: <code>{username}</code>\n📦 Лимит: {limit}\n⏳ Срок: {expire}\n\n🚀 Создаём?"
+        ),
+        "en": (
+            "{header}\n\n📋 <b>Please confirm:</b>\n"
+            "👤 Name: <code>{username}</code>\n📦 Limit: {limit}\n⏳ Validity: {expire}\n\n🚀 Create it?"
+        ),
+        "tk": (
+            "{header}\n\n📋 <b>Maglumatlary barlaň:</b>\n"
+            "👤 At: <code>{username}</code>\n📦 Limit: {limit}\n⏳ Möhlet: {expire}\n\n🚀 Dörediliňmi?"
+        ),
+    },
+    "panel_create_user_success": {
+        "ru": "{icon} <b>Пользователь создан</b> 🎉\n\n👤 <code>{username}</code>\n\n🔗 Ссылка подписки:\n<code>{sub_link}</code>",
+        "en": "{icon} <b>User created</b> 🎉\n\n👤 <code>{username}</code>\n\n🔗 Subscription link:\n<code>{sub_link}</code>",
+        "tk": "{icon} <b>Ulanyjy döredildi</b> 🎉\n\n👤 <code>{username}</code>\n\n🔗 Abunalyk salgysy:\n<code>{sub_link}</code>",
+    },
+    "panel_action_error": {
+        "ru": "{icon} <b>Не получилось выполнить действие</b>\n\n{reason}",
+        "en": "{icon} <b>Couldn't complete the action</b>\n\n{reason}",
+        "tk": "{icon} <b>Amal ýerine ýetirilmedi</b>\n\n{reason}",
+    },
+    "panel_edit_user_prompt": {
+        "ru": (
+            "{header}\n\n✏️ <b>Изменение: {username}</b>\n\n"
+            "📦 Отправьте новый лимит трафика в ГБ и новый срок в днях через пробел.\n"
+            "<i>Например: <code>100 60</code>. Значение 0 — без ограничений.</i>"
+        ),
+        "en": (
+            "{header}\n\n✏️ <b>Editing: {username}</b>\n\n"
+            "📦 Send the new traffic limit in GB and new validity in days, separated by a space.\n"
+            "<i>For example: <code>100 60</code>. Use 0 for unlimited.</i>"
+        ),
+        "tk": (
+            "{header}\n\n✏️ <b>Üýtgedilýär: {username}</b>\n\n"
+            "📦 Täze traffik limitini (GB) we möhletini (gün) boşluk bilen iberiň.\n"
+            "<i>Mysal: <code>100 60</code>. 0 — çäksiz diýmek.</i>"
+        ),
+    },
+    "panel_edit_user_success": {
+        "ru": "{icon} Данные пользователя <code>{username}</code> обновлены.",
+        "en": "{icon} User <code>{username}</code> updated.",
+        "tk": "{icon} <code>{username}</code> ulanyjysynyň maglumatlary täzelendi.",
+    },
+    "panel_user_detail": {
+        "ru": (
+            "{header}\n\n👤 <b>{username}</b>\n{status_emoji} Статус: {status_label}\n\n"
+            "📊 Использовано: {used}\n📦 Лимит: {limit}\n⏳ Срок: {expire}\n\n"
+            "🔗 Ссылка подписки:\n<code>{sub_link}</code>"
+        ),
+        "en": (
+            "{header}\n\n👤 <b>{username}</b>\n{status_emoji} Status: {status_label}\n\n"
+            "📊 Used: {used}\n📦 Limit: {limit}\n⏳ Validity: {expire}\n\n"
+            "🔗 Subscription link:\n<code>{sub_link}</code>"
+        ),
+        "tk": (
+            "{header}\n\n👤 <b>{username}</b>\n{status_emoji} Ýagdaýy: {status_label}\n\n"
+            "📊 Ulanyldy: {used}\n📦 Limit: {limit}\n⏳ Möhlet: {expire}\n\n"
+            "🔗 Abunalyk salgysy:\n<code>{sub_link}</code>"
+        ),
+    },
+    "panel_user_not_found": {
+        "ru": "Пользователь не найден — возможно, его уже удалили.",
+        "en": "User not found — maybe it was already deleted.",
+        "tk": "Ulanyjy tapylmady — belki eýýäm pozulandyr.",
+    },
+    "panel_delete_confirm_user": {
+        "ru": "{header}\n\n⚠️ Точно удалить пользователя <code>{username}</code>? Это действие необратимо.",
+        "en": "{header}\n\n⚠️ Delete user <code>{username}</code>? This can't be undone.",
+        "tk": "{header}\n\n⚠️ <code>{username}</code> ulanyjysyny pozmakçymysyňyz? Bu amal yzyna gaýtarylmaýar.",
+    },
+    "panel_delete_success": {
+        "ru": "{icon} Пользователь <code>{username}</code> удалён.",
+        "en": "{icon} User <code>{username}</code> deleted.",
+        "tk": "{icon} <code>{username}</code> ulanyjysy pozuldy.",
+    },
+    "panel_toggle_success": {
+        "ru": "{icon} <code>{username}</code>: новый статус — {status_label}.",
+        "en": "{icon} <code>{username}</code>: new status — {status_label}.",
+        "tk": "{icon} <code>{username}</code>: täze ýagdaýy — {status_label}.",
+    },
+    "panel_reset_success": {
+        "ru": "{icon} Трафик пользователя <code>{username}</code> сброшен.",
+        "en": "{icon} Traffic for <code>{username}</code> has been reset.",
+        "tk": "{icon} <code>{username}</code> ulanyjysynyň traffigi arassalandy.",
     },
 }
 
