@@ -3,10 +3,6 @@ from __future__ import annotations
 DEFAULT_LANGUAGE = "ru"
 LANGUAGES = ("ru", "en", "tk")
 
-# Decorative divider used on "screen" texts (menus, results) to separate the
-# intro from the call-to-action, keeping the layout consistent everywhere.
-DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
-
 # Each language's own name, shown on the language-picker buttons — always in
 # that language itself, never translated into the currently active one.
 LANGUAGE_LABELS = {
@@ -30,21 +26,18 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
             "<i>Умный помощник для управления VPN: ноды, облако, шифрование и "
             "безопасность — всё в одном месте.</i>\n\n"
-            "{div}\n"
             "👇 Выберите раздел, чтобы начать"
         ),
         "en": (
             "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
             "<i>Your smart VPN companion: nodes, cloud, encryption and security — "
             "all in one place.</i>\n\n"
-            "{div}\n"
             "👇 Choose a section to get started"
         ),
         "tk": (
             "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
             "<i>VPN dolandyryşy üçin akylly kömekçiňiz: node-lar, bulut, şifrleme "
             "we howpsuzlyk — bary-ýogy bir ýerde.</i>\n\n"
-            "{div}\n"
             "👇 Başlamak üçin bölümi saýlaň"
         ),
     },
@@ -73,102 +66,102 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": (
             "{icon} <b>Cloud VPN</b> 📶\n\n"
             "<i>Управление облачными VPN-подключениями появится здесь совсем скоро.</i>\n\n"
-            "{div}\n🛠️ Уже в разработке"
+            "🛠️ Уже в разработке"
         ),
         "en": (
             "{icon} <b>Cloud VPN</b> 📶\n\n"
             "<i>Cloud VPN connection management is coming here very soon.</i>\n\n"
-            "{div}\n🛠️ Already in the works"
+            "🛠️ Already in the works"
         ),
         "tk": (
             "{icon} <b>Cloud VPN</b> 📶\n\n"
             "<i>Bulut VPN birikmelerini dolandyrmak ýakynda bu ýerde peýda bolar.</i>\n\n"
-            "{div}\n🛠️ Eýýäm işlenilýär"
+            "🛠️ Eýýäm işlenilýär"
         ),
     },
     "section_cloud_account": {
         "ru": (
             "{icon} <b>Cloud Account</b> 🔑\n\n"
             "<i>Управление вашим аккаунтом появится совсем скоро.</i>\n\n"
-            "{div}\n🛠️ Уже в разработке"
+            "🛠️ Уже в разработке"
         ),
         "en": (
             "{icon} <b>Cloud Account</b> 🔑\n\n"
             "<i>Account management is coming very soon.</i>\n\n"
-            "{div}\n🛠️ Already in the works"
+            "🛠️ Already in the works"
         ),
         "tk": (
             "{icon} <b>Cloud Account</b> 🔑\n\n"
             "<i>Hasabyňyzy dolandyrmak ýakyn wagtda goşular.</i>\n\n"
-            "{div}\n🛠️ Eýýäm işlenilýär"
+            "🛠️ Eýýäm işlenilýär"
         ),
     },
     "section_crypt": {
         "ru": (
             "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
             "<i>Шифрование и дешифрование данных — уже в работе.</i>\n\n"
-            "{div}\n🛠️ Скоро будет доступно"
+            "🛠️ Скоро будет доступно"
         ),
         "en": (
             "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
             "<i>Data encryption and decryption tools are already in the works.</i>\n\n"
-            "{div}\n🛠️ Coming soon"
+            "🛠️ Coming soon"
         ),
         "tk": (
             "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
             "<i>Maglumatlary şifrlemek we deşifrlemek eýýäm işlenilýär.</i>\n\n"
-            "{div}\n🛠️ Ýakynda elýeterli bolar"
+            "🛠️ Ýakynda elýeterli bolar"
         ),
     },
     "section_info": {
         "ru": (
             "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
             "<i>Ваш помощник по управлению VPN — просто, быстро и безопасно.</i>\n\n"
-            "{div}\n🏷️ Версия <code>0.1.0</code>"
+            "🏷️ Версия <code>0.1.0</code>"
         ),
         "en": (
             "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
             "<i>Your VPN management companion — simple, fast and secure.</i>\n\n"
-            "{div}\n🏷️ Version <code>0.1.0</code>"
+            "🏷️ Version <code>0.1.0</code>"
         ),
         "tk": (
             "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
             "<i>VPN dolandyryş kömekçiňiz — ýönekeý, çalt we howpsuz.</i>\n\n"
-            "{div}\n🏷️ Wersiýa <code>0.1.0</code>"
+            "🏷️ Wersiýa <code>0.1.0</code>"
         ),
     },
     "section_sos_contact": {
         "ru": (
             "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
-            "{div}\n📩 Напишите нам: {contact}"
+            "📩 Напишите нам: {contact}"
         ),
         "en": (
             "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Something's not working? We're always here.</i>\n\n"
-            "{div}\n📩 Contact us: {contact}"
+            "📩 Contact us: {contact}"
         ),
         "tk": (
             "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
-            "{div}\n📩 Bize ýazyň: {contact}"
+            "📩 Bize ýazyň: {contact}"
         ),
     },
     "section_sos_empty": {
         "ru": (
             "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
-            "{div}\n📩 Поддержка появится здесь совсем скоро"
+            "📩 Поддержка появится здесь совсем скоро"
         ),
         "en": (
             "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Something's not working? We're always here.</i>\n\n"
-            "{div}\n📩 Support contact is coming very soon"
+            "📩 Support contact is coming very soon"
         ),
         "tk": (
             "{icon} <b>SOS</b> 🔌\n\n"
             "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
-            "{div}\n📩 Goldaw ýakynda bu ýerde peýda bolar"
+            "📩 Goldaw ýakynda bu ýerde peýda bolar"
         ),
     },
     # --- Language picker ---
@@ -176,17 +169,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": (
             "{icon} <b>Язык интерфейса</b> 📡\n\n"
             "<i>Выберите, на каком языке вам удобнее общаться с ботом.</i>\n\n"
-            "{div}\n👇 Доступные языки"
+            "👇 Доступные языки"
         ),
         "en": (
             "{icon} <b>Interface language</b> 📡\n\n"
             "<i>Choose the language you'd like the bot to speak.</i>\n\n"
-            "{div}\n👇 Available languages"
+            "👇 Available languages"
         ),
         "tk": (
             "{icon} <b>Interfeýsiň dili</b> 📡\n\n"
             "<i>Bot bilen haýsy dilde gürleşmek isleýändigiňizi saýlaň.</i>\n\n"
-            "{div}\n👇 Elýeterli diller"
+            "👇 Elýeterli diller"
         ),
     },
     "language_saved": {
@@ -201,34 +194,34 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": (
             "{icon} <b>Node</b> 🖧\n\n"
             "<i>Разверните VPN-ноду на своём сервере за пару минут — бот сделает всё сам.</i>\n\n"
-            "{div}\n👇 Выберите платформу"
+            "👇 Выберите платформу"
         ),
         "en": (
             "{icon} <b>Node</b> 🖧\n\n"
             "<i>Deploy a VPN node on your server in a couple of minutes — the bot handles the rest.</i>\n\n"
-            "{div}\n👇 Choose a platform"
+            "👇 Choose a platform"
         ),
         "tk": (
             "{icon} <b>Node</b> 🖧\n\n"
             "<i>Serweriňizde birnäçe minutda VPN node ornaşdyryň — galanyny bot eder.</i>\n\n"
-            "{div}\n👇 Platformany saýlaň"
+            "👇 Platformany saýlaň"
         ),
     },
     "node_cancelled": {
         "ru": (
             "{icon} <b>Node</b>\n\n"
             "🚫 <i>Установка отменена — данные не сохранены.</i>\n\n"
-            "{div}\n👇 Можно начать заново в любой момент"
+            "👇 Можно начать заново в любой момент"
         ),
         "en": (
             "{icon} <b>Node</b>\n\n"
             "🚫 <i>Installation cancelled — nothing was saved.</i>\n\n"
-            "{div}\n👇 You can start again anytime"
+            "👇 You can start again anytime"
         ),
         "tk": (
             "{icon} <b>Node</b>\n\n"
             "🚫 <i>Ornaşdyrma ýatyryldy — hiç zat ýatda saklanmady.</i>\n\n"
-            "{div}\n👇 Islän wagtyňyz täzeden başlap bilersiňiz"
+            "👇 Islän wagtyňyz täzeden başlap bilersiňiz"
         ),
     },
     "step_ip": {
@@ -322,21 +315,21 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📋 <b>Проверьте данные:</b>\n"
             "🌍 Сервер: <code>{host}</code>\n"
             "👤 Пользователь: <code>{user}</code>\n\n"
-            "{div}\n🚀 Всё готово — начинаем установку?"
+            "🚀 Всё готово — начинаем установку?"
         ),
         "en": (
             "{header}\n\n"
             "📋 <b>Please confirm:</b>\n"
             "🌍 Server: <code>{host}</code>\n"
             "👤 User: <code>{user}</code>\n\n"
-            "{div}\n🚀 Ready — start the installation?"
+            "🚀 Ready — start the installation?"
         ),
         "tk": (
             "{header}\n\n"
             "📋 <b>Maglumatlary barlaň:</b>\n"
             "🌍 Server: <code>{host}</code>\n"
             "👤 Ulanyjy: <code>{user}</code>\n\n"
-            "{div}\n🚀 Taýyn — ornaşdyrmaga başlaýarysmy?"
+            "🚀 Taýyn — ornaşdyrmaga başlaýarysmy?"
         ),
     },
     "installing_started": {
@@ -348,17 +341,17 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": (
             "{icon} <b>Не получилось установить ноду</b>\n\n"
             "{reason}\n\n"
-            "{div}\n🔁 Попробуйте ещё раз или обратитесь в поддержку"
+            "🔁 Попробуйте ещё раз или обратитесь в поддержку"
         ),
         "en": (
             "{icon} <b>Couldn't install the node</b>\n\n"
             "{reason}\n\n"
-            "{div}\n🔁 Try again, or reach out to support"
+            "🔁 Try again, or reach out to support"
         ),
         "tk": (
             "{icon} <b>Node ornaşdyrylyp bilinmedi</b>\n\n"
             "{reason}\n\n"
-            "{div}\n🔁 Täzeden synanyşyň ýa-da goldawa ýüz tutuň"
+            "🔁 Täzeden synanyşyň ýa-da goldawa ýüz tutuň"
         ),
     },
     "unexpected_error": {
@@ -521,10 +514,13 @@ _STRINGS: dict[str, dict[str, str]] = {
 }
 
 
-def t(lang: str, key: str, **kwargs: object) -> str:
+def t(lang: str, translation_key: str, **kwargs: object) -> str:
+    # `**kwargs` feeds template placeholders like {key} (e.g. an API key) or
+    # {host}, so this parameter can't be named `key` itself — that would
+    # collide with any translation using {key} as a placeholder name.
     lang = lang if lang in LANGUAGES else DEFAULT_LANGUAGE
-    strings = _STRINGS.get(key)
+    strings = _STRINGS.get(translation_key)
     if strings is None:
-        return key
-    template = strings.get(lang) or strings.get(DEFAULT_LANGUAGE) or key
+        return translation_key
+    template = strings.get(lang) or strings.get(DEFAULT_LANGUAGE) or translation_key
     return template.format(**kwargs) if kwargs else template
