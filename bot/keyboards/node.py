@@ -17,14 +17,6 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def ssh_user_keyboard() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="Использовать root", callback_data="sshuser:root")
-    builder.button(text="❌ Отмена", callback_data="nodesetup:cancel")
-    builder.adjust(1, 1)
-    return builder.as_markup()
-
-
 def confirm_install_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="✅ Установить", callback_data="nodeinstall:confirm")

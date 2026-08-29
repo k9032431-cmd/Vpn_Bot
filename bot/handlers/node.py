@@ -11,7 +11,6 @@ from bot.keyboards.node import (
     confirm_install_keyboard,
     node_menu_keyboard,
     node_result_keyboard,
-    ssh_user_keyboard,
 )
 from bot.services.node_installer import install_marzban_node, install_pasarguard_node
 from bot.services.ssh_client import NodeInstallError, SSHTarget
@@ -66,14 +65,8 @@ async def process_ip(message: Message, state: FSMContext) -> None:
     data = await state.update_data(host=host)
     await state.set_state(NodeSetupStates.waiting_ssh_user)
     await message.answer(
-        texts.step_ssh_user_text(data["node_type"]), reply_markup=ssh_user_keyboard()
+        texts.step_ssh_user_text(data["node_type"]), reply_markup=cancel_keyboard()
     )
-
-
-@router.callback_query(NodeSetupStates.waiting_ssh_user, F.data == "sshuser:root")
-async def process_ssh_user_root(callback: CallbackQuery, state: FSMContext) -> None:
-    await _ask_password(callback.message, state, "root")
-    await callback.answer()
 
 
 @router.message(NodeSetupStates.waiting_ssh_user)
