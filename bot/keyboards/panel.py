@@ -69,13 +69,33 @@ def panel_remove_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMar
     return builder.as_markup()
 
 
-def panel_users_keyboard(lang: str, panel_id: str, usernames: list[str], manageable: bool) -> InlineKeyboardMarkup:
+def panel_users_keyboard(
+    lang: str,
+    panel_id: str,
+    usernames: list[str],
+    manageable: bool,
+    page: int = 0,
+    has_prev: bool = False,
+    has_next: bool = False,
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     rows: list[int] = []
     if manageable:
         for name in usernames:
             builder.button(text=f"👤 {name}", callback_data=f"puser:view:{panel_id}:{name}")
             rows.append(1)
+
+    nav_buttons = 0
+    if has_prev:
+        builder.button(text="◀️", callback_data=f"pdash:users:{panel_id}:{page - 1}")
+        nav_buttons += 1
+    if has_next:
+        builder.button(text="▶️", callback_data=f"pdash:users:{panel_id}:{page + 1}")
+        nav_buttons += 1
+    if nav_buttons:
+        rows.append(nav_buttons)
+
+    if manageable:
         builder.button(text=t(lang, "btn_panel_create_user"), callback_data=f"pdash:newuser:{panel_id}")
         rows.append(1)
     builder.button(text=t(lang, "btn_panel_dashboard"), callback_data=f"pview:{panel_id}")

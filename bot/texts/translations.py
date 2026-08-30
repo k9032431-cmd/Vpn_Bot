@@ -783,9 +783,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{header}\n📊 <b>Statistika</b>\n\n📡 Inbound sany: <b>{inbounds_count}</b>\n👥 Müşderi sany: <b>{clients_count}</b>",
     },
     "panel_users_list_header": {
-        "ru": "{header}\n👥 <b>Пользователи</b>\n\nПоказаны первые {count}:",
-        "en": "{header}\n👥 <b>Users</b>\n\nShowing the first {count}:",
-        "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\nIlkinji {count} görkezilýär:",
+        "ru": "{header}\n👥 <b>Пользователи</b>\n\nПоказаны {start}–{end} из {total}:",
+        "en": "{header}\n👥 <b>Users</b>\n\nShowing {start}–{end} of {total}:",
+        "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\n{start}–{end} / {total} görkezilýär:",
     },
     "panel_users_list_empty": {
         "ru": "{header}\n👥 <b>Пользователи</b>\n\nПока пользователей нет.",

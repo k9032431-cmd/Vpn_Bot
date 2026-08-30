@@ -142,16 +142,28 @@ async def marzban_get_system_stats(url: str, token: str) -> MarzbanFamilyStats:
     )
 
 
-async def marzban_get_users(url: str, token: str, limit: int = 10) -> list[dict]:
+@dataclass
+class UsersPage:
+    users: list[dict]
+    total: int
+
+
+async def marzban_get_users(url: str, token: str, offset: int = 0, limit: int = 10) -> UsersPage:
     headers = {"Authorization": f"Bearer {token}"}
     async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
         payload = await _marzban_call(
-            session, "GET", f"{url}/api/users", headers=headers, params={"limit": limit}
+            session, "GET", f"{url}/api/users", headers=headers, params={"offset": offset, "limit": limit}
         )
     if not isinstance(payload, dict):
         raise PanelAPIError("bad_response")
     users = payload.get("users", [])
-    return users if isinstance(users, list) else []
+    users = users if isinstance(users, list) else []
+    total = payload.get("total", offset + len(users))
+    try:
+        total = int(total)
+    except (TypeError, ValueError):
+        total = offset + len(users)
+    return UsersPage(users=users, total=total)
 
 
 async def marzban_get_user(url: str, token: str, username: str) -> dict:
@@ -282,8 +294,10 @@ async def threexui_get_inbounds(url: str, cookies: dict[str, str]) -> list[dict]
     return obj if isinstance(obj, list) else []
 
 
-def count_3xui_clients(inbounds: list[dict]) -> int:
-    total = 0
+def list_3xui_clients(inbounds: list[dict]) -> list[str]:
+    """Flattens every inbound's `settings.clients` (raw Xray config JSON,
+    stable across 3x-ui forks) into a list of display labels."""
+    labels: list[str] = []
     for inbound in inbounds:
         settings_raw = inbound.get("settings")
         if not settings_raw:
@@ -294,5 +308,10 @@ def count_3xui_clients(inbounds: list[dict]) -> int:
             continue
         clients = settings.get("clients") if isinstance(settings, dict) else None
         if isinstance(clients, list):
-            total += len(clients)
-    return total
+            for client in clients:
+                labels.append(str(client.get("email") or client.get("id") or "?"))
+    return labels
+
+
+def count_3xui_clients(inbounds: list[dict]) -> int:
+    return len(list_3xui_clients(inbounds))

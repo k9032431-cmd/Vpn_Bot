@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import html
-import json
 from urllib.parse import urlparse
 
 from .premium_emoji import e
@@ -167,37 +166,37 @@ def stats_text_3xui(lang: str, panel: dict, inbounds_count: int, clients_count: 
     )
 
 
-def users_list_text_marzban_family(lang: str, panel: dict, users: list[dict]) -> str:
+def users_list_text_marzban_family(lang: str, panel: dict, users: list[dict], offset: int, total: int) -> str:
     # Usernames are shown as tappable buttons (see panel_users_keyboard),
-    # so this is just the screen's header/count line.
+    # so this is just the screen's header/range line.
     header = panel_header(lang, panel["type"], panel["url"])
-    if not users:
+    if not total:
         return t(lang, "panel_users_list_empty", header=header)
-    return t(lang, "panel_users_list_header", header=header, count=len(users))
+    return t(
+        lang,
+        "panel_users_list_header",
+        header=header,
+        start=offset + 1,
+        end=offset + len(users),
+        total=total,
+    )
 
 
-def users_list_text_3xui(lang: str, panel: dict, inbounds: list[dict]) -> str:
+def users_list_text_3xui(lang: str, panel: dict, page_labels: list[str], offset: int, total: int) -> str:
     header = panel_header(lang, panel["type"], panel["url"])
-    entries: list[str] = []
-    for inbound in inbounds:
-        settings_raw = inbound.get("settings")
-        if not settings_raw:
-            continue
-        try:
-            settings = json.loads(settings_raw)
-        except (ValueError, TypeError):
-            continue
-        clients = settings.get("clients") if isinstance(settings, dict) else None
-        if not isinstance(clients, list):
-            continue
-        for client in clients:
-            label = client.get("email") or client.get("id") or "?"
-            entries.append(f"👤 <code>{html.escape(str(label))}</code>")
-    if not entries:
+    if not total:
         return t(lang, "panel_users_list_empty", header=header)
-    shown = entries[:10]
-    lines = [t(lang, "panel_users_list_header", header=header, count=len(shown))]
-    lines.extend(shown)
+    lines = [
+        t(
+            lang,
+            "panel_users_list_header",
+            header=header,
+            start=offset + 1,
+            end=offset + len(page_labels),
+            total=total,
+        )
+    ]
+    lines.extend(f"👤 <code>{html.escape(label)}</code>" for label in page_labels)
     return "\n".join(lines)
 
 

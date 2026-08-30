@@ -26,6 +26,7 @@ from bot.services.panel_api import (
     PanelAPIError,
     count_3xui_clients,
     is_valid_panel_url,
+    list_3xui_clients,
     marzban_create_user,
     marzban_delete_user,
     marzban_get_inbounds,
@@ -267,24 +268,46 @@ async def cb_dashboard_stats(callback: CallbackQuery, lang: str) -> None:
     await callback.message.edit_text(text, reply_markup=panel_dashboard_back_keyboard(lang, panel_id))
 
 
-async def _render_users_screen(callback: CallbackQuery, lang: str, panel_id: str) -> None:
+USERS_PAGE_SIZE = 10
+
+
+async def _render_users_screen(callback: CallbackQuery, lang: str, panel_id: str, page: int = 0) -> None:
     panel = await panel_store.get(callback.from_user.id, panel_id)
     if not panel:
         await _show_panel_list(callback, lang)
         return
 
+    offset = page * USERS_PAGE_SIZE
     try:
         if panel["type"] in MANAGEABLE_TYPES:
             token = await marzban_login(panel["url"], panel["username"], panel["password"])
-            users = await marzban_get_users(panel["url"], token, limit=10)
-            text = texts.users_list_text_marzban_family(lang, panel, users)
-            usernames = [str(u["username"]) for u in users if u.get("username")]
-            keyboard = panel_users_keyboard(lang, panel_id, usernames, manageable=True)
+            result = await marzban_get_users(panel["url"], token, offset=offset, limit=USERS_PAGE_SIZE)
+            text = texts.users_list_text_marzban_family(lang, panel, result.users, offset, result.total)
+            usernames = [str(u["username"]) for u in result.users if u.get("username")]
+            keyboard = panel_users_keyboard(
+                lang,
+                panel_id,
+                usernames,
+                manageable=True,
+                page=page,
+                has_prev=page > 0,
+                has_next=offset + len(result.users) < result.total,
+            )
         else:
             cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
             inbounds = await threexui_get_inbounds(panel["url"], cookies)
-            text = texts.users_list_text_3xui(lang, panel, inbounds)
-            keyboard = panel_dashboard_back_keyboard(lang, panel_id)
+            all_labels = list_3xui_clients(inbounds)
+            page_labels = all_labels[offset : offset + USERS_PAGE_SIZE]
+            text = texts.users_list_text_3xui(lang, panel, page_labels, offset, len(all_labels))
+            keyboard = panel_users_keyboard(
+                lang,
+                panel_id,
+                [],
+                manageable=False,
+                page=page,
+                has_prev=page > 0,
+                has_next=offset + len(page_labels) < len(all_labels),
+            )
     except PanelAPIError as exc:
         text = texts.login_error_text(lang, str(exc))
         keyboard = panel_dashboard_back_keyboard(lang, panel_id)
@@ -294,8 +317,10 @@ async def _render_users_screen(callback: CallbackQuery, lang: str, panel_id: str
 
 @router.callback_query(F.data.startswith("pdash:users:"))
 async def cb_dashboard_users(callback: CallbackQuery, lang: str) -> None:
-    panel_id = callback.data.split(":", 2)[2]
-    await _render_users_screen(callback, lang, panel_id)
+    parts = callback.data.split(":")
+    panel_id = parts[2]
+    page = int(parts[3]) if len(parts) > 3 else 0
+    await _render_users_screen(callback, lang, panel_id, page)
     await callback.answer()
 
 
