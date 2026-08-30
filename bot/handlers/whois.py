@@ -37,17 +37,20 @@ async def process_whois_query(message: Message, state: FSMContext, lang: str) ->
         await message.answer(texts.invalid_input_text(lang), reply_markup=whois_cancel_keyboard(lang))
         return
 
-    status_message = await message.answer(texts.looking_up_text(lang))
+    # Answered as a reply to the query (rather than a separate/edited status
+    # message) so Telegram shows the familiar quoted-query header above the
+    # result — a typing indicator covers the wait instead of a placeholder.
+    await message.bot.send_chat_action(message.chat.id, "typing")
     try:
         if is_ip(query):
             info = await lookup_ip(query)
-            result_text = texts.ip_result_text(lang, query, info)
+            result_text = texts.ip_result_text(lang, info)
         else:
             info = await lookup_domain(query)
-            result_text = texts.domain_result_text(lang, query, info)
+            result_text = texts.domain_result_text(lang, info)
     except WhoisAPIError as exc:
-        await status_message.edit_text(texts.error_text(lang, str(exc)), reply_markup=whois_again_keyboard(lang))
+        await message.reply(texts.error_text(lang, str(exc)), reply_markup=whois_again_keyboard(lang))
         return
 
     await state.clear()
-    await status_message.edit_text(result_text, reply_markup=whois_again_keyboard(lang))
+    await message.reply(result_text, reply_markup=whois_again_keyboard(lang))

@@ -24,10 +24,6 @@ def invalid_input_text(lang: str) -> str:
     return t(lang, "whois_invalid")
 
 
-def looking_up_text(lang: str) -> str:
-    return t(lang, "whois_looking_up")
-
-
 def error_text(lang: str, reason: str) -> str:
     key = _WHOIS_ERR_KEYS.get(reason, "whois_err_bad_response")
     return t(lang, "whois_error", icon=e("error", "❌"), reason=t(lang, key))
@@ -37,13 +33,12 @@ def _yn(lang: str, value: bool) -> str:
     return t(lang, "whois_yes") if value else t(lang, "whois_no")
 
 
-def ip_result_text(lang: str, query: str, info) -> str:
+def ip_result_text(lang: str, info) -> str:
     city = ", ".join(filter(None, [info.city, info.region])) or "—"
     country = f"{info.country_flag} {info.country}".strip() if info.country else "—"
     return t(
         lang,
         "whois_ip_result",
-        query=html.escape(query),
         ip=html.escape(info.ip),
         host=html.escape(info.host or "—"),
         country=html.escape(country),
@@ -66,14 +61,13 @@ def _tree_list(items: list[str]) -> str:
     )
 
 
-def domain_result_text(lang: str, query: str, info) -> str:
+def domain_result_text(lang: str, info) -> str:
     ns = _tree_list(info.nameservers[:6]) if info.nameservers else "└ —"
     status = ", ".join(info.status) if info.status else "—"
     ip_extra = ", ".join(filter(None, [info.resolved_ip_country, info.resolved_ip_isp]))
     return t(
         lang,
         "whois_domain_result",
-        query=html.escape(query),
         domain=html.escape(info.domain),
         registrar=html.escape(info.registrar or "—"),
         created=html.escape(info.created or "—"),

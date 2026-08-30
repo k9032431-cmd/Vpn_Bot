@@ -989,11 +989,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🤔 That doesn't look like an IP address or a domain. Try again — for example: <code>1.1.1.1</code> or <code>example.com</code>",
         "tk": "🤔 Bu IP salgy ýa-da domen ýaly görnenok. Täzeden synanyşyň — mysal üçin: <code>1.1.1.1</code> ýa-da <code>example.com</code>",
     },
-    "whois_looking_up": {
-        "ru": "🔎 Собираю информацию...",
-        "en": "🔎 Gathering information...",
-        "tk": "🔎 Maglumat ýygnalýar...",
-    },
     "whois_error": {
         "ru": "{icon} Не удалось получить информацию — {reason}.",
         "en": "{icon} Couldn't fetch information — {reason}.",
@@ -1018,8 +1013,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "whois_no": {"ru": "Нет", "en": "No", "tk": "Ýok"},
     "whois_ip_result": {
         "ru": (
-            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
-            "<pre>┌ Arsi WhoIs Bot 🌐\n"
+            "<code>┌ Arsi WhoIs Bot 🌐\n"
             "│\n"
             "├ IP: {ip}\n"
             "├ Хост: {host}\n"
@@ -1032,11 +1026,10 @@ _STRINGS: dict[str, dict[str, str]] = {
             "├ VPN: {vpn}\n"
             "├ Tor: {tor}\n"
             "├ Хостинг: {hosting}\n"
-            "└ Cloudflare: {cloudflare}</pre>"
+            "└ Cloudflare: {cloudflare}</code>"
         ),
         "en": (
-            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
-            "<pre>┌ Arsi WhoIs Bot 🌐\n"
+            "<code>┌ Arsi WhoIs Bot 🌐\n"
             "│\n"
             "├ IP: {ip}\n"
             "├ Host: {host}\n"
@@ -1049,11 +1042,10 @@ _STRINGS: dict[str, dict[str, str]] = {
             "├ VPN: {vpn}\n"
             "├ Tor: {tor}\n"
             "├ Hosting: {hosting}\n"
-            "└ Cloudflare: {cloudflare}</pre>"
+            "└ Cloudflare: {cloudflare}</code>"
         ),
         "tk": (
-            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
-            "<pre>┌ Arsi WhoIs Bot 🌐\n"
+            "<code>┌ Arsi WhoIs Bot 🌐\n"
             "│\n"
             "├ IP: {ip}\n"
             "├ Host: {host}\n"
@@ -1066,13 +1058,12 @@ _STRINGS: dict[str, dict[str, str]] = {
             "├ VPN: {vpn}\n"
             "├ Tor: {tor}\n"
             "├ Hosting: {hosting}\n"
-            "└ Cloudflare: {cloudflare}</pre>"
+            "└ Cloudflare: {cloudflare}</code>"
         ),
     },
     "whois_domain_result": {
         "ru": (
-            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
-            "<pre>┌ Arsi WhoIs Bot 🌐\n"
+            "<code>┌ Arsi WhoIs Bot 🌐\n"
             "│\n"
             "├ Домен: {domain}\n"
             "├ Регистратор: {registrar}\n"
@@ -1084,11 +1075,10 @@ _STRINGS: dict[str, dict[str, str]] = {
             "├ IP сервера: {resolved_ip}{ip_extra}\n"
             "│\n"
             "├ Серверы имён:\n"
-            "{nameservers}</pre>"
+            "{nameservers}</code>"
         ),
         "en": (
-            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
-            "<pre>┌ Arsi WhoIs Bot 🌐\n"
+            "<code>┌ Arsi WhoIs Bot 🌐\n"
             "│\n"
             "├ Domain: {domain}\n"
             "├ Registrar: {registrar}\n"
@@ -1100,11 +1090,10 @@ _STRINGS: dict[str, dict[str, str]] = {
             "├ Server IP: {resolved_ip}{ip_extra}\n"
             "│\n"
             "├ Nameservers:\n"
-            "{nameservers}</pre>"
+            "{nameservers}</code>"
         ),
         "tk": (
-            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
-            "<pre>┌ Arsi WhoIs Bot 🌐\n"
+            "<code>┌ Arsi WhoIs Bot 🌐\n"
             "│\n"
             "├ Domen: {domain}\n"
             "├ Registrator: {registrar}\n"
@@ -1116,7 +1105,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "├ Server IP: {resolved_ip}{ip_extra}\n"
             "│\n"
             "├ At serwerleri:\n"
-            "{nameservers}</pre>"
+            "{nameservers}</code>"
         ),
     },
 }
