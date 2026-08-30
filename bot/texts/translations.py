@@ -81,6 +81,12 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_panel_menu": {"ru": "⚙️ Меню Panel", "en": "⚙️ Panel menu", "tk": "⚙️ Panel menýusy"},
     "btn_panel_add": {"ru": "➕ Добавить панель", "en": "➕ Add panel", "tk": "➕ Panel goş"},
     "btn_panel_list": {"ru": "📋 Мои панели", "en": "📋 My panels", "tk": "📋 Panellerim"},
+    "btn_panel_nodes": {"ru": "🖧 Ноды", "en": "🖧 Nodes", "tk": "🖧 Node-lar"},
+    "btn_panel_node_add": {"ru": "➕ Добавить ноду", "en": "➕ Add node", "tk": "➕ Node goş"},
+    "btn_panel_node_reconnect": {"ru": "🔄 Переподключить", "en": "🔄 Reconnect", "tk": "🔄 Gaýtadan birik"},
+    "btn_panel_node_delete": {"ru": "🗑 Удалить ноду", "en": "🗑 Delete node", "tk": "🗑 Node poz"},
+    "btn_panel_node_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "btn_panel_node_create_confirm": {"ru": "✅ Добавить", "en": "✅ Add", "tk": "✅ Goş"},
     "btn_profile": {"ru": "👤 Профиль", "en": "👤 Profile", "tk": "👤 Profil"},
     "profile_no_username": {"ru": "не указан", "en": "not set", "tk": "görkezilmedik"},
     "profile_text": {
@@ -952,6 +958,117 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Трафик пользователя <code>{username}</code> сброшен.",
         "en": "{icon} Traffic for <code>{username}</code> has been reset.",
         "tk": "{icon} <code>{username}</code> ulanyjysynyň traffigi arassalandy.",
+    },
+    # --- Ноды (Marzban/PasarGuard) ---
+    "node_status_connected": {"ru": "Подключена", "en": "Connected", "tk": "Birikdirilen"},
+    "node_status_connecting": {"ru": "Подключается", "en": "Connecting", "tk": "Birikdirilýär"},
+    "node_status_error": {"ru": "Ошибка", "en": "Error", "tk": "Ýalňyşlyk"},
+    "node_status_disabled": {"ru": "Отключена", "en": "Disabled", "tk": "Öçürilen"},
+    "panel_nodes_list_header": {
+        "ru": "{header}\n🖧 <b>Ноды</b>\n\nВсего: {count}",
+        "en": "{header}\n🖧 <b>Nodes</b>\n\nTotal: {count}",
+        "tk": "{header}\n🖧 <b>Node-lar</b>\n\nJemi: {count}",
+    },
+    "panel_nodes_list_empty": {
+        "ru": "{header}\n🖧 <b>Ноды</b>\n\nПока ни одной ноды не добавлено.",
+        "en": "{header}\n🖧 <b>Nodes</b>\n\nNo nodes added yet.",
+        "tk": "{header}\n🖧 <b>Node-lar</b>\n\nHeniz node goşulmady.",
+    },
+    "panel_node_detail": {
+        "ru": (
+            "{header}\n\n🖧 <b>{name}</b>\n{status_emoji} Статус: {status_label}\n\n"
+            "🌍 Адрес: <code>{address}</code>\n🔌 Порт: <code>{port}</code>\n"
+            "🔌 API-порт: <code>{api_port}</code>\n📦 Xray: {xray_version}\n\n"
+            "💬 Сообщение: {message}"
+        ),
+        "en": (
+            "{header}\n\n🖧 <b>{name}</b>\n{status_emoji} Status: {status_label}\n\n"
+            "🌍 Address: <code>{address}</code>\n🔌 Port: <code>{port}</code>\n"
+            "🔌 API port: <code>{api_port}</code>\n📦 Xray: {xray_version}\n\n"
+            "💬 Message: {message}"
+        ),
+        "tk": (
+            "{header}\n\n🖧 <b>{name}</b>\n{status_emoji} Ýagdaýy: {status_label}\n\n"
+            "🌍 Salgysy: <code>{address}</code>\n🔌 Port: <code>{port}</code>\n"
+            "🔌 API-port: <code>{api_port}</code>\n📦 Xray: {xray_version}\n\n"
+            "💬 Habar: {message}"
+        ),
+    },
+    "panel_create_node_step_name": {
+        "ru": "{header}\n\n🖧 Введите название новой ноды (произвольное, для себя):",
+        "en": "{header}\n\n🖧 Enter a name for the new node (any label, for your own reference):",
+        "tk": "{header}\n\n🖧 Täze node üçin at ýazyň (islendik, öz üçiňiz):",
+    },
+    "panel_create_node_invalid_name": {
+        "ru": "Название не может быть пустым. Попробуйте ещё раз:",
+        "en": "The name can't be empty. Try again:",
+        "tk": "At boş bolup bilmez. Täzeden synanyşyň:",
+    },
+    "panel_create_node_step_address": {
+        "ru": "{header}\n\n🌍 Название: <b>{name}</b>\n\nТеперь пришлите IP-адрес или домен ноды:",
+        "en": "{header}\n\n🌍 Name: <b>{name}</b>\n\nNow send the node's IP address or domain:",
+        "tk": "{header}\n\n🌍 Ady: <b>{name}</b>\n\nIndi node-yň IP salgysyny ýa-da domenini iberiň:",
+    },
+    "panel_create_node_invalid_address": {
+        "ru": "Похоже, это не IP-адрес и не домен. Попробуйте ещё раз:",
+        "en": "That doesn't look like an IP address or domain. Try again:",
+        "tk": "Bu IP salgy ýa-da domen ýaly görnenok. Täzeden synanyşyň:",
+    },
+    "panel_create_node_step_port": {
+        "ru": (
+            "{header}\n\n🔌 Пришлите порт ноды (обычно 62050) и, через двоеточие, "
+            "API-порт (обычно 62051) — например: <code>62050:62051</code>. "
+            "Можно прислать только один порт — тогда API-портом будет порт+1."
+        ),
+        "en": (
+            "{header}\n\n🔌 Send the node's port (usually 62050) and, separated by a colon, "
+            "its API port (usually 62051) — for example: <code>62050:62051</code>. "
+            "A single port is fine too — the API port will then be port+1."
+        ),
+        "tk": (
+            "{header}\n\n🔌 Node-yň portyny (adatça 62050) we, iki nokat bilen bölüp, "
+            "API-portyny (adatça 62051) iberiň — mysal üçin: <code>62050:62051</code>. "
+            "Diňe bir port hem bolýar — API-port onda port+1 bolar."
+        ),
+    },
+    "panel_create_node_invalid_port": {
+        "ru": "Похоже, это не порт. Пришлите число или два числа через двоеточие, например: <code>62050:62051</code>",
+        "en": "That doesn't look like a port. Send a number, or two separated by a colon, e.g.: <code>62050:62051</code>",
+        "tk": "Bu port ýaly görnenok. San ýa-da iki nokat bilen iki san iberiň, mysal: <code>62050:62051</code>",
+    },
+    "panel_create_node_confirm": {
+        "ru": (
+            "{header}\n\n🖧 Добавить ноду?\n\n🏷 Название: <b>{name}</b>\n🌍 Адрес: <code>{address}</code>\n"
+            "🔌 Порт: <code>{port}</code>\n🔌 API-порт: <code>{api_port}</code>"
+        ),
+        "en": (
+            "{header}\n\n🖧 Add this node?\n\n🏷 Name: <b>{name}</b>\n🌍 Address: <code>{address}</code>\n"
+            "🔌 Port: <code>{port}</code>\n🔌 API port: <code>{api_port}</code>"
+        ),
+        "tk": (
+            "{header}\n\n🖧 Bu node goşulsynmy?\n\n🏷 Ady: <b>{name}</b>\n🌍 Salgysy: <code>{address}</code>\n"
+            "🔌 Port: <code>{port}</code>\n🔌 API-port: <code>{api_port}</code>"
+        ),
+    },
+    "panel_create_node_success": {
+        "ru": "{icon} Нода <b>{name}</b> добавлена в панель.",
+        "en": "{icon} Node <b>{name}</b> has been added to the panel.",
+        "tk": "{icon} <b>{name}</b> node-y panele goşuldy.",
+    },
+    "panel_node_delete_confirm": {
+        "ru": "{header}\n\n⚠️ Точно удалить ноду <b>{name}</b> из панели? Это действие необратимо.",
+        "en": "{header}\n\n⚠️ Delete node <b>{name}</b> from the panel? This can't be undone.",
+        "tk": "{header}\n\n⚠️ <b>{name}</b> node-yny panelden pozmakçymysyňyz? Bu amal yzyna gaýtarylmaýar.",
+    },
+    "panel_node_delete_success": {
+        "ru": "{icon} Нода <b>{name}</b> удалена.",
+        "en": "{icon} Node <b>{name}</b> deleted.",
+        "tk": "{icon} <b>{name}</b> node-y pozuldy.",
+    },
+    "panel_node_reconnect_success": {
+        "ru": "{icon} Нода <b>{name}</b> переподключается...",
+        "en": "{icon} Node <b>{name}</b> is reconnecting...",
+        "tk": "{icon} <b>{name}</b> node-y gaýtadan birikdirilýär...",
     },
     # --- Arsi WhoIs ---
     "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},

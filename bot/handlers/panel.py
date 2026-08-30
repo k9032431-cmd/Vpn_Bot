@@ -16,6 +16,11 @@ from bot.keyboards.panel import (
     panel_dashboard_keyboard,
     panel_error_keyboard,
     panel_list_keyboard,
+    panel_node_cancel_keyboard,
+    panel_node_create_confirm_keyboard,
+    panel_node_delete_confirm_keyboard,
+    panel_node_detail_keyboard,
+    panel_nodes_keyboard,
     panel_remove_confirm_keyboard,
     panel_user_cancel_keyboard,
     panel_user_delete_confirm_keyboard,
@@ -27,21 +32,31 @@ from bot.services.panel_api import (
     count_3xui_clients,
     is_valid_panel_url,
     list_3xui_clients,
+    marzban_add_node,
     marzban_create_user,
+    marzban_delete_node,
     marzban_delete_user,
     marzban_get_inbounds,
+    marzban_get_node,
+    marzban_get_nodes,
     marzban_get_system_stats,
     marzban_get_user,
     marzban_get_users,
     marzban_login,
     marzban_modify_user,
+    marzban_reconnect_node,
     marzban_reset_user_usage,
     normalize_panel_url,
     threexui_get_inbounds,
     threexui_login,
 )
 from bot.services.panel_store import panel_store
-from bot.states.panel_setup import PanelSetupStates, PanelUserCreateStates, PanelUserEditStates
+from bot.states.panel_setup import (
+    PanelNodeCreateStates,
+    PanelSetupStates,
+    PanelUserCreateStates,
+    PanelUserEditStates,
+)
 from bot.texts import panel as texts
 
 router = Router(name="panel")
@@ -221,7 +236,7 @@ async def process_password(message: Message, state: FSMContext, lang: str, bot: 
     await state.clear()
     await status_message.edit_text(
         texts.connected_text(lang, data["panel_type"], data["url"]),
-        reply_markup=panel_dashboard_keyboard(lang, panel_id),
+        reply_markup=panel_dashboard_keyboard(lang, panel_id, data["panel_type"] in MANAGEABLE_TYPES),
     )
 
 
@@ -238,7 +253,8 @@ async def cb_panel_view(callback: CallbackQuery, state: FSMContext, lang: str) -
         await callback.answer()
         return
     await callback.message.edit_text(
-        texts.dashboard_text(lang, panel), reply_markup=panel_dashboard_keyboard(lang, panel_id)
+        texts.dashboard_text(lang, panel),
+        reply_markup=panel_dashboard_keyboard(lang, panel_id, panel["type"] in MANAGEABLE_TYPES),
     )
     await callback.answer()
 
@@ -625,4 +641,269 @@ async def cb_user_delete_confirm(callback: CallbackQuery, lang: str) -> None:
 
     await callback.message.edit_text(
         texts.delete_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+    )
+
+
+# --- Node management (Marzban / PasarGuard only) ---
+
+NODE_ADDRESS_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9.\-]{0,251}[a-zA-Z0-9]$|^[a-zA-Z0-9]$")
+
+
+async def _render_nodes_screen(callback: CallbackQuery, lang: str, panel_id: str) -> None:
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        nodes = await marzban_get_nodes(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.nodes_list_text(lang, panel, nodes), reply_markup=panel_nodes_keyboard(lang, panel_id, nodes)
+    )
+
+
+@router.callback_query(F.data.startswith("pdash:nodes:"))
+async def cb_dashboard_nodes(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_nodes_screen(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pnode:view:"))
+async def cb_node_view(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, node_id = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        node = await marzban_get_node(panel["url"], token, int(node_id))
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.node_detail_text(lang, panel, node),
+        reply_markup=panel_node_detail_keyboard(lang, panel_id, node.id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pnode:cancel:"))
+async def cb_node_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_nodes_screen(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pnode:new:"))
+async def cb_node_new(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
+        await callback.answer()
+        return
+    await state.clear()
+    await state.update_data(panel_id=panel_id)
+    await state.set_state(PanelNodeCreateStates.waiting_name)
+    await callback.message.edit_text(
+        texts.create_node_step_name_text(lang, panel), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+    )
+    await callback.answer()
+
+
+@router.message(PanelNodeCreateStates.waiting_name)
+async def process_node_name(message: Message, state: FSMContext, lang: str) -> None:
+    name = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    if not name:
+        await message.answer(
+            texts.invalid_node_name_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    await state.update_data(node_name=name)
+    await state.set_state(PanelNodeCreateStates.waiting_address)
+    await message.answer(
+        texts.create_node_step_address_text(lang, panel, name),
+        reply_markup=panel_node_cancel_keyboard(lang, panel_id),
+    )
+
+
+@router.message(PanelNodeCreateStates.waiting_address)
+async def process_node_address(message: Message, state: FSMContext, lang: str) -> None:
+    address = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    if not address or " " in address or not NODE_ADDRESS_RE.match(address):
+        await message.answer(
+            texts.invalid_node_address_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    await state.update_data(node_address=address)
+    await state.set_state(PanelNodeCreateStates.waiting_port)
+    await message.answer(
+        texts.create_node_step_port_text(lang, panel), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+    )
+
+
+@router.message(PanelNodeCreateStates.waiting_port)
+async def process_node_port(message: Message, state: FSMContext, lang: str) -> None:
+    raw = (message.text or "").strip()
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+
+    port_str, _, api_port_str = raw.partition(":")
+    try:
+        port = int(port_str)
+        api_port = int(api_port_str) if api_port_str else port + 1
+        if not (0 < port < 65536 and 0 < api_port < 65536):
+            raise ValueError
+    except ValueError:
+        await message.answer(
+            texts.invalid_node_port_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    data = await state.update_data(node_port=port, node_api_port=api_port)
+    await state.set_state(PanelNodeCreateStates.confirming)
+    await message.answer(
+        texts.create_node_confirm_text(lang, panel, data["node_name"], data["node_address"], port, api_port),
+        reply_markup=panel_node_create_confirm_keyboard(lang, panel_id),
+    )
+
+
+@router.callback_query(PanelNodeCreateStates.confirming, F.data.startswith("pnode:createcnf:"))
+async def cb_node_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        node = await marzban_add_node(
+            panel["url"], token, data["node_name"], data["node_address"], data["node_port"], data["node_api_port"]
+        )
+    except PanelAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.create_node_success_text(lang, node.name),
+        reply_markup=panel_node_detail_keyboard(lang, panel_id, node.id),
+    )
+
+
+@router.callback_query(F.data.startswith("pnode:reconnect:"))
+async def cb_node_reconnect(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, node_id = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        node = await marzban_get_node(panel["url"], token, int(node_id))
+        await marzban_reconnect_node(panel["url"], token, int(node_id))
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)),
+            reply_markup=panel_node_detail_keyboard(lang, panel_id, int(node_id)),
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.node_reconnect_success_text(lang, node.name),
+        reply_markup=panel_node_detail_keyboard(lang, panel_id, node.id),
+    )
+
+
+@router.callback_query(F.data.startswith("pnode:delask:"))
+async def cb_node_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, node_id = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        node = await marzban_get_node(panel["url"], token, int(node_id))
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.node_delete_confirm_text(lang, panel, node),
+        reply_markup=panel_node_delete_confirm_keyboard(lang, panel_id, node.id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pnode:delcnf:"))
+async def cb_node_delete_confirm(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, node_id = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        node = await marzban_get_node(panel["url"], token, int(node_id))
+        await marzban_delete_node(panel["url"], token, int(node_id))
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.node_delete_success_text(lang, node.name),
+        reply_markup=panel_dashboard_back_keyboard(lang, panel_id),
     )

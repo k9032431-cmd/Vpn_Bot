@@ -16,3 +16,10 @@ class PanelUserCreateStates(StatesGroup):
 
 class PanelUserEditStates(StatesGroup):
     waiting_limits = State()
+
+
+class PanelNodeCreateStates(StatesGroup):
+    waiting_name = State()
+    waiting_address = State()
+    waiting_port = State()
+    confirming = State()

@@ -246,6 +246,82 @@ async def marzban_reset_user_usage(url: str, token: str, username: str) -> dict:
     return payload
 
 
+@dataclass
+class NodeInfo:
+    id: int
+    name: str
+    address: str
+    port: int
+    api_port: int
+    usage_coefficient: float
+    xray_version: str | None
+    status: str
+    message: str | None
+
+
+def _parse_node(data: dict) -> NodeInfo:
+    return NodeInfo(
+        id=int(data.get("id", 0) or 0),
+        name=str(data.get("name", "?")),
+        address=str(data.get("address", "?")),
+        port=int(data.get("port", 0) or 0),
+        api_port=int(data.get("api_port", 0) or 0),
+        usage_coefficient=float(data.get("usage_coefficient", 1) or 1),
+        xray_version=data.get("xray_version"),
+        status=str(data.get("status", "?")),
+        message=data.get("message"),
+    )
+
+
+async def marzban_get_nodes(url: str, token: str) -> list[NodeInfo]:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/nodes", headers=headers)
+    if not isinstance(payload, list):
+        raise PanelAPIError("bad_response")
+    return [_parse_node(n) for n in payload if isinstance(n, dict)]
+
+
+async def marzban_get_node(url: str, token: str, node_id: int) -> NodeInfo:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/node/{node_id}", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return _parse_node(payload)
+
+
+async def marzban_add_node(
+    url: str, token: str, name: str, address: str, port: int, api_port: int
+) -> NodeInfo:
+    headers = {"Authorization": f"Bearer {token}"}
+    body = {
+        "name": name,
+        "address": address,
+        "port": port,
+        "api_port": api_port,
+        "usage_coefficient": 1,
+        "add_as_new_host": True,
+    }
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "POST", f"{url}/api/node", headers=headers, json=body)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return _parse_node(payload)
+
+
+async def marzban_delete_node(url: str, token: str, node_id: int) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "DELETE", f"{url}/api/node/{node_id}", headers=headers)
+
+
+async def marzban_reconnect_node(url: str, token: str, node_id: int) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "POST", f"{url}/api/node/{node_id}/reconnect", headers=headers)
+
+
 # --- 3X-UI (cookie-based session, optional CSRF token on newer builds) ---
 
 

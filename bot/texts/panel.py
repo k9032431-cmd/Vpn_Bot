@@ -347,6 +347,113 @@ def reset_success_text(lang: str, username: str) -> str:
     return t(lang, "panel_reset_success", icon=e("success", "✅"), username=html.escape(username))
 
 
+# --- Управление нодами (Marzban/PasarGuard) ---
+
+_NODE_STATUS_EMOJI = {
+    "connected": "🟢",
+    "connecting": "🟡",
+    "error": "🔴",
+    "disabled": "⚪",
+}
+
+
+def node_status_label(lang: str, status: str) -> str:
+    key = f"node_status_{status}"
+    label = t(lang, key)
+    return label if label != key else status
+
+
+def nodes_list_text(lang: str, panel: dict, nodes: list) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
+    if not nodes:
+        return t(lang, "panel_nodes_list_empty", header=header)
+    return t(lang, "panel_nodes_list_header", header=header, count=len(nodes))
+
+
+def node_list_label(node) -> str:
+    emoji = _NODE_STATUS_EMOJI.get(node.status, "•")
+    return f"{emoji} {node.name} — {node.address}"
+
+
+def node_detail_text(lang: str, panel: dict, node) -> str:
+    message = html.escape(node.message) if node.message else "—"
+    return t(
+        lang,
+        "panel_node_detail",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        name=html.escape(node.name),
+        status_emoji=_NODE_STATUS_EMOJI.get(node.status, "•"),
+        status_label=node_status_label(lang, node.status),
+        address=html.escape(node.address),
+        port=node.port,
+        api_port=node.api_port,
+        xray_version=html.escape(node.xray_version or "—"),
+        message=message,
+    )
+
+
+def create_node_step_name_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_create_node_step_name", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def invalid_node_name_text(lang: str) -> str:
+    return t(lang, "panel_create_node_invalid_name")
+
+
+def create_node_step_address_text(lang: str, panel: dict, name: str) -> str:
+    return t(
+        lang,
+        "panel_create_node_step_address",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        name=html.escape(name),
+    )
+
+
+def invalid_node_address_text(lang: str) -> str:
+    return t(lang, "panel_create_node_invalid_address")
+
+
+def create_node_step_port_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_create_node_step_port", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def invalid_node_port_text(lang: str) -> str:
+    return t(lang, "panel_create_node_invalid_port")
+
+
+def create_node_confirm_text(lang: str, panel: dict, name: str, address: str, port: int, api_port: int) -> str:
+    return t(
+        lang,
+        "panel_create_node_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        name=html.escape(name),
+        address=html.escape(address),
+        port=port,
+        api_port=api_port,
+    )
+
+
+def create_node_success_text(lang: str, name: str) -> str:
+    return t(lang, "panel_create_node_success", icon=e("success", "✅"), name=html.escape(name))
+
+
+def node_delete_confirm_text(lang: str, panel: dict, node) -> str:
+    return t(
+        lang,
+        "panel_node_delete_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        name=html.escape(node.name),
+    )
+
+
+def node_delete_success_text(lang: str, name: str) -> str:
+    return t(lang, "panel_node_delete_success", icon=e("success", "✅"), name=html.escape(name))
+
+
+def node_reconnect_success_text(lang: str, name: str) -> str:
+    return t(lang, "panel_node_reconnect_success", icon=e("success", "✅"), name=html.escape(name))
+
+
 # --- Уведомление админам (всегда на русском, как и для Node) ---
 
 
