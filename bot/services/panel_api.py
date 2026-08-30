@@ -322,6 +322,62 @@ async def marzban_reconnect_node(url: str, token: str, node_id: int) -> None:
         await _marzban_call(session, "POST", f"{url}/api/node/{node_id}/reconnect", headers=headers)
 
 
+# --- Xray core config (Marzban / PasarGuard) ---
+
+
+@dataclass
+class CoreInfo:
+    version: str
+    started: bool
+
+
+async def marzban_get_core_info(url: str, token: str) -> CoreInfo:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/core", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return CoreInfo(version=str(payload.get("version", "?")), started=bool(payload.get("started")))
+
+
+async def marzban_get_core_config(url: str, token: str) -> dict:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/core/config", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return payload
+
+
+async def marzban_set_core_config(url: str, token: str, config: dict) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "PUT", f"{url}/api/core/config", headers=headers, json=config)
+
+
+async def marzban_restart_core(url: str, token: str) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "POST", f"{url}/api/core/restart", headers=headers)
+
+
+class CoreConfigError(Exception):
+    """Raised by parse_core_config_input for a config that isn't usable —
+    str(exc) is a short reason code the texts layer turns into a message."""
+
+
+def parse_core_config_input(raw: str) -> dict:
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise CoreConfigError("not_json") from exc
+    if not isinstance(data, dict):
+        raise CoreConfigError("not_object")
+    if "inbounds" not in data:
+        raise CoreConfigError("missing_inbounds")
+    return data
+
+
 # --- 3X-UI (cookie-based session, optional CSRF token on newer builds) ---
 
 

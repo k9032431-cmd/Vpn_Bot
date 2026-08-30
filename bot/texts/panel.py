@@ -454,6 +454,62 @@ def node_reconnect_success_text(lang: str, name: str) -> str:
     return t(lang, "panel_node_reconnect_success", icon=e("success", "✅"), name=html.escape(name))
 
 
+# --- Xray core config (Marzban/PasarGuard) ---
+
+_CORE_ERR_KEYS = {
+    "not_json": "panel_core_err_not_json",
+    "not_object": "panel_core_err_not_object",
+    "missing_inbounds": "panel_core_err_missing_inbounds",
+}
+
+
+def core_menu_text(lang: str, panel: dict, core_info) -> str:
+    status_key = "core_status_started" if core_info.started else "core_status_stopped"
+    return t(
+        lang,
+        "panel_core_menu",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        version=html.escape(core_info.version),
+        status_emoji="🟢" if core_info.started else "🔴",
+        status_label=t(lang, status_key),
+    )
+
+
+def core_config_caption(lang: str, panel: dict) -> str:
+    return t(lang, "panel_core_config_caption", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def core_edit_prompt_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_core_edit_prompt", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def core_config_error_text(lang: str, reason: str) -> str:
+    key = _CORE_ERR_KEYS.get(reason, "panel_core_err_not_json")
+    return t(lang, key)
+
+
+def core_edit_confirm_text(lang: str, panel: dict, inbounds: int, outbounds: int) -> str:
+    return t(
+        lang,
+        "panel_core_edit_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        inbounds=inbounds,
+        outbounds=outbounds,
+    )
+
+
+def core_edit_success_text(lang: str) -> str:
+    return t(lang, "panel_core_edit_success", icon=e("success", "✅"))
+
+
+def core_restart_confirm_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_core_restart_confirm", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def core_restart_success_text(lang: str) -> str:
+    return t(lang, "panel_core_restart_success", icon=e("success", "✅"))
+
+
 # --- Уведомление админам (всегда на русском, как и для Node) ---
 
 

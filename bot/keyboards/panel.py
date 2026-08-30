@@ -43,14 +43,15 @@ def panel_error_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def panel_dashboard_keyboard(lang: str, panel_id: str, show_nodes: bool) -> InlineKeyboardMarkup:
+def panel_dashboard_keyboard(lang: str, panel_id: str, manageable: bool) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_stats"), callback_data=f"pdash:stats:{panel_id}")
     builder.button(text=t(lang, "btn_panel_users"), callback_data=f"pdash:users:{panel_id}")
     rows = [1, 1]
-    if show_nodes:
+    if manageable:
         builder.button(text=t(lang, "btn_panel_nodes"), callback_data=f"pdash:nodes:{panel_id}")
-        rows.append(1)
+        builder.button(text=t(lang, "btn_panel_core"), callback_data=f"pdash:core:{panel_id}")
+        rows.extend([1, 1])
     builder.button(text=t(lang, "btn_panel_remove"), callback_data=f"pdash:rmask:{panel_id}")
     builder.button(text=t(lang, "btn_panel_list"), callback_data="pdash:list")
     rows.extend([1, 1])
@@ -117,6 +118,46 @@ def panel_node_delete_confirm_keyboard(lang: str, panel_id: str, node_id: int) -
         text=t(lang, "btn_panel_node_delete_confirm"), callback_data=f"pnode:delcnf:{panel_id}:{node_id}"
     )
     builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:view:{panel_id}:{node_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_core_menu_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_core_view"), callback_data=f"pcore:view:{panel_id}")
+    builder.button(text=t(lang, "btn_panel_core_edit"), callback_data=f"pcore:editstart:{panel_id}")
+    builder.button(text=t(lang, "btn_panel_core_restart"), callback_data=f"pcore:restartask:{panel_id}")
+    builder.button(text=t(lang, "btn_panel_dashboard"), callback_data=f"pview:{panel_id}")
+    builder.adjust(1, 1, 1, 1)
+    return builder.as_markup()
+
+
+def panel_core_back_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_core"), callback_data=f"pdash:core:{panel_id}")
+    builder.button(text=t(lang, "btn_panel_dashboard"), callback_data=f"pview:{panel_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_core_cancel_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pcore:cancel:{panel_id}")
+    return builder.as_markup()
+
+
+def panel_core_edit_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_core_apply"), callback_data=f"pcore:editcnf:{panel_id}")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pcore:cancel:{panel_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_core_restart_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_core_restart_confirm"), callback_data=f"pcore:restartcnf:{panel_id}")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pdash:core:{panel_id}")
     builder.adjust(1, 1)
     return builder.as_markup()
 

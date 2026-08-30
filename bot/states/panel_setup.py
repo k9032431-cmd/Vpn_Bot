@@ -23,3 +23,8 @@ class PanelNodeCreateStates(StatesGroup):
     waiting_address = State()
     waiting_port = State()
     confirming = State()
+
+
+class PanelCoreEditStates(StatesGroup):
+    waiting_config = State()
+    confirming = State()

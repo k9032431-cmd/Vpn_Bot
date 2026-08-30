@@ -82,6 +82,12 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_panel_add": {"ru": "➕ Добавить панель", "en": "➕ Add panel", "tk": "➕ Panel goş"},
     "btn_panel_list": {"ru": "📋 Мои панели", "en": "📋 My panels", "tk": "📋 Panellerim"},
     "btn_panel_nodes": {"ru": "🖧 Ноды", "en": "🖧 Nodes", "tk": "🖧 Node-lar"},
+    "btn_panel_core": {"ru": "🧬 Xray Core", "en": "🧬 Xray Core", "tk": "🧬 Xray Core"},
+    "btn_panel_core_view": {"ru": "📄 Показать конфиг", "en": "📄 Show config", "tk": "📄 Konfigi görkez"},
+    "btn_panel_core_edit": {"ru": "✏️ Изменить конфиг", "en": "✏️ Edit config", "tk": "✏️ Konfigi üýtget"},
+    "btn_panel_core_restart": {"ru": "🔄 Перезапустить Core", "en": "🔄 Restart Core", "tk": "🔄 Core-y täzeden başlat"},
+    "btn_panel_core_apply": {"ru": "⚠️ Применить", "en": "⚠️ Apply", "tk": "⚠️ Ulan"},
+    "btn_panel_core_restart_confirm": {"ru": "🔄 Да, перезапустить", "en": "🔄 Yes, restart", "tk": "🔄 Hawa, täzeden başlat"},
     "btn_panel_node_add": {"ru": "➕ Добавить ноду", "en": "➕ Add node", "tk": "➕ Node goş"},
     "btn_panel_node_reconnect": {"ru": "🔄 Переподключить", "en": "🔄 Reconnect", "tk": "🔄 Gaýtadan birik"},
     "btn_panel_node_delete": {"ru": "🗑 Удалить ноду", "en": "🗑 Delete node", "tk": "🗑 Node poz"},
@@ -1069,6 +1075,89 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Нода <b>{name}</b> переподключается...",
         "en": "{icon} Node <b>{name}</b> is reconnecting...",
         "tk": "{icon} <b>{name}</b> node-y gaýtadan birikdirilýär...",
+    },
+    # --- Xray core config (Marzban/PasarGuard) ---
+    "panel_core_menu": {
+        "ru": (
+            "{header}\n\n🧬 <b>Xray Core</b>\n\n📦 Версия: <code>{version}</code>\n{status_emoji} Статус: {status_label}\n\n"
+            "⚠️ <i>Изменение конфига напрямую влияет на работу VPN — будьте осторожны.</i>"
+        ),
+        "en": (
+            "{header}\n\n🧬 <b>Xray Core</b>\n\n📦 Version: <code>{version}</code>\n{status_emoji} Status: {status_label}\n\n"
+            "⚠️ <i>Editing the config directly affects the running VPN — be careful.</i>"
+        ),
+        "tk": (
+            "{header}\n\n🧬 <b>Xray Core</b>\n\n📦 Wersiýa: <code>{version}</code>\n{status_emoji} Ýagdaýy: {status_label}\n\n"
+            "⚠️ <i>Konfigi üýtgetmek gönüden-göni işleýän VPN-e täsir edýär — seresap boluň.</i>"
+        ),
+    },
+    "core_status_started": {"ru": "Запущен", "en": "Running", "tk": "Işleýär"},
+    "core_status_stopped": {"ru": "Остановлен", "en": "Stopped", "tk": "Duran"},
+    "panel_core_config_caption": {
+        "ru": "🧬 Текущий Xray-конфиг панели {header}",
+        "en": "🧬 Current Xray config of panel {header}",
+        "tk": "🧬 {header} panelynyň häzirki Xray konfigi",
+    },
+    "panel_core_edit_prompt": {
+        "ru": (
+            "{header}\n\n✏️ Пришлите новый конфиг — текстом (если короткий) или файлом <code>.json</code>.\n\n"
+            "⚠️ Конфиг будет применён к работающему серверу — если он некорректен, VPN может перестать работать."
+        ),
+        "en": (
+            "{header}\n\n✏️ Send the new config — as text (if short) or as a <code>.json</code> file.\n\n"
+            "⚠️ The config will be applied to the running server — if it's invalid, the VPN may stop working."
+        ),
+        "tk": (
+            "{header}\n\n✏️ Täze konfigi iberiň — tekst hökmünde (gysga bolsa) ýa-da <code>.json</code> faýl hökmünde.\n\n"
+            "⚠️ Konfig işleýän serwere ulanylar — nädogry bolsa, VPN işlemegini bes edip biler."
+        ),
+    },
+    "panel_core_err_not_json": {
+        "ru": "Это не похоже на корректный JSON. Проверьте синтаксис и пришлите ещё раз.",
+        "en": "That doesn't look like valid JSON. Check the syntax and send it again.",
+        "tk": "Bu dogry JSON ýaly görnenok. Sintaksisi barlaň we täzeden iberiň.",
+    },
+    "panel_core_err_not_object": {
+        "ru": "Конфиг должен быть JSON-объектом (в фигурных скобках), а не списком или значением.",
+        "en": "The config must be a JSON object (curly braces), not a list or a plain value.",
+        "tk": "Konfig JSON obýekti bolmaly (üýtgeşik alamatlar bilen), sanaw ýa-da baha däl.",
+    },
+    "panel_core_err_missing_inbounds": {
+        "ru": "В конфиге нет поля <code>inbounds</code> — это не похоже на валидный Xray-конфиг.",
+        "en": "The config has no <code>inbounds</code> field — this doesn't look like a valid Xray config.",
+        "tk": "Konfigde <code>inbounds</code> meýdany ýok — bu dogry Xray konfigi ýaly görnenok.",
+    },
+    "panel_core_edit_confirm": {
+        "ru": (
+            "{header}\n\n⚠️ <b>Применить новый конфиг?</b>\n\n"
+            "📥 Inbound'ов: <b>{inbounds}</b>\n📤 Outbound'ов: <b>{outbounds}</b>\n\n"
+            "Core перезапустится с новыми настройками. Если конфиг ошибочен, VPN может перестать работать."
+        ),
+        "en": (
+            "{header}\n\n⚠️ <b>Apply the new config?</b>\n\n"
+            "📥 Inbounds: <b>{inbounds}</b>\n📤 Outbounds: <b>{outbounds}</b>\n\n"
+            "The core will restart with the new settings. If the config is wrong, the VPN may stop working."
+        ),
+        "tk": (
+            "{header}\n\n⚠️ <b>Täze konfig ulanylsynmy?</b>\n\n"
+            "📥 Inbound: <b>{inbounds}</b>\n📤 Outbound: <b>{outbounds}</b>\n\n"
+            "Core täze sazlamalar bilen täzeden başlar. Konfig ýalňyş bolsa, VPN işlemegini bes edip biler."
+        ),
+    },
+    "panel_core_edit_success": {
+        "ru": "{icon} Новый конфиг применён, Core перезапущен.",
+        "en": "{icon} New config applied, Core restarted.",
+        "tk": "{icon} Täze konfig ulanyldy, Core täzeden başlady.",
+    },
+    "panel_core_restart_confirm": {
+        "ru": "{header}\n\n🔄 Перезапустить Xray Core? Активные соединения будут ненадолго прерваны.",
+        "en": "{header}\n\n🔄 Restart Xray Core? Active connections will be briefly interrupted.",
+        "tk": "{header}\n\n🔄 Xray Core täzeden başladylsynmy? Işjeň birikmeler gysga wagtlyk kesiler.",
+    },
+    "panel_core_restart_success": {
+        "ru": "{icon} Xray Core перезапущен.",
+        "en": "{icon} Xray Core restarted.",
+        "tk": "{icon} Xray Core täzeden başlady.",
     },
     # --- Arsi WhoIs ---
     "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},

@@ -1,16 +1,22 @@
 from __future__ import annotations
 
+import json
 import re
 import time
 
 from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 
 from bot.config import config
 from bot.keyboards.panel import (
     panel_add_menu_keyboard,
     panel_cancel_keyboard,
+    panel_core_back_keyboard,
+    panel_core_cancel_keyboard,
+    panel_core_edit_confirm_keyboard,
+    panel_core_menu_keyboard,
+    panel_core_restart_confirm_keyboard,
     panel_create_user_confirm_keyboard,
     panel_dashboard_back_keyboard,
     panel_dashboard_keyboard,
@@ -28,6 +34,7 @@ from bot.keyboards.panel import (
     panel_users_keyboard,
 )
 from bot.services.panel_api import (
+    CoreConfigError,
     PanelAPIError,
     count_3xui_clients,
     is_valid_panel_url,
@@ -36,6 +43,8 @@ from bot.services.panel_api import (
     marzban_create_user,
     marzban_delete_node,
     marzban_delete_user,
+    marzban_get_core_config,
+    marzban_get_core_info,
     marzban_get_inbounds,
     marzban_get_node,
     marzban_get_nodes,
@@ -46,12 +55,16 @@ from bot.services.panel_api import (
     marzban_modify_user,
     marzban_reconnect_node,
     marzban_reset_user_usage,
+    marzban_restart_core,
+    marzban_set_core_config,
     normalize_panel_url,
+    parse_core_config_input,
     threexui_get_inbounds,
     threexui_login,
 )
 from bot.services.panel_store import panel_store
 from bot.states.panel_setup import (
+    PanelCoreEditStates,
     PanelNodeCreateStates,
     PanelSetupStates,
     PanelUserCreateStates,
@@ -906,4 +919,184 @@ async def cb_node_delete_confirm(callback: CallbackQuery, lang: str) -> None:
     await callback.message.edit_text(
         texts.node_delete_success_text(lang, node.name),
         reply_markup=panel_dashboard_back_keyboard(lang, panel_id),
+    )
+
+
+# --- Xray core config (Marzban / PasarGuard only) ---
+
+
+@router.callback_query(F.data.startswith("pdash:core:"))
+async def cb_dashboard_core(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        core_info = await marzban_get_core_info(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.core_menu_text(lang, panel, core_info), reply_markup=panel_core_menu_keyboard(lang, panel_id)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pcore:view:"))
+async def cb_core_view(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        config = await marzban_get_core_config(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_core_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    document = BufferedInputFile(
+        json.dumps(config, indent=2, ensure_ascii=False).encode("utf-8"), filename="xray_config.json"
+    )
+    await callback.message.answer_document(
+        document,
+        caption=texts.core_config_caption(lang, panel),
+        reply_markup=panel_core_back_keyboard(lang, panel_id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pcore:cancel:"))
+async def cb_core_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    await cb_dashboard_core(callback, state, lang)
+
+
+@router.callback_query(F.data.startswith("pcore:editstart:"))
+async def cb_core_edit_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
+        await callback.answer()
+        return
+    await state.clear()
+    await state.update_data(panel_id=panel_id)
+    await state.set_state(PanelCoreEditStates.waiting_config)
+    await callback.message.edit_text(
+        texts.core_edit_prompt_text(lang, panel), reply_markup=panel_core_cancel_keyboard(lang, panel_id)
+    )
+    await callback.answer()
+
+
+@router.message(PanelCoreEditStates.waiting_config)
+async def process_core_config(message: Message, state: FSMContext, lang: str, bot: Bot) -> None:
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    if message.document:
+        buffer = await bot.download(message.document)
+        raw = buffer.getvalue().decode("utf-8", errors="replace")
+    else:
+        raw = message.text or ""
+
+    try:
+        config = parse_core_config_input(raw)
+    except CoreConfigError as exc:
+        await message.answer(
+            texts.core_config_error_text(lang, str(exc)), reply_markup=panel_core_cancel_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.update_data(new_core_config=config)
+    await state.set_state(PanelCoreEditStates.confirming)
+    inbounds = config.get("inbounds")
+    outbounds = config.get("outbounds")
+    await message.answer(
+        texts.core_edit_confirm_text(
+            lang, panel, len(inbounds) if isinstance(inbounds, list) else 0,
+            len(outbounds) if isinstance(outbounds, list) else 0,
+        ),
+        reply_markup=panel_core_edit_confirm_keyboard(lang, panel_id),
+    )
+
+
+@router.callback_query(PanelCoreEditStates.confirming, F.data.startswith("pcore:editcnf:"))
+async def cb_core_edit_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        await marzban_set_core_config(panel["url"], token, data["new_core_config"])
+    except PanelAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_core_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.core_edit_success_text(lang), reply_markup=panel_core_back_keyboard(lang, panel_id)
+    )
+
+
+@router.callback_query(F.data.startswith("pcore:restartask:"))
+async def cb_core_restart_ask(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.message.edit_text(
+        texts.core_restart_confirm_text(lang, panel),
+        reply_markup=panel_core_restart_confirm_keyboard(lang, panel_id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pcore:restartcnf:"))
+async def cb_core_restart_confirm(callback: CallbackQuery, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        await marzban_restart_core(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_core_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.core_restart_success_text(lang), reply_markup=panel_core_back_keyboard(lang, panel_id)
     )
