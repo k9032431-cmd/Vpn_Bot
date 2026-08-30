@@ -86,6 +86,8 @@ def _ip_fields(lang: str, info) -> list[_TreeItem]:
     ]
     if info.org:
         fields.append(("whois_l_org", html.escape(info.org)))
+    if info.network_name:
+        fields.append(("whois_l_network", _code(info.network_name)))
     fields.append(("whois_l_timezone", html.escape(info.timezone or "—")))
     fields.append(None)
     fields.extend(

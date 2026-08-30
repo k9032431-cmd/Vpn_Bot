@@ -19,6 +19,7 @@ RAW_WHOIS_PORT = 43
 # lookup logic itself.
 IPWHOIS_URL_TEMPLATE = "https://ipwho.is/{ip}"
 RDAP_URL_TEMPLATE = "https://rdap.org/domain/{domain}"
+RDAP_IP_URL_TEMPLATE = "https://rdap.org/ip/{ip}"
 IANA_WHOIS_SERVER = "whois.iana.org"
 
 # Cloudflare's own ASNs — used to flag an IP as Cloudflare even when the
@@ -57,6 +58,7 @@ class IPInfo:
     city: str | None
     isp: str | None
     org: str | None
+    network_name: str | None
     asn: str | None
     timezone: str | None
     is_proxy: bool
@@ -118,6 +120,26 @@ async def _dns_records(domain: str, record_type: str) -> list[str]:
     return values
 
 
+async def _ip_rdap_lookup(ip: str) -> dict | None:
+    # ipwho.is's isp/org fields come from a commercial geo-IP database and
+    # can be generic or stale for smaller resellers. RDAP queries the
+    # actual regional registry (RIPE/ARIN/APNIC/...) live, so its network
+    # "name" is the authoritative, registry-assigned label for that block —
+    # often closer to the real operator's brand than a geo-IP vendor guess.
+    async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT, trust_env=True) as session:
+        try:
+            async with session.get(RDAP_IP_URL_TEMPLATE.format(ip=ip)) as resp:
+                if resp.status >= 400:
+                    return None
+                try:
+                    payload = await resp.json(content_type=None)
+                except (aiohttp.ContentTypeError, ValueError):
+                    return None
+        except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError):
+            return None
+    return payload if isinstance(payload, dict) else None
+
+
 async def lookup_ip(ip: str) -> IPInfo:
     async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT, trust_env=True) as session:
         try:
@@ -148,6 +170,13 @@ async def lookup_ip(ip: str) -> IPInfo:
 
     host = await _reverse_dns(ip)
 
+    network_name = None
+    rdap_payload = await _ip_rdap_lookup(ip)
+    if rdap_payload:
+        name = rdap_payload.get("name")
+        if isinstance(name, str) and name:
+            network_name = name
+
     return IPInfo(
         ip=str(payload.get("ip", ip)),
         host=host,
@@ -157,6 +186,7 @@ async def lookup_ip(ip: str) -> IPInfo:
         city=payload.get("city"),
         isp=provider,
         org=extra_org,
+        network_name=network_name,
         asn=asn_label,
         timezone=(payload.get("timezone") or {}).get("id"),
         is_proxy=bool(security.get("proxy")),
