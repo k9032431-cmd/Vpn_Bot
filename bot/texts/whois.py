@@ -41,6 +41,8 @@ def _yn(lang: str, value: bool) -> str:
 def _tree(lang: str, items: list[_TreeItem]) -> str:
     # Collapses consecutive/leading/trailing blanks, then renders the
     # box-drawing tree — the last real row closes it with "└" instead of "├".
+    # Plain proportional text with bold labels (not a monospace <code>
+    # block), matching the reference bot's look.
     cleaned: list[_TreeItem] = []
     for item in items:
         if item is None:
@@ -52,34 +54,26 @@ def _tree(lang: str, items: list[_TreeItem]) -> str:
         cleaned.pop()
 
     last_idx = len(cleaned) - 1
-    lines = [f"┌ {_BOT_NAME} 🌐"]
+    lines = [f"┌ <b>{_BOT_NAME}</b> 🌐"]
     for i, item in enumerate(cleaned):
         if item is None:
             lines.append("│")
         else:
             label_key, value = item
             prefix = "└" if i == last_idx else "├"
-            lines.append(f"{prefix} {t(lang, label_key)}: {value}")
-    return "<code>" + "\n".join(lines) + "</code>"
+            lines.append(f"{prefix} <b>{t(lang, label_key)}</b>: {value}")
+    return "\n".join(lines)
 
 
 def _ip_fields(lang: str, info) -> list[_TreeItem]:
+    # The full field set for an IP — used both for a standalone IP lookup
+    # and for the resolved-IP block embedded in a domain result.
+    city = ", ".join(filter(None, [info.city, info.region])) or "—"
     country = f"{info.country_flag} {info.country}".strip() if info.country else "—"
-    provider = f"{html.escape(info.isp or '—')} ({html.escape(info.asn or '—')})"
     return [
         ("whois_l_ip", html.escape(info.ip)),
-        ("whois_l_country", html.escape(country)),
-        ("whois_l_provider", provider),
-        ("whois_l_cloudflare", _yn(lang, info.is_cloudflare)),
-    ]
-
-
-def ip_result_text(lang: str, info) -> str:
-    city = ", ".join(filter(None, [info.city, info.region])) or "—"
-    items: list[_TreeItem] = [
-        ("whois_l_ip", html.escape(info.ip)),
         ("whois_l_host", html.escape(info.host or "—")),
-        ("whois_l_country", html.escape(f"{info.country_flag} {info.country}".strip() if info.country else "—")),
+        ("whois_l_country", html.escape(country)),
         ("whois_l_city", html.escape(city)),
         ("whois_l_provider", f"{html.escape(info.isp or '—')} ({html.escape(info.asn or '—')})"),
         ("whois_l_timezone", html.escape(info.timezone or "—")),
@@ -90,7 +84,10 @@ def ip_result_text(lang: str, info) -> str:
         ("whois_l_hosting", _yn(lang, info.is_hosting)),
         ("whois_l_cloudflare", _yn(lang, info.is_cloudflare)),
     ]
-    return _tree(lang, items)
+
+
+def ip_result_text(lang: str, info) -> str:
+    return _tree(lang, _ip_fields(lang, info))
 
 
 def domain_result_text(lang: str, info) -> str:
