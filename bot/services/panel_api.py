@@ -378,6 +378,55 @@ def parse_core_config_input(raw: str) -> dict:
     return data
 
 
+# --- Sub-admin management (Marzban / PasarGuard) ---
+
+
+@dataclass
+class AdminInfo:
+    username: str
+    is_sudo: bool
+    telegram_id: int | None
+
+
+def _parse_admin(data: dict) -> AdminInfo:
+    return AdminInfo(
+        username=str(data.get("username", "?")),
+        is_sudo=bool(data.get("is_sudo")),
+        telegram_id=data.get("telegram_id"),
+    )
+
+
+async def marzban_get_admins(url: str, token: str) -> list[AdminInfo]:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/admins", headers=headers)
+    if not isinstance(payload, list):
+        raise PanelAPIError("bad_response")
+    return [_parse_admin(a) for a in payload if isinstance(a, dict)]
+
+
+async def marzban_create_admin(url: str, token: str, username: str, password: str, is_sudo: bool) -> AdminInfo:
+    headers = {"Authorization": f"Bearer {token}"}
+    body = {"username": username, "password": password, "is_sudo": is_sudo}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "POST", f"{url}/api/admin", headers=headers, json=body)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return _parse_admin(payload)
+
+
+async def marzban_modify_admin(url: str, token: str, username: str, **fields) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "PUT", f"{url}/api/admin/{username}", headers=headers, json=fields)
+
+
+async def marzban_delete_admin(url: str, token: str, username: str) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "DELETE", f"{url}/api/admin/{username}", headers=headers)
+
+
 # --- 3X-UI (cookie-based session, optional CSRF token on newer builds) ---
 
 

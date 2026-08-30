@@ -28,3 +28,9 @@ class PanelNodeCreateStates(StatesGroup):
 class PanelCoreEditStates(StatesGroup):
     waiting_config = State()
     confirming = State()
+
+
+class PanelAdminCreateStates(StatesGroup):
+    waiting_username = State()
+    waiting_password = State()
+    confirming = State()

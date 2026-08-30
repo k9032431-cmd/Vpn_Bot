@@ -11,6 +11,11 @@ from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from bot.config import config
 from bot.keyboards.panel import (
     panel_add_menu_keyboard,
+    panel_admin_cancel_keyboard,
+    panel_admin_create_confirm_keyboard,
+    panel_admin_delete_confirm_keyboard,
+    panel_admin_detail_keyboard,
+    panel_admins_keyboard,
     panel_cancel_keyboard,
     panel_core_back_keyboard,
     panel_core_cancel_keyboard,
@@ -40,9 +45,12 @@ from bot.services.panel_api import (
     is_valid_panel_url,
     list_3xui_clients,
     marzban_add_node,
+    marzban_create_admin,
     marzban_create_user,
+    marzban_delete_admin,
     marzban_delete_node,
     marzban_delete_user,
+    marzban_get_admins,
     marzban_get_core_config,
     marzban_get_core_info,
     marzban_get_inbounds,
@@ -52,6 +60,7 @@ from bot.services.panel_api import (
     marzban_get_user,
     marzban_get_users,
     marzban_login,
+    marzban_modify_admin,
     marzban_modify_user,
     marzban_reconnect_node,
     marzban_reset_user_usage,
@@ -64,6 +73,7 @@ from bot.services.panel_api import (
 )
 from bot.services.panel_store import panel_store
 from bot.states.panel_setup import (
+    PanelAdminCreateStates,
     PanelCoreEditStates,
     PanelNodeCreateStates,
     PanelSetupStates,
@@ -1099,4 +1109,236 @@ async def cb_core_restart_confirm(callback: CallbackQuery, lang: str) -> None:
 
     await callback.message.edit_text(
         texts.core_restart_success_text(lang), reply_markup=panel_core_back_keyboard(lang, panel_id)
+    )
+
+
+# --- Sub-admin management (Marzban / PasarGuard only) ---
+
+
+async def _render_admins_screen(callback: CallbackQuery, lang: str, panel_id: str) -> None:
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        admins = await marzban_get_admins(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.admins_list_text(lang, panel, admins), reply_markup=panel_admins_keyboard(lang, panel_id, admins)
+    )
+
+
+@router.callback_query(F.data.startswith("pdash:admins:"))
+async def cb_dashboard_admins(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_admins_screen(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("padmin:cancel:"))
+async def cb_admin_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_admins_screen(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("padmin:new:"))
+async def cb_admin_new(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    panel_id = callback.data.split(":", 2)[2]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
+        await callback.answer()
+        return
+    await state.clear()
+    await state.update_data(panel_id=panel_id)
+    await state.set_state(PanelAdminCreateStates.waiting_username)
+    await callback.message.edit_text(
+        texts.create_admin_step_username_text(lang, panel),
+        reply_markup=panel_admin_cancel_keyboard(lang, panel_id),
+    )
+    await callback.answer()
+
+
+@router.message(PanelAdminCreateStates.waiting_username)
+async def process_admin_username(message: Message, state: FSMContext, lang: str) -> None:
+    username = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    if not NEW_USERNAME_RE.match(username):
+        await message.answer(
+            texts.invalid_new_admin_username_text(lang), reply_markup=panel_admin_cancel_keyboard(lang, panel_id)
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    await state.update_data(admin_username=username)
+    await state.set_state(PanelAdminCreateStates.waiting_password)
+    await message.answer(
+        texts.create_admin_step_password_text(lang, panel, username),
+        reply_markup=panel_admin_cancel_keyboard(lang, panel_id),
+    )
+
+
+@router.message(PanelAdminCreateStates.waiting_password)
+async def process_admin_password(message: Message, state: FSMContext, lang: str) -> None:
+    password = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id = data.get("panel_id", "")
+    if not password:
+        await message.answer(
+            texts.empty_admin_password_text(lang), reply_markup=panel_admin_cancel_keyboard(lang, panel_id)
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    data = await state.update_data(admin_password=password)
+    await state.set_state(PanelAdminCreateStates.confirming)
+    await message.answer(
+        texts.create_admin_confirm_text(lang, panel, data["admin_username"]),
+        reply_markup=panel_admin_create_confirm_keyboard(lang, panel_id),
+    )
+
+
+@router.callback_query(PanelAdminCreateStates.confirming, F.data.startswith("padmin:createcnf:"))
+async def cb_admin_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, panel_id, sudo_flag = callback.data.split(":", 3)
+    data = await state.get_data()
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    is_sudo = sudo_flag == "1"
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        admin = await marzban_create_admin(panel["url"], token, data["admin_username"], data["admin_password"], is_sudo)
+    except PanelAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.create_admin_success_text(lang, admin.username, admin.is_sudo),
+        reply_markup=panel_admin_detail_keyboard(lang, panel_id, admin.username, admin.is_sudo),
+    )
+
+
+@router.callback_query(F.data.startswith("padmin:view:"))
+async def cb_admin_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        admins = await marzban_get_admins(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    admin = next((a for a in admins if a.username == username), None)
+    if not admin:
+        await _render_admins_screen(callback, lang, panel_id)
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.admin_detail_text(lang, panel, admin),
+        reply_markup=panel_admin_detail_keyboard(lang, panel_id, admin.username, admin.is_sudo),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("padmin:togglesudo:"))
+async def cb_admin_toggle_sudo(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        admins = await marzban_get_admins(panel["url"], token)
+        admin = next((a for a in admins if a.username == username), None)
+        if not admin:
+            raise PanelAPIError("bad_response")
+        new_sudo = not admin.is_sudo
+        await marzban_modify_admin(panel["url"], token, username, is_sudo=new_sudo)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.admin_toggle_sudo_success_text(lang, username, new_sudo),
+        reply_markup=panel_admin_detail_keyboard(lang, panel_id, username, new_sudo),
+    )
+
+
+@router.callback_query(F.data.startswith("padmin:delask:"))
+async def cb_admin_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.message.edit_text(
+        texts.admin_delete_confirm_text(lang, panel, username),
+        reply_markup=panel_admin_delete_confirm_keyboard(lang, panel_id, username),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("padmin:delcnf:"))
+async def cb_admin_delete_confirm(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, username = callback.data.split(":", 3)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        await marzban_delete_admin(panel["url"], token, username)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.admin_delete_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
     )

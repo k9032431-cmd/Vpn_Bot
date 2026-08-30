@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.texts.panel import node_list_label, panel_list_label
+from bot.texts.panel import admin_list_label, node_list_label, panel_list_label
 from bot.texts.translations import t
 
 
@@ -51,7 +51,8 @@ def panel_dashboard_keyboard(lang: str, panel_id: str, manageable: bool) -> Inli
     if manageable:
         builder.button(text=t(lang, "btn_panel_nodes"), callback_data=f"pdash:nodes:{panel_id}")
         builder.button(text=t(lang, "btn_panel_core"), callback_data=f"pdash:core:{panel_id}")
-        rows.extend([1, 1])
+        builder.button(text=t(lang, "btn_panel_admins"), callback_data=f"pdash:admins:{panel_id}")
+        rows.extend([1, 1, 1])
     builder.button(text=t(lang, "btn_panel_remove"), callback_data=f"pdash:rmask:{panel_id}")
     builder.button(text=t(lang, "btn_panel_list"), callback_data="pdash:list")
     rows.extend([1, 1])
@@ -158,6 +159,55 @@ def panel_core_restart_confirm_keyboard(lang: str, panel_id: str) -> InlineKeybo
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_core_restart_confirm"), callback_data=f"pcore:restartcnf:{panel_id}")
     builder.button(text=t(lang, "btn_cancel"), callback_data=f"pdash:core:{panel_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_admins_keyboard(lang: str, panel_id: str, admins: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for admin in admins:
+        builder.button(text=admin_list_label(admin), callback_data=f"padmin:view:{panel_id}:{admin.username}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_panel_admin_add"), callback_data=f"padmin:new:{panel_id}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_panel_dashboard"), callback_data=f"pview:{panel_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def panel_admin_cancel_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:cancel:{panel_id}")
+    return builder.as_markup()
+
+
+def panel_admin_create_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_admin_create_normal"), callback_data=f"padmin:createcnf:{panel_id}:0")
+    builder.button(text=t(lang, "btn_panel_admin_create_sudo"), callback_data=f"padmin:createcnf:{panel_id}:1")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:cancel:{panel_id}")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def panel_admin_detail_keyboard(lang: str, panel_id: str, username: str, is_sudo: bool) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    toggle_key = "btn_panel_admin_toggle_sudo_off" if is_sudo else "btn_panel_admin_toggle_sudo_on"
+    builder.button(text=t(lang, toggle_key), callback_data=f"padmin:togglesudo:{panel_id}:{username}")
+    builder.button(text=t(lang, "btn_panel_admin_delete"), callback_data=f"padmin:delask:{panel_id}:{username}")
+    builder.button(text=t(lang, "btn_panel_admins"), callback_data=f"pdash:admins:{panel_id}")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def panel_admin_delete_confirm_keyboard(lang: str, panel_id: str, username: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_panel_admin_delete_confirm"), callback_data=f"padmin:delcnf:{panel_id}:{username}"
+    )
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:view:{panel_id}:{username}")
     builder.adjust(1, 1)
     return builder.as_markup()
 

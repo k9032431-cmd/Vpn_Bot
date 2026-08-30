@@ -510,6 +510,100 @@ def core_restart_success_text(lang: str) -> str:
     return t(lang, "panel_core_restart_success", icon=e("success", "✅"))
 
 
+# --- Суб-админы (Marzban/PasarGuard) ---
+
+
+def admins_list_text(lang: str, panel: dict, admins: list) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
+    if not admins:
+        return t(lang, "panel_admins_list_empty", header=header)
+    return t(lang, "panel_admins_list_header", header=header, count=len(admins))
+
+
+def admin_list_label(admin) -> str:
+    emoji = "👑" if admin.is_sudo else "👤"
+    return f"{emoji} {admin.username}"
+
+
+def _sudo_label(lang: str, is_sudo: bool) -> str:
+    return t(lang, "admin_sudo_yes" if is_sudo else "admin_sudo_no")
+
+
+def admin_detail_text(lang: str, panel: dict, admin) -> str:
+    return t(
+        lang,
+        "panel_admin_detail",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        username=html.escape(admin.username),
+        sudo_emoji="👑" if admin.is_sudo else "👤",
+        sudo_label=_sudo_label(lang, admin.is_sudo),
+        telegram_id=admin.telegram_id or "—",
+    )
+
+
+def create_admin_step_username_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_create_admin_step_username", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def invalid_new_admin_username_text(lang: str) -> str:
+    return t(lang, "panel_create_admin_invalid_username")
+
+
+def create_admin_step_password_text(lang: str, panel: dict, username: str) -> str:
+    return t(
+        lang,
+        "panel_create_admin_step_password",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        username=html.escape(username),
+    )
+
+
+def empty_admin_password_text(lang: str) -> str:
+    return t(lang, "panel_create_admin_empty_password")
+
+
+def create_admin_confirm_text(lang: str, panel: dict, username: str) -> str:
+    return t(
+        lang,
+        "panel_create_admin_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        username=html.escape(username),
+    )
+
+
+def create_admin_success_text(lang: str, username: str, is_sudo: bool) -> str:
+    return t(
+        lang,
+        "panel_create_admin_success",
+        icon=e("success", "✅"),
+        username=html.escape(username),
+        sudo_label=_sudo_label(lang, is_sudo),
+    )
+
+
+def admin_toggle_sudo_success_text(lang: str, username: str, is_sudo: bool) -> str:
+    return t(
+        lang,
+        "panel_admin_toggle_sudo_success",
+        icon=e("success", "✅"),
+        username=html.escape(username),
+        sudo_label=_sudo_label(lang, is_sudo),
+    )
+
+
+def admin_delete_confirm_text(lang: str, panel: dict, username: str) -> str:
+    return t(
+        lang,
+        "panel_admin_delete_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        username=html.escape(username),
+    )
+
+
+def admin_delete_success_text(lang: str, username: str) -> str:
+    return t(lang, "panel_admin_delete_success", icon=e("success", "✅"), username=html.escape(username))
+
+
 # --- Уведомление админам (всегда на русском, как и для Node) ---
 
 
