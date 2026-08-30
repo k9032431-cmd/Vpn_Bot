@@ -56,6 +56,7 @@ class IPInfo:
     region: str | None
     city: str | None
     isp: str | None
+    org: str | None
     asn: str | None
     timezone: str | None
     is_proxy: bool
@@ -133,8 +134,17 @@ async def lookup_ip(ip: str) -> IPInfo:
     flag = payload.get("flag") or {}
     asn_raw = connection.get("asn")
     asn_label = f"AS{asn_raw}" if asn_raw else None
-    isp = connection.get("isp") or connection.get("org")
-    is_cloudflare = (asn_label in _CLOUDFLARE_ASN) or bool(isp and "cloudflare" in isp.lower())
+    isp = connection.get("isp")
+    org = connection.get("org")
+    provider = isp or org
+    # ipwho.is separates the network operator (isp) from the registered
+    # organization for that IP block (org) — they often differ (e.g. a
+    # reseller's own name vs. the actual hosting company), so both are
+    # worth showing whenever they're not the same thing.
+    extra_org = org if org and org != provider else None
+    is_cloudflare = (asn_label in _CLOUDFLARE_ASN) or bool(
+        (provider and "cloudflare" in provider.lower()) or (org and "cloudflare" in org.lower())
+    )
 
     host = await _reverse_dns(ip)
 
@@ -145,7 +155,8 @@ async def lookup_ip(ip: str) -> IPInfo:
         country_flag=str(flag.get("emoji") or ""),
         region=payload.get("region"),
         city=payload.get("city"),
-        isp=isp,
+        isp=provider,
+        org=extra_org,
         asn=asn_label,
         timezone=(payload.get("timezone") or {}).get("id"),
         is_proxy=bool(security.get("proxy")),

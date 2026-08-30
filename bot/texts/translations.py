@@ -1016,6 +1016,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "whois_l_country": {"ru": "🌍 Страна", "en": "🌍 Country", "tk": "🌍 Ýurt"},
     "whois_l_city": {"ru": "🏙 Город", "en": "🏙 City", "tk": "🏙 Şäher"},
     "whois_l_provider": {"ru": "🏢 Провайдер", "en": "🏢 Provider", "tk": "🏢 Provaýder"},
+    "whois_l_org": {"ru": "🏬 Организация", "en": "🏬 Organization", "tk": "🏬 Guramasy"},
     "whois_l_timezone": {"ru": "🕒 Часовой пояс", "en": "🕒 Timezone", "tk": "🕒 Wagt guşagy"},
     "whois_l_proxy": {"ru": "🎭 Прокси", "en": "🎭 Proxy", "tk": "🎭 Proksi"},
     "whois_l_vpn": {"ru": "🛡 VPN", "en": "🛡 VPN", "tk": "🛡 VPN"},
