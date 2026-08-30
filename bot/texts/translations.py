@@ -44,9 +44,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     # --- Button labels ---
     "btn_node": {"ru": "🖥 Node", "en": "🖥 Node", "tk": "🖥 Node"},
     "btn_cloud_vpn": {"ru": "☁️ Cloud VPN", "en": "☁️ Cloud VPN", "tk": "☁️ Cloud VPN"},
-    "btn_cloud_account": {"ru": "👤 Cloud Account", "en": "👤 Cloud Account", "tk": "👤 Cloud Account"},
+    "btn_cloud_account": {"ru": "📇 Cloud Account", "en": "📇 Cloud Account", "tk": "📇 Cloud Account"},
     "btn_crypt": {"ru": "🔐 Crypt/Decrypt", "en": "🔐 Crypt/Decrypt", "tk": "🔐 Crypt/Decrypt"},
-    "btn_language": {"ru": "🌐 Язык", "en": "🌐 Language", "tk": "🌐 Dil"},
+    "btn_language": {"ru": "💬 Язык", "en": "💬 Language", "tk": "💬 Dil"},
     "btn_info": {"ru": "ℹ️ Инфо", "en": "ℹ️ Info", "tk": "ℹ️ Maglumat"},
     "btn_sos": {"ru": "🆘 SOS", "en": "🆘 SOS", "tk": "🆘 SOS"},
     "sos_greeting": {
