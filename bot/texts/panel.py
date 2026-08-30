@@ -746,6 +746,88 @@ def create_host_success_text(lang: str, remark: str) -> str:
     return t(lang, "panel_create_host_success", icon=e("success", "✅"), remark=html.escape(remark))
 
 
+# --- Инбаунды (3X-UI) ---
+
+
+def inbounds_list_text(lang: str, panel: dict, inbounds: list[dict]) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
+    if not inbounds:
+        return t(lang, "panel_inbounds_list_empty", header=header)
+    return t(lang, "panel_inbounds_list_header", header=header, count=len(inbounds))
+
+
+def inbound_list_label(inbound: dict, clients: int) -> str:
+    emoji = "🟢" if inbound.get("enable", True) else "⛔"
+    remark = inbound.get("remark") or f"#{inbound.get('id', '?')}"
+    return f"{emoji} {remark} — :{inbound.get('port', '?')} ({clients})"
+
+
+def inbound_detail_text(lang: str, panel: dict, inbound: dict, clients: int) -> str:
+    enabled = bool(inbound.get("enable", True))
+    return t(
+        lang,
+        "panel_inbound_detail",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(str(inbound.get("remark") or f"#{inbound.get('id', '?')}")),
+        status_emoji="🟢" if enabled else "⛔",
+        status_label=t(lang, "inbound_status_enabled" if enabled else "inbound_status_disabled"),
+        protocol=html.escape(str(inbound.get("protocol", "?"))),
+        port=inbound.get("port", "?"),
+        clients=clients,
+    )
+
+
+def inbound_edit_prompt_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_inbound_edit_prompt", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+_INBOUND_ERR_KEYS = {
+    "wrong_format": "panel_inbound_err_wrong_format",
+    "bad_port": "panel_inbound_err_bad_port",
+}
+
+
+def inbound_fields_error_text(lang: str, reason: str) -> str:
+    key = _INBOUND_ERR_KEYS.get(reason, "panel_inbound_err_wrong_format")
+    return t(lang, key)
+
+
+def inbound_edit_confirm_text(lang: str, panel: dict, inbound: dict) -> str:
+    return t(
+        lang,
+        "panel_inbound_edit_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(str(inbound.get("remark") or "—")),
+        port=inbound.get("port", "?"),
+    )
+
+
+def inbound_edit_success_text(lang: str) -> str:
+    return t(lang, "panel_inbound_edit_success", icon=e("success", "✅"))
+
+
+def inbound_toggle_success_text(lang: str, enabled: bool) -> str:
+    return t(
+        lang,
+        "panel_inbound_toggle_success",
+        icon=e("success", "✅"),
+        status_label=t(lang, "inbound_status_enabled" if enabled else "inbound_status_disabled"),
+    )
+
+
+def inbound_delete_confirm_text(lang: str, panel: dict, remark: str) -> str:
+    return t(
+        lang,
+        "panel_inbound_delete_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(remark),
+    )
+
+
+def inbound_delete_success_text(lang: str) -> str:
+    return t(lang, "panel_inbound_delete_success", icon=e("success", "✅"))
+
+
 # --- Уведомление админам (всегда на русском, как и для Node) ---
 
 

@@ -106,6 +106,14 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_panel_host_create_confirm": {"ru": "✅ Добавить", "en": "✅ Add", "tk": "✅ Goş"},
     "btn_panel_host_apply": {"ru": "✅ Применить", "en": "✅ Apply", "tk": "✅ Ulan"},
     "btn_panel_hosts_list": {"ru": "🏠 К списку хостов", "en": "🏠 Back to hosts", "tk": "🏠 Hostlara gaýt"},
+    "btn_panel_inbounds": {"ru": "📡 Инбаунды", "en": "📡 Inbounds", "tk": "📡 Inboundlar"},
+    "btn_panel_inbound_edit": {"ru": "✏️ Remark/порт", "en": "✏️ Remark/port", "tk": "✏️ Remark/port"},
+    "btn_panel_inbound_toggle_on": {"ru": "✅ Включить", "en": "✅ Enable", "tk": "✅ Işjeňleşdir"},
+    "btn_panel_inbound_toggle_off": {"ru": "⛔ Отключить", "en": "⛔ Disable", "tk": "⛔ Öçür"},
+    "btn_panel_inbound_delete": {"ru": "🗑 Удалить инбаунд", "en": "🗑 Delete inbound", "tk": "🗑 Inbound poz"},
+    "btn_panel_inbound_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "btn_panel_inbound_apply": {"ru": "✅ Применить", "en": "✅ Apply", "tk": "✅ Ulan"},
+    "btn_panel_inbounds_list": {"ru": "📡 К инбаундам", "en": "📡 Back to inbounds", "tk": "📡 Inboundlara gaýt"},
     "btn_panel_node_add": {"ru": "➕ Добавить ноду", "en": "➕ Add node", "tk": "➕ Node goş"},
     "btn_panel_node_reconnect": {"ru": "🔄 Переподключить", "en": "🔄 Reconnect", "tk": "🔄 Gaýtadan birik"},
     "btn_panel_node_delete": {"ru": "🗑 Удалить ноду", "en": "🗑 Delete node", "tk": "🗑 Node poz"},
@@ -1393,6 +1401,73 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Хост <b>{remark}</b> добавлен.",
         "en": "{icon} Host <b>{remark}</b> added.",
         "tk": "{icon} <b>{remark}</b> hosty goşuldy.",
+    },
+    # --- Инбаунды 3X-UI ---
+    "panel_inbounds_list_header": {
+        "ru": "{header}\n📡 <b>Инбаунды</b>\n\nВсего: {count}",
+        "en": "{header}\n📡 <b>Inbounds</b>\n\nTotal: {count}",
+        "tk": "{header}\n📡 <b>Inboundlar</b>\n\nJemi: {count}",
+    },
+    "panel_inbounds_list_empty": {
+        "ru": "{header}\n📡 <b>Инбаунды</b>\n\nНа панели нет ни одного инбаунда.",
+        "en": "{header}\n📡 <b>Inbounds</b>\n\nThe panel has no inbounds.",
+        "tk": "{header}\n📡 <b>Inboundlar</b>\n\nPanelde inbound ýok.",
+    },
+    "panel_inbound_detail": {
+        "ru": (
+            "{header}\n\n📡 <b>{remark}</b>\n{status_emoji} {status_label}\n\n"
+            "🔌 Протокол: <code>{protocol}</code>\n🔢 Порт: <code>{port}</code>\n👥 Клиентов: <b>{clients}</b>"
+        ),
+        "en": (
+            "{header}\n\n📡 <b>{remark}</b>\n{status_emoji} {status_label}\n\n"
+            "🔌 Protocol: <code>{protocol}</code>\n🔢 Port: <code>{port}</code>\n👥 Clients: <b>{clients}</b>"
+        ),
+        "tk": (
+            "{header}\n\n📡 <b>{remark}</b>\n{status_emoji} {status_label}\n\n"
+            "🔌 Protokol: <code>{protocol}</code>\n🔢 Port: <code>{port}</code>\n👥 Müşderi: <b>{clients}</b>"
+        ),
+    },
+    "inbound_status_enabled": {"ru": "Включён", "en": "Enabled", "tk": "Işjeň"},
+    "inbound_status_disabled": {"ru": "Отключён", "en": "Disabled", "tk": "Öçürilen"},
+    "panel_inbound_edit_prompt": {
+        "ru": "{header}\n\n✏️ Пришлите новый remark и порт через «|», например: <code>Мой сервер|8443</code>",
+        "en": "{header}\n\n✏️ Send the new remark and port separated by \"|\", e.g.: <code>My server|8443</code>",
+        "tk": "{header}\n\n✏️ Täze remark we porty «|» bilen iberiň, mysal: <code>Serweri m|8443</code>",
+    },
+    "panel_inbound_err_wrong_format": {
+        "ru": "Нужно 2 сегмента через «|»: remark|порт. Пример: <code>Мой сервер|8443</code>",
+        "en": "Exactly 2 segments separated by \"|\" are needed: remark|port. Example: <code>My server|8443</code>",
+        "tk": "«|» bilen 2 segment gerek: remark|port. Mysal: <code>Serweri m|8443</code>",
+    },
+    "panel_inbound_err_bad_port": {
+        "ru": "Порт должен быть числом от 1 до 65535.",
+        "en": "The port must be a number from 1 to 65535.",
+        "tk": "Port 1-den 65535-e çenli san bolmaly.",
+    },
+    "panel_inbound_edit_confirm": {
+        "ru": "{header}\n\n✏️ Применить: remark — <b>{remark}</b>, порт — <code>{port}</code>?",
+        "en": "{header}\n\n✏️ Apply: remark — <b>{remark}</b>, port — <code>{port}</code>?",
+        "tk": "{header}\n\n✏️ Ulanylsynmy: remark — <b>{remark}</b>, port — <code>{port}</code>?",
+    },
+    "panel_inbound_edit_success": {
+        "ru": "{icon} Инбаунд обновлён.",
+        "en": "{icon} Inbound updated.",
+        "tk": "{icon} Inbound täzelendi.",
+    },
+    "panel_inbound_toggle_success": {
+        "ru": "{icon} Инбаунд теперь {status_label}.",
+        "en": "{icon} The inbound is now {status_label}.",
+        "tk": "{icon} Inbound indi {status_label}.",
+    },
+    "panel_inbound_delete_confirm": {
+        "ru": "{header}\n\n⚠️ Точно удалить инбаунд <b>{remark}</b>? Все его клиенты перестанут работать.",
+        "en": "{header}\n\n⚠️ Delete inbound <b>{remark}</b>? All its clients will stop working.",
+        "tk": "{header}\n\n⚠️ <b>{remark}</b> inboundy pozmakçymysyňyz? Onuň ähli müşderileri işlemegini bes eder.",
+    },
+    "panel_inbound_delete_success": {
+        "ru": "{icon} Инбаунд удалён.",
+        "en": "{icon} Inbound deleted.",
+        "tk": "{icon} Inbound pozuldy.",
     },
     # --- Arsi WhoIs ---
     "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},

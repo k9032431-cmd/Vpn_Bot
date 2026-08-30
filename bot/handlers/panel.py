@@ -34,6 +34,11 @@ from bot.keyboards.panel import (
     panel_host_new_cancel_keyboard,
     panel_hosts_list_keyboard,
     panel_hosts_tags_keyboard,
+    panel_inbound_cancel_keyboard,
+    panel_inbound_delete_confirm_keyboard,
+    panel_inbound_detail_keyboard,
+    panel_inbound_edit_confirm_keyboard,
+    panel_inbounds_keyboard,
     panel_list_keyboard,
     panel_node_cancel_keyboard,
     panel_node_create_confirm_keyboard,
@@ -49,8 +54,10 @@ from bot.keyboards.panel import (
 from bot.services.panel_api import (
     CoreConfigError,
     HostFieldsError,
+    InboundFieldsError,
     PanelAPIError,
     count_3xui_clients,
+    inbound_client_count,
     is_valid_panel_url,
     list_3xui_clients,
     marzban_add_node,
@@ -81,8 +88,11 @@ from bot.services.panel_api import (
     normalize_panel_url,
     parse_core_config_input,
     parse_host_fields_input,
+    parse_inbound_fields_input,
+    threexui_delete_inbound,
     threexui_get_inbounds,
     threexui_login,
+    threexui_update_inbound,
 )
 from bot.services.panel_store import panel_store
 from bot.states.panel_setup import (
@@ -90,6 +100,7 @@ from bot.states.panel_setup import (
     PanelCoreEditStates,
     PanelHostCreateStates,
     PanelHostEditStates,
+    PanelInboundEditStates,
     PanelNodeCreateStates,
     PanelSetupStates,
     PanelUserCreateStates,
@@ -274,7 +285,7 @@ async def process_password(message: Message, state: FSMContext, lang: str, bot: 
     await state.clear()
     await status_message.edit_text(
         texts.connected_text(lang, data["panel_type"], data["url"]),
-        reply_markup=panel_dashboard_keyboard(lang, panel_id, data["panel_type"] in MANAGEABLE_TYPES),
+        reply_markup=panel_dashboard_keyboard(lang, panel_id, data["panel_type"]),
     )
 
 
@@ -292,7 +303,7 @@ async def cb_panel_view(callback: CallbackQuery, state: FSMContext, lang: str) -
         return
     await callback.message.edit_text(
         texts.dashboard_text(lang, panel),
-        reply_markup=panel_dashboard_keyboard(lang, panel_id, panel["type"] in MANAGEABLE_TYPES),
+        reply_markup=panel_dashboard_keyboard(lang, panel_id, panel["type"]),
     )
     await callback.answer()
 
@@ -1785,4 +1796,266 @@ async def cb_host_create_confirm(callback: CallbackQuery, state: FSMContext, lan
     await callback.message.edit_text(
         texts.create_host_success_text(lang, new_host["remark"]),
         reply_markup=panel_hosts_list_keyboard(lang, panel_id, tag_index, hosts_map[tag]),
+    )
+
+
+# --- Inbound management (3X-UI only) ---
+#
+# Creating a brand-new inbound isn't offered here: a working, secure
+# inbound needs protocol-specific settings (VLESS/VMess/Trojan client
+# fields, TLS or REALITY key material, ...) that are best generated and
+# reviewed in the panel's own UI rather than guessed at over chat. Editing
+# an existing inbound's remark/port, enabling/disabling it, and deleting
+# it are all safe, protocol-agnostic operations that don't require
+# touching its settings/streamSettings at all.
+
+
+def _find_inbound(inbounds: list[dict], inbound_id: int) -> dict | None:
+    return next((ib for ib in inbounds if ib.get("id") == inbound_id), None)
+
+
+async def _render_inbounds_screen(callback: CallbackQuery, lang: str, panel_id: str) -> None:
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    clients_by_id = {ib.get("id"): inbound_client_count(ib) for ib in inbounds}
+    await callback.message.edit_text(
+        texts.inbounds_list_text(lang, panel, inbounds),
+        reply_markup=panel_inbounds_keyboard(lang, panel_id, inbounds, clients_by_id),
+    )
+
+
+@router.callback_query(F.data.startswith("pdash:inbounds:"))
+async def cb_dashboard_inbounds(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_inbounds_screen(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pinb:view:"))
+async def cb_inbound_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    inbound_id = int(inbound_id_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    inbound = _find_inbound(inbounds, inbound_id)
+    if not inbound:
+        await _render_inbounds_screen(callback, lang, panel_id)
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.inbound_detail_text(lang, panel, inbound, inbound_client_count(inbound)),
+        reply_markup=panel_inbound_detail_keyboard(lang, panel_id, inbound_id, bool(inbound.get("enable", True))),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pinb:editstart:"))
+async def cb_inbound_edit_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    inbound_id = int(inbound_id_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] != "3xui":
+        await callback.answer()
+        return
+    await state.clear()
+    await state.update_data(panel_id=panel_id, inbound_id=inbound_id)
+    await state.set_state(PanelInboundEditStates.waiting_fields)
+    await callback.message.edit_text(
+        texts.inbound_edit_prompt_text(lang, panel),
+        reply_markup=panel_inbound_cancel_keyboard(lang, panel_id, inbound_id),
+    )
+    await callback.answer()
+
+
+@router.message(PanelInboundEditStates.waiting_fields)
+async def process_inbound_fields(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, inbound_id = data["panel_id"], data["inbound_id"]
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    try:
+        updates = parse_inbound_fields_input(message.text or "")
+    except InboundFieldsError as exc:
+        await message.answer(
+            texts.inbound_fields_error_text(lang, str(exc)),
+            reply_markup=panel_inbound_cancel_keyboard(lang, panel_id, inbound_id),
+        )
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+    except PanelAPIError as exc:
+        await state.clear()
+        await message.answer(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    inbound = _find_inbound(inbounds, inbound_id)
+    if not inbound:
+        await state.clear()
+        await message.answer(
+            texts.action_error_text(lang, "bad_response"),
+            reply_markup=panel_dashboard_back_keyboard(lang, panel_id),
+        )
+        return
+    inbound = dict(inbound)
+    inbound.update(updates)
+
+    await state.update_data(pending_updates=updates)
+    await state.set_state(PanelInboundEditStates.confirming)
+    await message.answer(
+        texts.inbound_edit_confirm_text(lang, panel, inbound),
+        reply_markup=panel_inbound_edit_confirm_keyboard(lang, panel_id, inbound_id),
+    )
+
+
+@router.callback_query(PanelInboundEditStates.confirming, F.data.startswith("pinb:editcnf:"))
+async def cb_inbound_edit_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, inbound_id = data["panel_id"], data["inbound_id"]
+    updates = data.get("pending_updates", {})
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+        inbound = dict(inbound)
+        inbound.update(updates)
+        await threexui_update_inbound(panel["url"], cookies, inbound)
+    except PanelAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.inbound_edit_success_text(lang),
+        reply_markup=panel_inbound_detail_keyboard(lang, panel_id, inbound_id, bool(inbound.get("enable", True))),
+    )
+
+
+@router.callback_query(F.data.startswith("pinb:toggle:"))
+async def cb_inbound_toggle(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    inbound_id = int(inbound_id_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+        inbound = dict(inbound)
+        inbound["enable"] = not bool(inbound.get("enable", True))
+        await threexui_update_inbound(panel["url"], cookies, inbound)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.inbound_toggle_success_text(lang, inbound["enable"]),
+        reply_markup=panel_inbound_detail_keyboard(lang, panel_id, inbound_id, inbound["enable"]),
+    )
+
+
+@router.callback_query(F.data.startswith("pinb:delask:"))
+async def cb_inbound_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    inbound_id = int(inbound_id_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        remark = str(inbound.get("remark") or f"#{inbound_id}") if inbound else f"#{inbound_id}"
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.inbound_delete_confirm_text(lang, panel, remark),
+        reply_markup=panel_inbound_delete_confirm_keyboard(lang, panel_id, inbound_id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pinb:delcnf:"))
+async def cb_inbound_delete_confirm(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    inbound_id = int(inbound_id_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        await threexui_delete_inbound(panel["url"], cookies, inbound_id)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.inbound_delete_success_text(lang), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
     )

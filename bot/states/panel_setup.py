@@ -46,3 +46,8 @@ class PanelHostCreateStates(StatesGroup):
     waiting_address = State()
     waiting_port = State()
     confirming = State()
+
+
+class PanelInboundEditStates(StatesGroup):
+    waiting_fields = State()
+    confirming = State()

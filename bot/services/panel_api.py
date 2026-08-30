@@ -585,3 +585,58 @@ def list_3xui_clients(inbounds: list[dict]) -> list[str]:
 
 def count_3xui_clients(inbounds: list[dict]) -> int:
     return len(list_3xui_clients(inbounds))
+
+
+def inbound_client_count(inbound: dict) -> int:
+    return len(list_3xui_clients([inbound]))
+
+
+async def threexui_update_inbound(url: str, cookies: dict[str, str], inbound: dict) -> None:
+    # 3X-UI's update endpoint expects the whole inbound object back (like
+    # Marzban's /api/hosts) — "clientStats" is a response-only computed
+    # field the list endpoint adds, so it's dropped before resubmitting.
+    body = {k: v for k, v in inbound.items() if k != "clientStats"}
+    async with aiohttp.ClientSession(
+        connector=_connector(), timeout=REQUEST_TIMEOUT, cookies=cookies
+    ) as session:
+        status, payload = await _request_json(
+            session, "POST", f"{url}/panel/api/inbounds/update/{inbound['id']}", json=body
+        )
+    if status != 200 or not isinstance(payload, dict) or not payload.get("success"):
+        raise PanelAPIError(f"http:{status}" if status != 200 else "bad_response")
+
+
+async def threexui_delete_inbound(url: str, cookies: dict[str, str], inbound_id: int) -> None:
+    async with aiohttp.ClientSession(
+        connector=_connector(), timeout=REQUEST_TIMEOUT, cookies=cookies
+    ) as session:
+        status, payload = await _request_json(session, "POST", f"{url}/panel/api/inbounds/del/{inbound_id}")
+    if status != 200 or not isinstance(payload, dict) or not payload.get("success"):
+        raise PanelAPIError(f"http:{status}" if status != 200 else "bad_response")
+
+
+class InboundFieldsError(Exception):
+    """str(exc) is a short reason code the texts layer turns into a message."""
+
+
+def parse_inbound_fields_input(raw: str) -> dict:
+    """Parses the compact "remark|port" editor line — an empty segment
+    leaves that field untouched. Protocol/TLS/Reality settings aren't
+    editable this way; those are best configured in the panel itself."""
+    parts = raw.split("|")
+    if len(parts) != 2:
+        raise InboundFieldsError("wrong_format")
+
+    remark, port_raw = (p.strip() for p in parts)
+    updates: dict = {}
+    if remark:
+        updates["remark"] = remark
+    if port_raw:
+        try:
+            port = int(port_raw)
+        except ValueError as exc:
+            raise InboundFieldsError("bad_port") from exc
+        if not (0 < port < 65536):
+            raise InboundFieldsError("bad_port")
+        updates["port"] = port
+    return updates

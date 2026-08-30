@@ -1,7 +1,13 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.texts.panel import admin_list_label, host_list_label, node_list_label, panel_list_label
+from bot.texts.panel import (
+    admin_list_label,
+    host_list_label,
+    inbound_list_label,
+    node_list_label,
+    panel_list_label,
+)
 from bot.texts.translations import t
 
 
@@ -43,17 +49,20 @@ def panel_error_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def panel_dashboard_keyboard(lang: str, panel_id: str, manageable: bool) -> InlineKeyboardMarkup:
+def panel_dashboard_keyboard(lang: str, panel_id: str, panel_type: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_stats"), callback_data=f"pdash:stats:{panel_id}")
     builder.button(text=t(lang, "btn_panel_users"), callback_data=f"pdash:users:{panel_id}")
     rows = [1, 1]
-    if manageable:
+    if panel_type in ("marzban", "pasarguard"):
         builder.button(text=t(lang, "btn_panel_nodes"), callback_data=f"pdash:nodes:{panel_id}")
         builder.button(text=t(lang, "btn_panel_core"), callback_data=f"pdash:core:{panel_id}")
         builder.button(text=t(lang, "btn_panel_admins"), callback_data=f"pdash:admins:{panel_id}")
         builder.button(text=t(lang, "btn_panel_hosts"), callback_data=f"pdash:hosts:{panel_id}")
         rows.extend([1, 1, 1, 1])
+    elif panel_type == "3xui":
+        builder.button(text=t(lang, "btn_panel_inbounds"), callback_data=f"pdash:inbounds:{panel_id}")
+        rows.append(1)
     builder.button(text=t(lang, "btn_panel_remove"), callback_data=f"pdash:rmask:{panel_id}")
     builder.button(text=t(lang, "btn_panel_list"), callback_data="pdash:list")
     rows.extend([1, 1])
@@ -299,6 +308,61 @@ def panel_host_create_confirm_keyboard(lang: str, panel_id: str, tag_index: int)
         text=t(lang, "btn_panel_host_create_confirm"), callback_data=f"phost:newcnf:{panel_id}:{tag_index}"
     )
     builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_inbounds_keyboard(
+    lang: str, panel_id: str, inbounds: list[dict], clients_by_id: dict[int, int]
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for inbound in inbounds:
+        inbound_id = inbound.get("id")
+        clients = clients_by_id.get(inbound_id, 0)
+        builder.button(text=inbound_list_label(inbound, clients), callback_data=f"pinb:view:{panel_id}:{inbound_id}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_panel_dashboard"), callback_data=f"pview:{panel_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def panel_inbound_detail_keyboard(lang: str, panel_id: str, inbound_id: int, enabled: bool) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    toggle_key = "btn_panel_inbound_toggle_off" if enabled else "btn_panel_inbound_toggle_on"
+    builder.button(
+        text=t(lang, "btn_panel_inbound_edit"), callback_data=f"pinb:editstart:{panel_id}:{inbound_id}"
+    )
+    builder.button(text=t(lang, toggle_key), callback_data=f"pinb:toggle:{panel_id}:{inbound_id}")
+    builder.button(
+        text=t(lang, "btn_panel_inbound_delete"), callback_data=f"pinb:delask:{panel_id}:{inbound_id}"
+    )
+    builder.button(text=t(lang, "btn_panel_inbounds_list"), callback_data=f"pdash:inbounds:{panel_id}")
+    builder.adjust(2, 1, 1)
+    return builder.as_markup()
+
+
+def panel_inbound_cancel_keyboard(lang: str, panel_id: str, inbound_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}")
+    return builder.as_markup()
+
+
+def panel_inbound_edit_confirm_keyboard(lang: str, panel_id: str, inbound_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_panel_inbound_apply"), callback_data=f"pinb:editcnf:{panel_id}:{inbound_id}")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_inbound_delete_confirm_keyboard(lang: str, panel_id: str, inbound_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_panel_inbound_delete_confirm"), callback_data=f"pinb:delcnf:{panel_id}:{inbound_id}"
+    )
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}")
     builder.adjust(1, 1)
     return builder.as_markup()
 
