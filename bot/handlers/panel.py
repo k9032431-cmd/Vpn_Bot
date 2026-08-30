@@ -282,7 +282,9 @@ async def _render_users_screen(callback: CallbackQuery, lang: str, panel_id: str
         if panel["type"] in MANAGEABLE_TYPES:
             token = await marzban_login(panel["url"], panel["username"], panel["password"])
             result = await marzban_get_users(panel["url"], token, offset=offset, limit=USERS_PAGE_SIZE)
-            text = texts.users_list_text_marzban_family(lang, panel, result.users, offset, result.total)
+            text = texts.users_list_text_marzban_family(
+                lang, panel, result.users, offset, result.total, USERS_PAGE_SIZE
+            )
             usernames = [str(u["username"]) for u in result.users if u.get("username")]
             keyboard = panel_users_keyboard(
                 lang,
@@ -298,7 +300,9 @@ async def _render_users_screen(callback: CallbackQuery, lang: str, panel_id: str
             inbounds = await threexui_get_inbounds(panel["url"], cookies)
             all_labels = list_3xui_clients(inbounds)
             page_labels = all_labels[offset : offset + USERS_PAGE_SIZE]
-            text = texts.users_list_text_3xui(lang, panel, page_labels, offset, len(all_labels))
+            text = texts.users_list_text_3xui(
+                lang, panel, page_labels, offset, len(all_labels), USERS_PAGE_SIZE
+            )
             keyboard = panel_users_keyboard(
                 lang,
                 panel_id,

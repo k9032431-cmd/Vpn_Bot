@@ -783,9 +783,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{header}\n📊 <b>Statistika</b>\n\n📡 Inbound sany: <b>{inbounds_count}</b>\n👥 Müşderi sany: <b>{clients_count}</b>",
     },
     "panel_users_list_header": {
-        "ru": "{header}\n👥 <b>Пользователи</b>\n\nПоказаны {start}–{end} из {total}:",
-        "en": "{header}\n👥 <b>Users</b>\n\nShowing {start}–{end} of {total}:",
-        "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\n{start}–{end} / {total} görkezilýär:",
+        "ru": "{header}\n👥 <b>Пользователи</b>\n\nПоказаны {start}–{end} из {total} · 📄 Стр. {page}/{pages}:",
+        "en": "{header}\n👥 <b>Users</b>\n\nShowing {start}–{end} of {total} · 📄 Page {page}/{pages}:",
+        "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\n{start}–{end} / {total} görkezilýär · 📄 Sah. {page}/{pages}:",
     },
     "panel_users_list_empty": {
         "ru": "{header}\n👥 <b>Пользователи</b>\n\nПока пользователей нет.",
@@ -952,6 +952,184 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Трафик пользователя <code>{username}</code> сброшен.",
         "en": "{icon} Traffic for <code>{username}</code> has been reset.",
         "tk": "{icon} <code>{username}</code> ulanyjysynyň traffigi arassalandy.",
+    },
+    # --- Arsi WhoIs ---
+    "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},
+    "btn_whois_again": {"ru": "🔎 Новый запрос", "en": "🔎 New lookup", "tk": "🔎 Täze sorag"},
+    "whois_prompt": {
+        "ru": (
+            "{icon} <b>Arsi WhoIs</b>\n\n"
+            "Отправьте IP-адрес или домен — соберу всё, что доступно: геолокацию, "
+            "провайдера, ASN, признаки VPN/прокси/хостинга, а для доменов — "
+            "регистратора, дату регистрации и серверы имён.\n\n"
+            "✏️ Например: <code>8.8.8.8</code> или <code>example.com</code>"
+        ),
+        "en": (
+            "{icon} <b>Arsi WhoIs</b>\n\n"
+            "Send an IP address or a domain — I'll gather everything available: "
+            "geolocation, provider, ASN, VPN/proxy/hosting flags, and for domains "
+            "— registrar, registration date and nameservers.\n\n"
+            "✏️ Example: <code>8.8.8.8</code> or <code>example.com</code>"
+        ),
+        "tk": (
+            "{icon} <b>Arsi WhoIs</b>\n\n"
+            "IP salgysyny ýa-da domeni iberiň — geolokasiýa, provaýder, ASN, "
+            "VPN/proksi/hosting alamatlaryny, domenler üçin bolsa — registratory, "
+            "hasaba alnan senesini we at serwerlerini tapyp bererin.\n\n"
+            "✏️ Mysal: <code>8.8.8.8</code> ýa-da <code>example.com</code>"
+        ),
+    },
+    "whois_cancelled": {
+        "ru": "🚫 <i>Запрос отменён.</i>",
+        "en": "🚫 <i>Lookup cancelled.</i>",
+        "tk": "🚫 <i>Sorag ýatyryldy.</i>",
+    },
+    "whois_invalid": {
+        "ru": "🤔 Это не похоже на IP-адрес или домен. Попробуйте ещё раз — например: <code>1.1.1.1</code> или <code>example.com</code>",
+        "en": "🤔 That doesn't look like an IP address or a domain. Try again — for example: <code>1.1.1.1</code> or <code>example.com</code>",
+        "tk": "🤔 Bu IP salgy ýa-da domen ýaly görnenok. Täzeden synanyşyň — mysal üçin: <code>1.1.1.1</code> ýa-da <code>example.com</code>",
+    },
+    "whois_looking_up": {
+        "ru": "🔎 Собираю информацию...",
+        "en": "🔎 Gathering information...",
+        "tk": "🔎 Maglumat ýygnalýar...",
+    },
+    "whois_error": {
+        "ru": "{icon} Не удалось получить информацию — {reason}.",
+        "en": "{icon} Couldn't fetch information — {reason}.",
+        "tk": "{icon} Maglumat alynmady — {reason}.",
+    },
+    "whois_err_connect": {
+        "ru": "не удалось подключиться к источнику данных, попробуйте позже",
+        "en": "couldn't reach the data source, try again later",
+        "tk": "maglumat çeşmesine birikip bolmady, soňrak synanyşyň",
+    },
+    "whois_err_not_found": {
+        "ru": "ничего не найдено по этому запросу",
+        "en": "nothing found for this query",
+        "tk": "bu sorag boýunça hiç zat tapylmady",
+    },
+    "whois_err_bad_response": {
+        "ru": "источник данных вернул некорректный ответ",
+        "en": "the data source returned an invalid response",
+        "tk": "maglumat çeşmesi nädogry jogap gaýtardy",
+    },
+    "whois_yes": {"ru": "Да", "en": "Yes", "tk": "Hawa"},
+    "whois_no": {"ru": "Нет", "en": "No", "tk": "Ýok"},
+    "whois_ip_result": {
+        "ru": (
+            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
+            "┌ Arsi WhoIs Bot 🌐\n"
+            "│\n"
+            "├ IP: <code>{ip}</code>\n"
+            "├ Хост: {host}\n"
+            "├ Страна: {country}\n"
+            "├ Город: {city}\n"
+            "├ Провайдер: {isp} ({asn})\n"
+            "├ Часовой пояс: {timezone}\n"
+            "│\n"
+            "├ Прокси: {proxy}\n"
+            "├ VPN: {vpn}\n"
+            "├ Tor: {tor}\n"
+            "├ Хостинг: {hosting}\n"
+            "├ Cloudflare: {cloudflare}\n"
+            "│\n"
+            "└ Источник: {source}"
+        ),
+        "en": (
+            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
+            "┌ Arsi WhoIs Bot 🌐\n"
+            "│\n"
+            "├ IP: <code>{ip}</code>\n"
+            "├ Host: {host}\n"
+            "├ Country: {country}\n"
+            "├ City: {city}\n"
+            "├ Provider: {isp} ({asn})\n"
+            "├ Timezone: {timezone}\n"
+            "│\n"
+            "├ Proxy: {proxy}\n"
+            "├ VPN: {vpn}\n"
+            "├ Tor: {tor}\n"
+            "├ Hosting: {hosting}\n"
+            "├ Cloudflare: {cloudflare}\n"
+            "│\n"
+            "└ Source: {source}"
+        ),
+        "tk": (
+            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
+            "┌ Arsi WhoIs Bot 🌐\n"
+            "│\n"
+            "├ IP: <code>{ip}</code>\n"
+            "├ Host: {host}\n"
+            "├ Ýurt: {country}\n"
+            "├ Şäher: {city}\n"
+            "├ Provaýder: {isp} ({asn})\n"
+            "├ Wagt guşagy: {timezone}\n"
+            "│\n"
+            "├ Proksi: {proxy}\n"
+            "├ VPN: {vpn}\n"
+            "├ Tor: {tor}\n"
+            "├ Hosting: {hosting}\n"
+            "├ Cloudflare: {cloudflare}\n"
+            "│\n"
+            "└ Çeşme: {source}"
+        ),
+    },
+    "whois_domain_result": {
+        "ru": (
+            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
+            "┌ Arsi WhoIs Bot 🌐\n"
+            "│\n"
+            "├ Домен: <code>{domain}</code>\n"
+            "├ Регистратор: {registrar}\n"
+            "├ Зарегистрирован: {created}\n"
+            "├ Истекает: {expires}\n"
+            "├ Обновлён: {updated}\n"
+            "├ Статус: {status}\n"
+            "├ Cloudflare NS: {cloudflare}\n"
+            "├ IP сервера: <code>{resolved_ip}</code>{ip_extra}\n"
+            "│\n"
+            "├ Серверы имён:\n"
+            "{nameservers}\n"
+            "│\n"
+            "└ Источник: {source}"
+        ),
+        "en": (
+            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
+            "┌ Arsi WhoIs Bot 🌐\n"
+            "│\n"
+            "├ Domain: <code>{domain}</code>\n"
+            "├ Registrar: {registrar}\n"
+            "├ Registered: {created}\n"
+            "├ Expires: {expires}\n"
+            "├ Updated: {updated}\n"
+            "├ Status: {status}\n"
+            "├ Cloudflare NS: {cloudflare}\n"
+            "├ Server IP: <code>{resolved_ip}</code>{ip_extra}\n"
+            "│\n"
+            "├ Nameservers:\n"
+            "{nameservers}\n"
+            "│\n"
+            "└ Source: {source}"
+        ),
+        "tk": (
+            "🌐 <b>ARSI WHOIS</b>\n<code>{query}</code>\n\n"
+            "┌ Arsi WhoIs Bot 🌐\n"
+            "│\n"
+            "├ Domen: <code>{domain}</code>\n"
+            "├ Registrator: {registrar}\n"
+            "├ Hasaba alnan: {created}\n"
+            "├ Möhleti: {expires}\n"
+            "├ Täzelenen: {updated}\n"
+            "├ Status: {status}\n"
+            "├ Cloudflare NS: {cloudflare}\n"
+            "├ Server IP: <code>{resolved_ip}</code>{ip_extra}\n"
+            "│\n"
+            "├ At serwerleri:\n"
+            "{nameservers}\n"
+            "│\n"
+            "└ Çeşme: {source}"
+        ),
     },
 }
 

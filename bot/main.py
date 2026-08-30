@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from bot.config import config
-from bot.handlers import language, menu, node, panel, profile, start
+from bot.handlers import language, menu, node, panel, profile, start, whois
 from bot.middlewares.language import LanguageMiddleware
 
 
@@ -24,6 +24,7 @@ async def main() -> None:
     dp.include_router(node.router)
     dp.include_router(panel.router)
     dp.include_router(profile.router)
+    dp.include_router(whois.router)
     dp.include_router(language.router)
     dp.include_router(menu.router)
 

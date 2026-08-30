@@ -62,6 +62,8 @@ IDS: dict[str, str] = {
     "threexui": "",
     # profile — заголовок и кнопка раздела Профиль
     "profile": "",
+    # whois — заголовок и кнопка раздела Arsi WhoIs
+    "whois": "",
 }
 
 

@@ -166,7 +166,13 @@ def stats_text_3xui(lang: str, panel: dict, inbounds_count: int, clients_count: 
     )
 
 
-def users_list_text_marzban_family(lang: str, panel: dict, users: list[dict], offset: int, total: int) -> str:
+def _page_count(total: int, page_size: int) -> int:
+    return max(1, -(-total // page_size))
+
+
+def users_list_text_marzban_family(
+    lang: str, panel: dict, users: list[dict], offset: int, total: int, page_size: int
+) -> str:
     # Usernames are shown as tappable buttons (see panel_users_keyboard),
     # so this is just the screen's header/range line.
     header = panel_header(lang, panel["type"], panel["url"])
@@ -179,10 +185,14 @@ def users_list_text_marzban_family(lang: str, panel: dict, users: list[dict], of
         start=offset + 1,
         end=offset + len(users),
         total=total,
+        page=offset // page_size + 1,
+        pages=_page_count(total, page_size),
     )
 
 
-def users_list_text_3xui(lang: str, panel: dict, page_labels: list[str], offset: int, total: int) -> str:
+def users_list_text_3xui(
+    lang: str, panel: dict, page_labels: list[str], offset: int, total: int, page_size: int
+) -> str:
     header = panel_header(lang, panel["type"], panel["url"])
     if not total:
         return t(lang, "panel_users_list_empty", header=header)
@@ -194,6 +204,8 @@ def users_list_text_3xui(lang: str, panel: dict, page_labels: list[str], offset:
             start=offset + 1,
             end=offset + len(page_labels),
             total=total,
+            page=offset // page_size + 1,
+            pages=_page_count(total, page_size),
         )
     ]
     lines.extend(f"👤 <code>{html.escape(label)}</code>" for label in page_labels)
