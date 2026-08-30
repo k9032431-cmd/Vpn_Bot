@@ -4,17 +4,22 @@ import asyncio
 import ipaddress
 import re
 import socket
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import aiohttp
+import dns.asyncresolver
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=12)
+DNS_TIMEOUT = 4
+RAW_WHOIS_TIMEOUT = 8
+RAW_WHOIS_PORT = 43
 
 # Public data sources — module-level so they're easy to point at a
 # self-hosted mirror (or a fake server in tests) without touching the
 # lookup logic itself.
 IPWHOIS_URL_TEMPLATE = "https://ipwho.is/{ip}"
 RDAP_URL_TEMPLATE = "https://rdap.org/domain/{domain}"
+IANA_WHOIS_SERVER = "whois.iana.org"
 
 # Cloudflare's own ASNs — used to flag an IP as Cloudflare even when the
 # ISP/org name from the geo API doesn't spell it out.
@@ -70,9 +75,10 @@ class DomainInfo:
     nameservers: list[str]
     status: list[str]
     is_cloudflare_ns: bool
-    resolved_ip: str | None
-    resolved_ip_country: str | None
-    resolved_ip_isp: str | None
+    a_records: list[str] = field(default_factory=list)
+    mx_records: list[str] = field(default_factory=list)
+    txt_records: list[str] = field(default_factory=list)
+    resolved_ip_info: IPInfo | None = None
 
 
 async def _reverse_dns(ip: str) -> str | None:
@@ -86,15 +92,29 @@ async def _reverse_dns(ip: str) -> str | None:
         return None
 
 
-async def _resolve_ip(domain: str) -> str | None:
-    loop = asyncio.get_running_loop()
+async def _dns_records(domain: str, record_type: str) -> list[str]:
+    resolver = dns.asyncresolver.Resolver()
+    resolver.timeout = DNS_TIMEOUT
+    resolver.lifetime = DNS_TIMEOUT
     try:
-        infos = await asyncio.wait_for(
-            loop.getaddrinfo(domain, None, family=socket.AF_INET), timeout=5
-        )
-        return infos[0][4][0] if infos else None
+        answer = await resolver.resolve(domain, record_type)
     except Exception:
-        return None
+        return []
+
+    values: list[str] = []
+    for rdata in answer:
+        if record_type == "TXT":
+            text = b"".join(rdata.strings).decode("utf-8", errors="replace")
+            values.append(text)
+        elif record_type == "MX":
+            # A null MX ("." exchange, RFC 7505) means "accepts no mail" —
+            # not a real mail server, so it's not worth listing.
+            exchange = str(rdata.exchange).rstrip(".")
+            if exchange:
+                values.append(f"{rdata.preference} {exchange}")
+        else:
+            values.append(str(rdata).rstrip("."))
+    return values
 
 
 async def lookup_ip(ip: str) -> IPInfo:
@@ -170,11 +190,110 @@ async def _rdap_lookup(domain: str) -> dict | None:
     return payload if isinstance(payload, dict) else None
 
 
+# --- Classic WHOIS protocol (port 43) fallback — RDAP isn't run by every
+# ccTLD registry (notably .ru and several others), so for those domains this
+# is the only way to get registrar/date/nameserver data at all. ---
+
+_WHOIS_PATTERNS = {
+    "registrar": (r"(?im)^(?:Registrar|Sponsoring Registrar):\s*(.+)$",),
+    "created": (r"(?im)^(?:Creation Date|created|Registered on|Domain Registration Date):\s*(.+)$",),
+    "expires": (
+        r"(?im)^(?:Registry Expiry Date|paid-till|Registrar Registration Expiration Date"
+        r"|Expiry [Dd]ate|Expiration Date):\s*(.+)$",
+    ),
+    "updated": (r"(?im)^(?:Updated Date|Last updated|changed):\s*(.+)$",),
+}
+
+
+def _first_match(patterns: tuple[str, ...], text: str) -> str | None:
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def _parse_raw_whois(text: str) -> dict:
+    created = _first_match(_WHOIS_PATTERNS["created"], text)
+    expires = _first_match(_WHOIS_PATTERNS["expires"], text)
+    updated = _first_match(_WHOIS_PATTERNS["updated"], text)
+
+    status: list[str] = []
+    for line in re.findall(r"(?im)^(?:Domain Status|state):\s*(.+)$", text):
+        for part in line.split(","):
+            token = part.strip().split(" ")[0] if part.strip() else ""
+            if token and token not in status:
+                status.append(token)
+
+    nameservers: list[str] = []
+    for ns in re.findall(r"(?im)^(?:Name Server|nserver):\s*(\S+)", text):
+        ns = ns.strip().rstrip(".")
+        if ns and ns not in nameservers:
+            nameservers.append(ns)
+
+    return {
+        "registrar": _first_match(_WHOIS_PATTERNS["registrar"], text),
+        "created": created[:10] if created else None,
+        "expires": expires[:10] if expires else None,
+        "updated": updated[:10] if updated else None,
+        "status": status,
+        "nameservers": nameservers,
+    }
+
+
+async def _whois_query(server: str, query: str) -> str | None:
+    try:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(server, RAW_WHOIS_PORT), timeout=RAW_WHOIS_TIMEOUT
+        )
+    except (OSError, asyncio.TimeoutError):
+        return None
+    try:
+        writer.write((query + "\r\n").encode())
+        await writer.drain()
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = await asyncio.wait_for(reader.read(4096), timeout=RAW_WHOIS_TIMEOUT)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > 200_000:
+                break
+        return b"".join(chunks).decode("utf-8", errors="replace")
+    except (OSError, asyncio.TimeoutError):
+        return None
+    finally:
+        writer.close()
+
+
+async def _raw_whois_lookup(domain: str) -> dict | None:
+    tld = domain.rsplit(".", 1)[-1].lower()
+    iana_text = await _whois_query(IANA_WHOIS_SERVER, tld)
+    if not iana_text:
+        return None
+    server_match = re.search(r"(?im)^whois:\s*(\S+)", iana_text)
+    if not server_match:
+        return None
+
+    text = await _whois_query(server_match.group(1), domain)
+    if not text:
+        return None
+
+    # A handful of registries (classic gTLDs via their registrar) point to
+    # a more specific server that holds the actual record.
+    referral = re.search(r"(?im)^(?:ReferralServer|Registrar Whois Server):\s*(?:whois://)?(\S+)", text)
+    if referral:
+        deeper = await _whois_query(referral.group(1).rstrip("/"), domain)
+        if deeper:
+            text = deeper
+
+    parsed = _parse_raw_whois(text)
+    return parsed if any(parsed.values()) else None
+
+
 async def lookup_domain(domain: str) -> DomainInfo:
-    # Not every ccTLD registry runs an RDAP server (notably .ru and several
-    # others), so a missing/failed RDAP response isn't treated as a hard
-    # error here — it just means the whois-specific fields stay empty while
-    # the DNS-based lookup below still has a chance to find something.
     payload = await _rdap_lookup(domain)
 
     registrar = created = expires = updated = None
@@ -199,18 +318,31 @@ async def lookup_domain(domain: str) -> DomainInfo:
         status = [str(s) for s in (payload.get("status") or [])]
         domain_label = str(payload.get("ldhName", domain)).lower()
 
-    resolved_ip = await _resolve_ip(domain)
-    resolved_ip_country = None
-    resolved_ip_isp = None
-    if resolved_ip:
+    # RDAP coverage is spotty for many ccTLD registries (.ru among them) —
+    # when it left the key fields empty, fall back to the classic WHOIS
+    # protocol (port 43) via an IANA referral to the right server.
+    if not registrar and not created:
+        raw = await _raw_whois_lookup(domain)
+        if raw:
+            registrar = registrar or raw["registrar"]
+            created = created or raw["created"]
+            expires = expires or raw["expires"]
+            updated = updated or raw["updated"]
+            status = status or raw["status"]
+            nameservers = nameservers or raw["nameservers"]
+
+    a_records = await _dns_records(domain, "A")
+    mx_records = await _dns_records(domain, "MX")
+    txt_records = await _dns_records(domain, "TXT")
+
+    resolved_ip_info = None
+    if a_records:
         try:
-            ip_info = await lookup_ip(resolved_ip)
-            resolved_ip_country = ip_info.country
-            resolved_ip_isp = ip_info.isp
+            resolved_ip_info = await lookup_ip(a_records[0])
         except WhoisAPIError:
             pass
 
-    if payload is None and not resolved_ip:
+    if not registrar and not nameservers and not a_records and not created:
         raise WhoisAPIError("not_found")
 
     return DomainInfo(
@@ -222,7 +354,8 @@ async def lookup_domain(domain: str) -> DomainInfo:
         nameservers=nameservers,
         status=status,
         is_cloudflare_ns=any("cloudflare" in ns.lower() for ns in nameservers),
-        resolved_ip=resolved_ip,
-        resolved_ip_country=resolved_ip_country,
-        resolved_ip_isp=resolved_ip_isp,
+        a_records=a_records,
+        mx_records=mx_records,
+        txt_records=txt_records,
+        resolved_ip_info=resolved_ip_info,
     )

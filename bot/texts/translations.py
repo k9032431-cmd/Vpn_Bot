@@ -1011,103 +1011,28 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "whois_yes": {"ru": "Да", "en": "Yes", "tk": "Hawa"},
     "whois_no": {"ru": "Нет", "en": "No", "tk": "Ýok"},
-    "whois_ip_result": {
-        "ru": (
-            "<code>┌ Arsi WhoIs Bot 🌐\n"
-            "│\n"
-            "├ IP: {ip}\n"
-            "├ Хост: {host}\n"
-            "├ Страна: {country}\n"
-            "├ Город: {city}\n"
-            "├ Провайдер: {isp} ({asn})\n"
-            "├ Часовой пояс: {timezone}\n"
-            "│\n"
-            "├ Прокси: {proxy}\n"
-            "├ VPN: {vpn}\n"
-            "├ Tor: {tor}\n"
-            "├ Хостинг: {hosting}\n"
-            "└ Cloudflare: {cloudflare}</code>"
-        ),
-        "en": (
-            "<code>┌ Arsi WhoIs Bot 🌐\n"
-            "│\n"
-            "├ IP: {ip}\n"
-            "├ Host: {host}\n"
-            "├ Country: {country}\n"
-            "├ City: {city}\n"
-            "├ Provider: {isp} ({asn})\n"
-            "├ Timezone: {timezone}\n"
-            "│\n"
-            "├ Proxy: {proxy}\n"
-            "├ VPN: {vpn}\n"
-            "├ Tor: {tor}\n"
-            "├ Hosting: {hosting}\n"
-            "└ Cloudflare: {cloudflare}</code>"
-        ),
-        "tk": (
-            "<code>┌ Arsi WhoIs Bot 🌐\n"
-            "│\n"
-            "├ IP: {ip}\n"
-            "├ Host: {host}\n"
-            "├ Ýurt: {country}\n"
-            "├ Şäher: {city}\n"
-            "├ Provaýder: {isp} ({asn})\n"
-            "├ Wagt guşagy: {timezone}\n"
-            "│\n"
-            "├ Proksi: {proxy}\n"
-            "├ VPN: {vpn}\n"
-            "├ Tor: {tor}\n"
-            "├ Hosting: {hosting}\n"
-            "└ Cloudflare: {cloudflare}</code>"
-        ),
-    },
-    "whois_domain_result": {
-        "ru": (
-            "<code>┌ Arsi WhoIs Bot 🌐\n"
-            "│\n"
-            "├ Домен: {domain}\n"
-            "├ Регистратор: {registrar}\n"
-            "├ Зарегистрирован: {created}\n"
-            "├ Истекает: {expires}\n"
-            "├ Обновлён: {updated}\n"
-            "├ Статус: {status}\n"
-            "├ Cloudflare NS: {cloudflare}\n"
-            "├ IP сервера: {resolved_ip}{ip_extra}\n"
-            "│\n"
-            "├ Серверы имён:\n"
-            "{nameservers}</code>"
-        ),
-        "en": (
-            "<code>┌ Arsi WhoIs Bot 🌐\n"
-            "│\n"
-            "├ Domain: {domain}\n"
-            "├ Registrar: {registrar}\n"
-            "├ Registered: {created}\n"
-            "├ Expires: {expires}\n"
-            "├ Updated: {updated}\n"
-            "├ Status: {status}\n"
-            "├ Cloudflare NS: {cloudflare}\n"
-            "├ Server IP: {resolved_ip}{ip_extra}\n"
-            "│\n"
-            "├ Nameservers:\n"
-            "{nameservers}</code>"
-        ),
-        "tk": (
-            "<code>┌ Arsi WhoIs Bot 🌐\n"
-            "│\n"
-            "├ Domen: {domain}\n"
-            "├ Registrator: {registrar}\n"
-            "├ Hasaba alnan: {created}\n"
-            "├ Möhleti: {expires}\n"
-            "├ Täzelenen: {updated}\n"
-            "├ Status: {status}\n"
-            "├ Cloudflare NS: {cloudflare}\n"
-            "├ Server IP: {resolved_ip}{ip_extra}\n"
-            "│\n"
-            "├ At serwerleri:\n"
-            "{nameservers}</code>"
-        ),
-    },
+    "whois_l_ip": {"ru": "📍 IP", "en": "📍 IP", "tk": "📍 IP"},
+    "whois_l_host": {"ru": "🖥 Хост", "en": "🖥 Host", "tk": "🖥 Host"},
+    "whois_l_country": {"ru": "🌍 Страна", "en": "🌍 Country", "tk": "🌍 Ýurt"},
+    "whois_l_city": {"ru": "🏙 Город", "en": "🏙 City", "tk": "🏙 Şäher"},
+    "whois_l_provider": {"ru": "🏢 Провайдер", "en": "🏢 Provider", "tk": "🏢 Provaýder"},
+    "whois_l_timezone": {"ru": "🕒 Часовой пояс", "en": "🕒 Timezone", "tk": "🕒 Wagt guşagy"},
+    "whois_l_proxy": {"ru": "🎭 Прокси", "en": "🎭 Proxy", "tk": "🎭 Proksi"},
+    "whois_l_vpn": {"ru": "🛡 VPN", "en": "🛡 VPN", "tk": "🛡 VPN"},
+    "whois_l_tor": {"ru": "🕵️ Tor", "en": "🕵️ Tor", "tk": "🕵️ Tor"},
+    "whois_l_hosting": {"ru": "🖧 Хостинг", "en": "🖧 Hosting", "tk": "🖧 Hosting"},
+    "whois_l_cloudflare": {"ru": "☁️ Cloudflare", "en": "☁️ Cloudflare", "tk": "☁️ Cloudflare"},
+    "whois_l_domain": {"ru": "📛 Домен", "en": "📛 Domain", "tk": "📛 Domen"},
+    "whois_l_registrar": {"ru": "🏛 Регистратор", "en": "🏛 Registrar", "tk": "🏛 Registrator"},
+    "whois_l_created": {"ru": "📅 Зарегистрирован", "en": "📅 Registered", "tk": "📅 Hasaba alnan"},
+    "whois_l_expires": {"ru": "⏳ Истекает", "en": "⏳ Expires", "tk": "⏳ Möhleti"},
+    "whois_l_updated": {"ru": "🔄 Обновлён", "en": "🔄 Updated", "tk": "🔄 Täzelenen"},
+    "whois_l_status": {"ru": "🚦 Статус", "en": "🚦 Status", "tk": "🚦 Status"},
+    "whois_l_cloudflare_ns": {"ru": "☁️ Cloudflare NS", "en": "☁️ Cloudflare NS", "tk": "☁️ Cloudflare NS"},
+    "whois_l_nameservers": {"ru": "📡 Серверы имён", "en": "📡 Nameservers", "tk": "📡 At serwerleri"},
+    "whois_l_dns_a": {"ru": "🔢 DNS A", "en": "🔢 DNS A", "tk": "🔢 DNS A"},
+    "whois_l_dns_mx": {"ru": "📧 DNS MX", "en": "📧 DNS MX", "tk": "📧 DNS MX"},
+    "whois_l_dns_txt": {"ru": "📝 DNS TXT", "en": "📝 DNS TXT", "tk": "📝 DNS TXT"},
 }
 
 
