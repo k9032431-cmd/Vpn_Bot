@@ -263,17 +263,17 @@ _STRINGS: dict[str, dict[str, str]] = {
     "title_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "node_menu": {
         "ru": (
-            "{icon} <b>Node</b> 🖧\n\n"
+            "{icon} <b>Node</b> 🖥\n\n"
             "<i>Разверните VPN-ноду на своём сервере за пару минут — бот сделает всё сам.</i>\n\n"
             "👇 Выберите платформу"
         ),
         "en": (
-            "{icon} <b>Node</b> 🖧\n\n"
+            "{icon} <b>Node</b> 🖥\n\n"
             "<i>Deploy a VPN node on your server in a couple of minutes — the bot handles the rest.</i>\n\n"
             "👇 Choose a platform"
         ),
         "tk": (
-            "{icon} <b>Node</b> 🖧\n\n"
+            "{icon} <b>Node</b> 🖥\n\n"
             "<i>Serweriňizde birnäçe minutda VPN node ornaşdyryň — galanyny bot eder.</i>\n\n"
             "👇 Platformany saýlaň"
         ),
@@ -1022,7 +1022,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "whois_l_proxy": {"ru": "🎭 Прокси", "en": "🎭 Proxy", "tk": "🎭 Proksi"},
     "whois_l_vpn": {"ru": "🛡 VPN", "en": "🛡 VPN", "tk": "🛡 VPN"},
     "whois_l_tor": {"ru": "🕵️ Tor", "en": "🕵️ Tor", "tk": "🕵️ Tor"},
-    "whois_l_hosting": {"ru": "🖧 Хостинг", "en": "🖧 Hosting", "tk": "🖧 Hosting"},
+    "whois_l_hosting": {"ru": "🏭 Хостинг", "en": "🏭 Hosting", "tk": "🏭 Hosting"},
     "whois_l_cloudflare": {"ru": "☁️ Cloudflare", "en": "☁️ Cloudflare", "tk": "☁️ Cloudflare"},
     "whois_l_domain": {"ru": "📛 Домен", "en": "📛 Domain", "tk": "📛 Domen"},
     "whois_l_registrar": {"ru": "🏛 Регистратор", "en": "🏛 Registrar", "tk": "🏛 Registrator"},
