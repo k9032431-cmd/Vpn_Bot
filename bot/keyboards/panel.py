@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.texts.panel import admin_list_label, node_list_label, panel_list_label
+from bot.texts.panel import admin_list_label, host_list_label, node_list_label, panel_list_label
 from bot.texts.translations import t
 
 
@@ -52,7 +52,8 @@ def panel_dashboard_keyboard(lang: str, panel_id: str, manageable: bool) -> Inli
         builder.button(text=t(lang, "btn_panel_nodes"), callback_data=f"pdash:nodes:{panel_id}")
         builder.button(text=t(lang, "btn_panel_core"), callback_data=f"pdash:core:{panel_id}")
         builder.button(text=t(lang, "btn_panel_admins"), callback_data=f"pdash:admins:{panel_id}")
-        rows.extend([1, 1, 1])
+        builder.button(text=t(lang, "btn_panel_hosts"), callback_data=f"pdash:hosts:{panel_id}")
+        rows.extend([1, 1, 1, 1])
     builder.button(text=t(lang, "btn_panel_remove"), callback_data=f"pdash:rmask:{panel_id}")
     builder.button(text=t(lang, "btn_panel_list"), callback_data="pdash:list")
     rows.extend([1, 1])
@@ -208,6 +209,96 @@ def panel_admin_delete_confirm_keyboard(lang: str, panel_id: str, username: str)
         text=t(lang, "btn_panel_admin_delete_confirm"), callback_data=f"padmin:delcnf:{panel_id}:{username}"
     )
     builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:view:{panel_id}:{username}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_hosts_tags_keyboard(lang: str, panel_id: str, tags: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, tag in enumerate(tags):
+        builder.button(text=f"📡 {tag}", callback_data=f"phost:tag:{panel_id}:{i}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_panel_dashboard"), callback_data=f"pview:{panel_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def panel_hosts_list_keyboard(lang: str, panel_id: str, tag_index: int, hosts: list[dict]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, host in enumerate(hosts):
+        builder.button(text=host_list_label(host), callback_data=f"phost:view:{panel_id}:{tag_index}:{i}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_panel_host_add"), callback_data=f"phost:new:{panel_id}:{tag_index}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_panel_hosts"), callback_data=f"pdash:hosts:{panel_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def panel_host_detail_keyboard(
+    lang: str, panel_id: str, tag_index: int, host_index: int, is_disabled: bool
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    toggle_key = "btn_panel_host_toggle_on" if is_disabled else "btn_panel_host_toggle_off"
+    builder.button(
+        text=t(lang, "btn_panel_host_edit"), callback_data=f"phost:editstart:{panel_id}:{tag_index}:{host_index}"
+    )
+    builder.button(text=t(lang, toggle_key), callback_data=f"phost:toggle:{panel_id}:{tag_index}:{host_index}")
+    builder.button(
+        text=t(lang, "btn_panel_host_delete"), callback_data=f"phost:delask:{panel_id}:{tag_index}:{host_index}"
+    )
+    builder.button(text=t(lang, "btn_panel_hosts_list"), callback_data=f"phost:tag:{panel_id}:{tag_index}")
+    builder.adjust(2, 1, 1)
+    return builder.as_markup()
+
+
+def panel_host_cancel_keyboard(lang: str, panel_id: str, tag_index: int, host_index: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}")
+    return builder.as_markup()
+
+
+def panel_host_edit_confirm_keyboard(
+    lang: str, panel_id: str, tag_index: int, host_index: int
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_panel_host_apply"), callback_data=f"phost:editcnf:{panel_id}:{tag_index}:{host_index}"
+    )
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_host_delete_confirm_keyboard(
+    lang: str, panel_id: str, tag_index: int, host_index: int
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_panel_host_delete_confirm"),
+        callback_data=f"phost:delcnf:{panel_id}:{tag_index}:{host_index}",
+    )
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def panel_host_new_cancel_keyboard(lang: str, panel_id: str, tag_index: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}")
+    return builder.as_markup()
+
+
+def panel_host_create_confirm_keyboard(lang: str, panel_id: str, tag_index: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_panel_host_create_confirm"), callback_data=f"phost:newcnf:{panel_id}:{tag_index}"
+    )
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}")
     builder.adjust(1, 1)
     return builder.as_markup()
 

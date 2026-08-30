@@ -26,6 +26,14 @@ from bot.keyboards.panel import (
     panel_dashboard_back_keyboard,
     panel_dashboard_keyboard,
     panel_error_keyboard,
+    panel_host_cancel_keyboard,
+    panel_host_create_confirm_keyboard,
+    panel_host_delete_confirm_keyboard,
+    panel_host_detail_keyboard,
+    panel_host_edit_confirm_keyboard,
+    panel_host_new_cancel_keyboard,
+    panel_hosts_list_keyboard,
+    panel_hosts_tags_keyboard,
     panel_list_keyboard,
     panel_node_cancel_keyboard,
     panel_node_create_confirm_keyboard,
@@ -40,6 +48,7 @@ from bot.keyboards.panel import (
 )
 from bot.services.panel_api import (
     CoreConfigError,
+    HostFieldsError,
     PanelAPIError,
     count_3xui_clients,
     is_valid_panel_url,
@@ -53,6 +62,7 @@ from bot.services.panel_api import (
     marzban_get_admins,
     marzban_get_core_config,
     marzban_get_core_info,
+    marzban_get_hosts,
     marzban_get_inbounds,
     marzban_get_node,
     marzban_get_nodes,
@@ -66,8 +76,11 @@ from bot.services.panel_api import (
     marzban_reset_user_usage,
     marzban_restart_core,
     marzban_set_core_config,
+    marzban_set_hosts,
+    new_host_entry,
     normalize_panel_url,
     parse_core_config_input,
+    parse_host_fields_input,
     threexui_get_inbounds,
     threexui_login,
 )
@@ -75,6 +88,8 @@ from bot.services.panel_store import panel_store
 from bot.states.panel_setup import (
     PanelAdminCreateStates,
     PanelCoreEditStates,
+    PanelHostCreateStates,
+    PanelHostEditStates,
     PanelNodeCreateStates,
     PanelSetupStates,
     PanelUserCreateStates,
@@ -1341,4 +1356,433 @@ async def cb_admin_delete_confirm(callback: CallbackQuery, lang: str) -> None:
 
     await callback.message.edit_text(
         texts.admin_delete_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+    )
+
+
+# --- Subscription host settings (Marzban / PasarGuard only) ---
+
+
+async def _render_hosts_tags(callback: CallbackQuery, lang: str, panel_id: str) -> None:
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    tags = sorted(hosts_map.keys())
+    await callback.message.edit_text(
+        texts.hosts_tags_text(lang, panel, tags), reply_markup=panel_hosts_tags_keyboard(lang, panel_id, tags)
+    )
+
+
+@router.callback_query(F.data.startswith("pdash:hosts:"))
+async def cb_dashboard_hosts(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    panel_id = callback.data.split(":", 2)[2]
+    await _render_hosts_tags(callback, lang, panel_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("phost:tag:"))
+async def cb_host_tag(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, panel_id, tag_index_raw = callback.data.split(":", 3)
+    tag_index = int(tag_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    tags = sorted(hosts_map.keys())
+    if tag_index >= len(tags):
+        await _render_hosts_tags(callback, lang, panel_id)
+        await callback.answer()
+        return
+
+    tag = tags[tag_index]
+    await callback.message.edit_text(
+        texts.hosts_list_text(lang, panel, tag, hosts_map[tag]),
+        reply_markup=panel_hosts_list_keyboard(lang, panel_id, tag_index, hosts_map[tag]),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("phost:view:"))
+async def cb_host_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, panel_id, tag_index_raw, host_index_raw = callback.data.split(":", 4)
+    tag_index, host_index = int(tag_index_raw), int(host_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    tags = sorted(hosts_map.keys())
+    if tag_index >= len(tags) or host_index >= len(hosts_map[tags[tag_index]]):
+        await _render_hosts_tags(callback, lang, panel_id)
+        await callback.answer()
+        return
+
+    tag = tags[tag_index]
+    host = hosts_map[tag][host_index]
+    await callback.message.edit_text(
+        texts.host_detail_text(lang, panel, tag, host),
+        reply_markup=panel_host_detail_keyboard(lang, panel_id, tag_index, host_index, bool(host.get("is_disabled"))),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("phost:editstart:"))
+async def cb_host_edit_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, panel_id, tag_index_raw, host_index_raw = callback.data.split(":", 4)
+    tag_index, host_index = int(tag_index_raw), int(host_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
+        await callback.answer()
+        return
+    await state.clear()
+    await state.update_data(panel_id=panel_id, tag_index=tag_index, host_index=host_index)
+    await state.set_state(PanelHostEditStates.waiting_fields)
+    await callback.message.edit_text(
+        texts.host_edit_prompt_text(lang, panel),
+        reply_markup=panel_host_cancel_keyboard(lang, panel_id, tag_index, host_index),
+    )
+    await callback.answer()
+
+
+@router.message(PanelHostEditStates.waiting_fields)
+async def process_host_fields(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, tag_index, host_index = data["panel_id"], data["tag_index"], data["host_index"]
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    try:
+        updates = parse_host_fields_input(message.text or "")
+    except HostFieldsError as exc:
+        await message.answer(
+            texts.host_fields_error_text(lang, str(exc)),
+            reply_markup=panel_host_cancel_keyboard(lang, panel_id, tag_index, host_index),
+        )
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+        host = dict(hosts_map[tag][host_index])
+    except (PanelAPIError, IndexError) as exc:
+        await state.clear()
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await message.answer(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+    host.update(updates)
+
+    await state.update_data(pending_updates=updates)
+    await state.set_state(PanelHostEditStates.confirming)
+    await message.answer(
+        texts.host_edit_confirm_text(lang, panel, host),
+        reply_markup=panel_host_edit_confirm_keyboard(lang, panel_id, tag_index, host_index),
+    )
+
+
+@router.callback_query(PanelHostEditStates.confirming, F.data.startswith("phost:editcnf:"))
+async def cb_host_edit_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, tag_index, host_index = data["panel_id"], data["tag_index"], data["host_index"]
+    updates = data.get("pending_updates", {})
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+        hosts_map[tag][host_index].update(updates)
+        await marzban_set_hosts(panel["url"], token, hosts_map)
+        is_disabled = bool(hosts_map[tag][host_index].get("is_disabled"))
+    except (PanelAPIError, IndexError) as exc:
+        await state.clear()
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await callback.message.edit_text(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.host_edit_success_text(lang),
+        reply_markup=panel_host_detail_keyboard(lang, panel_id, tag_index, host_index, is_disabled),
+    )
+
+
+@router.callback_query(F.data.startswith("phost:toggle:"))
+async def cb_host_toggle(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, tag_index_raw, host_index_raw = callback.data.split(":", 4)
+    tag_index, host_index = int(tag_index_raw), int(host_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+        host = hosts_map[tag][host_index]
+        host["is_disabled"] = not bool(host.get("is_disabled"))
+        await marzban_set_hosts(panel["url"], token, hosts_map)
+    except (PanelAPIError, IndexError) as exc:
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await callback.message.edit_text(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.host_toggle_success_text(lang, host["is_disabled"]),
+        reply_markup=panel_host_detail_keyboard(lang, panel_id, tag_index, host_index, host["is_disabled"]),
+    )
+
+
+@router.callback_query(F.data.startswith("phost:delask:"))
+async def cb_host_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, tag_index_raw, host_index_raw = callback.data.split(":", 4)
+    tag_index, host_index = int(tag_index_raw), int(host_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+        remark = hosts_map[tag][host_index].get("remark")
+    except (PanelAPIError, IndexError) as exc:
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await callback.message.edit_text(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.host_delete_confirm_text(lang, panel, remark),
+        reply_markup=panel_host_delete_confirm_keyboard(lang, panel_id, tag_index, host_index),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("phost:delcnf:"))
+async def cb_host_delete_confirm(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, tag_index_raw, host_index_raw = callback.data.split(":", 4)
+    tag_index, host_index = int(tag_index_raw), int(host_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+        del hosts_map[tag][host_index]
+        await marzban_set_hosts(panel["url"], token, hosts_map)
+    except (PanelAPIError, IndexError) as exc:
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await callback.message.edit_text(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.host_delete_success_text(lang),
+        reply_markup=panel_hosts_list_keyboard(lang, panel_id, tag_index, hosts_map[tag]),
+    )
+
+
+@router.callback_query(F.data.startswith("phost:new:"))
+async def cb_host_new(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, panel_id, tag_index_raw = callback.data.split(":", 3)
+    tag_index = int(tag_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] not in MANAGEABLE_TYPES:
+        await callback.answer()
+        return
+
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+    except (PanelAPIError, IndexError) as exc:
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await callback.message.edit_text(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await state.clear()
+    await state.update_data(panel_id=panel_id, tag_index=tag_index, tag=tag)
+    await state.set_state(PanelHostCreateStates.waiting_remark)
+    await callback.message.edit_text(
+        texts.create_host_step_remark_text(lang, panel, tag),
+        reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
+    )
+    await callback.answer()
+
+
+@router.message(PanelHostCreateStates.waiting_remark)
+async def process_host_remark(message: Message, state: FSMContext, lang: str) -> None:
+    remark = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id, tag_index = data["panel_id"], data["tag_index"]
+    if not remark:
+        await message.answer(
+            texts.invalid_new_host_remark_text(lang),
+            reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    await state.update_data(host_remark=remark)
+    await state.set_state(PanelHostCreateStates.waiting_address)
+    await message.answer(
+        texts.create_host_step_address_text(lang, panel),
+        reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
+    )
+
+
+@router.message(PanelHostCreateStates.waiting_address)
+async def process_host_address(message: Message, state: FSMContext, lang: str) -> None:
+    address = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id, tag_index = data["panel_id"], data["tag_index"]
+    if not address or " " in address or not NODE_ADDRESS_RE.match(address):
+        await message.answer(
+            texts.invalid_new_host_address_text(lang),
+            reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    await state.update_data(host_address=address)
+    await state.set_state(PanelHostCreateStates.waiting_port)
+    await message.answer(
+        texts.create_host_step_port_text(lang, panel),
+        reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
+    )
+
+
+@router.message(PanelHostCreateStates.waiting_port)
+async def process_host_port(message: Message, state: FSMContext, lang: str) -> None:
+    raw = (message.text or "").strip()
+    data = await state.get_data()
+    panel_id, tag_index = data["panel_id"], data["tag_index"]
+
+    port: int | None = None
+    if raw and raw != "-":
+        try:
+            port = int(raw)
+            if not (0 < port < 65536):
+                raise ValueError
+        except ValueError:
+            await message.answer(
+                texts.host_fields_error_text(lang, "bad_port"),
+                reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
+            )
+            return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    data = await state.update_data(host_port=port)
+    await state.set_state(PanelHostCreateStates.confirming)
+    await message.answer(
+        texts.create_host_confirm_text(lang, panel, data["tag"], data["host_remark"], data["host_address"], port),
+        reply_markup=panel_host_create_confirm_keyboard(lang, panel_id, tag_index),
+    )
+
+
+@router.callback_query(PanelHostCreateStates.confirming, F.data.startswith("phost:newcnf:"))
+async def cb_host_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, tag_index = data["panel_id"], data["tag_index"]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    new_host = new_host_entry(data["host_remark"], data["host_address"], data.get("host_port"))
+    try:
+        token = await marzban_login(panel["url"], panel["username"], panel["password"])
+        hosts_map = await marzban_get_hosts(panel["url"], token)
+        tag = sorted(hosts_map.keys())[tag_index]
+        hosts_map[tag].append(new_host)
+        await marzban_set_hosts(panel["url"], token, hosts_map)
+    except (PanelAPIError, IndexError) as exc:
+        await state.clear()
+        reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
+        await callback.message.edit_text(
+            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.create_host_success_text(lang, new_host["remark"]),
+        reply_markup=panel_hosts_list_keyboard(lang, panel_id, tag_index, hosts_map[tag]),
     )

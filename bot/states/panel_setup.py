@@ -34,3 +34,15 @@ class PanelAdminCreateStates(StatesGroup):
     waiting_username = State()
     waiting_password = State()
     confirming = State()
+
+
+class PanelHostEditStates(StatesGroup):
+    waiting_fields = State()
+    confirming = State()
+
+
+class PanelHostCreateStates(StatesGroup):
+    waiting_remark = State()
+    waiting_address = State()
+    waiting_port = State()
+    confirming = State()

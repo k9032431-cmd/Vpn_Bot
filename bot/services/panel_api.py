@@ -427,6 +427,95 @@ async def marzban_delete_admin(url: str, token: str, username: str) -> None:
         await _marzban_call(session, "DELETE", f"{url}/api/admin/{username}", headers=headers)
 
 
+# --- Subscription host settings (Marzban / PasarGuard) ---
+#
+# Host entries are kept as raw dicts rather than a dataclass: Marzban's
+# HostConfig has many optional advanced fields (fragment_setting,
+# noise_setting, mux_enable, ...) that this bot doesn't expose editing
+# for, and PUT /api/hosts replaces the *entire* structure — round-tripping
+# through a lossy typed model would silently drop whatever the panel
+# admin already configured for those fields.
+
+
+async def marzban_get_hosts(url: str, token: str) -> dict[str, list[dict]]:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        payload = await _marzban_call(session, "GET", f"{url}/api/hosts", headers=headers)
+    if not isinstance(payload, dict):
+        raise PanelAPIError("bad_response")
+    return {
+        str(tag): [h for h in hosts if isinstance(h, dict)]
+        for tag, hosts in payload.items()
+        if isinstance(hosts, list)
+    }
+
+
+async def marzban_set_hosts(url: str, token: str, hosts: dict[str, list[dict]]) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+        await _marzban_call(session, "PUT", f"{url}/api/hosts", headers=headers, json=hosts)
+
+
+def new_host_entry(remark: str, address: str, port: int | None) -> dict:
+    return {
+        "remark": remark,
+        "address": address,
+        "port": port,
+        "sni": None,
+        "host": None,
+        "path": None,
+        "security": "inbound_default",
+        "alpn": None,
+        "fingerprint": None,
+        "allowinsecure": False,
+        "is_disabled": False,
+        "mux_enable": False,
+        "fragment_setting": None,
+        "noise_setting": None,
+        "random_user_agent": False,
+        "use_sni_as_host": False,
+    }
+
+
+class HostFieldsError(Exception):
+    """str(exc) is a short reason code the texts layer turns into a message."""
+
+
+def parse_host_fields_input(raw: str) -> dict:
+    """Parses the compact "remark|address|port|sni|host|path" editor line.
+
+    An empty segment leaves that field untouched; a lone "-" explicitly
+    clears an optional field (port/sni/host/path) to null."""
+    parts = raw.split("|")
+    if len(parts) != 6:
+        raise HostFieldsError("wrong_field_count")
+
+    remark, address, port_raw, sni, host, path = (p.strip() for p in parts)
+    updates: dict = {}
+    if remark:
+        updates["remark"] = remark
+    if address:
+        updates["address"] = address
+    if port_raw:
+        if port_raw == "-":
+            updates["port"] = None
+        else:
+            try:
+                port = int(port_raw)
+            except ValueError as exc:
+                raise HostFieldsError("bad_port") from exc
+            if not (0 < port < 65536):
+                raise HostFieldsError("bad_port")
+            updates["port"] = port
+    if sni:
+        updates["sni"] = None if sni == "-" else sni
+    if host:
+        updates["host"] = None if host == "-" else host
+    if path:
+        updates["path"] = None if path == "-" else path
+    return updates
+
+
 # --- 3X-UI (cookie-based session, optional CSRF token on newer builds) ---
 
 

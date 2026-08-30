@@ -96,6 +96,16 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_panel_admin_toggle_sudo_off": {"ru": "👤 Убрать sudo", "en": "👤 Remove sudo", "tk": "👤 Sudo aýyr"},
     "btn_panel_admin_delete": {"ru": "🗑 Удалить админа", "en": "🗑 Delete admin", "tk": "🗑 Admin poz"},
     "btn_panel_admin_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "btn_panel_hosts": {"ru": "🏠 Хосты", "en": "🏠 Hosts", "tk": "🏠 Hostlar"},
+    "btn_panel_host_add": {"ru": "➕ Добавить хост", "en": "➕ Add host", "tk": "➕ Host goş"},
+    "btn_panel_host_edit": {"ru": "✏️ Изменить", "en": "✏️ Edit", "tk": "✏️ Üýtget"},
+    "btn_panel_host_toggle_on": {"ru": "✅ Включить", "en": "✅ Enable", "tk": "✅ Işjeňleşdir"},
+    "btn_panel_host_toggle_off": {"ru": "⛔ Отключить", "en": "⛔ Disable", "tk": "⛔ Öçür"},
+    "btn_panel_host_delete": {"ru": "🗑 Удалить хост", "en": "🗑 Delete host", "tk": "🗑 Host poz"},
+    "btn_panel_host_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "btn_panel_host_create_confirm": {"ru": "✅ Добавить", "en": "✅ Add", "tk": "✅ Goş"},
+    "btn_panel_host_apply": {"ru": "✅ Применить", "en": "✅ Apply", "tk": "✅ Ulan"},
+    "btn_panel_hosts_list": {"ru": "🏠 К списку хостов", "en": "🏠 Back to hosts", "tk": "🏠 Hostlara gaýt"},
     "btn_panel_node_add": {"ru": "➕ Добавить ноду", "en": "➕ Add node", "tk": "➕ Node goş"},
     "btn_panel_node_reconnect": {"ru": "🔄 Переподключить", "en": "🔄 Reconnect", "tk": "🔄 Gaýtadan birik"},
     "btn_panel_node_delete": {"ru": "🗑 Удалить ноду", "en": "🗑 Delete node", "tk": "🗑 Node poz"},
@@ -1229,6 +1239,160 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Админ <b>{username}</b> удалён.",
         "en": "{icon} Admin <b>{username}</b> deleted.",
         "tk": "{icon} <b>{username}</b> admini pozuldy.",
+    },
+    # --- Хосты подписки (Marzban/PasarGuard) ---
+    "panel_hosts_tags_header": {
+        "ru": "{header}\n🏠 <b>Хосты подписки</b>\n\nВыберите inbound:",
+        "en": "{header}\n🏠 <b>Subscription hosts</b>\n\nChoose an inbound:",
+        "tk": "{header}\n🏠 <b>Abunalyk hostlary</b>\n\nInbound saýlaň:",
+    },
+    "panel_hosts_tags_empty": {
+        "ru": "{header}\n🏠 <b>Хосты подписки</b>\n\nНа панели нет ни одного inbound'а.",
+        "en": "{header}\n🏠 <b>Subscription hosts</b>\n\nThe panel has no inbounds.",
+        "tk": "{header}\n🏠 <b>Abunalyk hostlary</b>\n\nPanelde inbound ýok.",
+    },
+    "panel_hosts_list_header": {
+        "ru": "{header}\n🏠 <b>{tag}</b>\n\nХостов: {count}",
+        "en": "{header}\n🏠 <b>{tag}</b>\n\nHosts: {count}",
+        "tk": "{header}\n🏠 <b>{tag}</b>\n\nHost sany: {count}",
+    },
+    "panel_hosts_list_empty": {
+        "ru": "{header}\n🏠 <b>{tag}</b>\n\nХостов пока нет.",
+        "en": "{header}\n🏠 <b>{tag}</b>\n\nNo hosts yet.",
+        "tk": "{header}\n🏠 <b>{tag}</b>\n\nHeniz host ýok.",
+    },
+    "panel_host_detail": {
+        "ru": (
+            "{header}\n🏠 <b>{tag}</b>\n\n{status_emoji} {status_label}\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Адрес: <code>{address}</code>\n🔌 Порт: <code>{port}</code>\n"
+            "🔒 SNI: <code>{sni}</code>\n🏷 Host: <code>{host}</code>\n📁 Path: <code>{path}</code>\n"
+            "🛡 Security: <code>{security}</code>"
+        ),
+        "en": (
+            "{header}\n🏠 <b>{tag}</b>\n\n{status_emoji} {status_label}\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Address: <code>{address}</code>\n🔌 Port: <code>{port}</code>\n"
+            "🔒 SNI: <code>{sni}</code>\n🏷 Host: <code>{host}</code>\n📁 Path: <code>{path}</code>\n"
+            "🛡 Security: <code>{security}</code>"
+        ),
+        "tk": (
+            "{header}\n🏠 <b>{tag}</b>\n\n{status_emoji} {status_label}\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Salgysy: <code>{address}</code>\n🔌 Port: <code>{port}</code>\n"
+            "🔒 SNI: <code>{sni}</code>\n🏷 Host: <code>{host}</code>\n📁 Path: <code>{path}</code>\n"
+            "🛡 Security: <code>{security}</code>"
+        ),
+    },
+    "host_status_enabled": {"ru": "Включён", "en": "Enabled", "tk": "Işjeň"},
+    "host_status_disabled": {"ru": "Отключён", "en": "Disabled", "tk": "Öçürilen"},
+    "panel_host_edit_prompt": {
+        "ru": (
+            "{header}\n\n✏️ Пришлите одной строкой через «|»:\n"
+            "<code>remark|адрес|порт|sni|host|path</code>\n\n"
+            "Пустой сегмент — не менять это поле, «-» — очистить (для порта/sni/host/path).\n\n"
+            "Например: <code>|new.example.com||-||</code> изменит только адрес и очистит SNI."
+        ),
+        "en": (
+            "{header}\n\n✏️ Send one line separated by \"|\":\n"
+            "<code>remark|address|port|sni|host|path</code>\n\n"
+            "An empty segment leaves that field unchanged, \"-\" clears it (for port/sni/host/path).\n\n"
+            "Example: <code>|new.example.com||-||</code> changes only the address and clears SNI."
+        ),
+        "tk": (
+            "{header}\n\n✏️ «|» bilen bir setirde iberiň:\n"
+            "<code>remark|salgy|port|sni|host|path</code>\n\n"
+            "Boş segment — üýtgetmez, «-» — arassalar (port/sni/host/path üçin).\n\n"
+            "Mysal: <code>|new.example.com||-||</code> diňe salgyny üýtgeder we SNI-ni arassalar."
+        ),
+    },
+    "panel_host_err_wrong_field_count": {
+        "ru": "Нужно ровно 6 сегментов через «|» (можно пустых). Пример: <code>|||||</code>",
+        "en": "Exactly 6 segments separated by \"|\" are required (empty ones are fine). Example: <code>|||||</code>",
+        "tk": "«|» bilen takyk 6 segment gerek (boşlary bolýar). Mysal: <code>|||||</code>",
+    },
+    "panel_host_err_bad_port": {
+        "ru": "Порт должен быть числом от 1 до 65535, либо «-» чтобы очистить.",
+        "en": "The port must be a number from 1 to 65535, or \"-\" to clear it.",
+        "tk": "Port 1-den 65535-e çenli san bolmaly, ýa-da arassalamak üçin «-».",
+    },
+    "panel_host_edit_confirm": {
+        "ru": (
+            "{header}\n\n✏️ Применить изменения?\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Адрес: <code>{address}</code>\n🔌 Порт: <code>{port}</code>\n"
+            "🔒 SNI: <code>{sni}</code>\n🏷 Host: <code>{host}</code>\n📁 Path: <code>{path}</code>"
+        ),
+        "en": (
+            "{header}\n\n✏️ Apply these changes?\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Address: <code>{address}</code>\n🔌 Port: <code>{port}</code>\n"
+            "🔒 SNI: <code>{sni}</code>\n🏷 Host: <code>{host}</code>\n📁 Path: <code>{path}</code>"
+        ),
+        "tk": (
+            "{header}\n\n✏️ Üýtgeşmeler ulanylsynmy?\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Salgysy: <code>{address}</code>\n🔌 Port: <code>{port}</code>\n"
+            "🔒 SNI: <code>{sni}</code>\n🏷 Host: <code>{host}</code>\n📁 Path: <code>{path}</code>"
+        ),
+    },
+    "panel_host_edit_success": {
+        "ru": "{icon} Хост обновлён.",
+        "en": "{icon} Host updated.",
+        "tk": "{icon} Host täzelendi.",
+    },
+    "panel_host_toggle_success": {
+        "ru": "{icon} Хост теперь {status_label}.",
+        "en": "{icon} The host is now {status_label}.",
+        "tk": "{icon} Host indi {status_label}.",
+    },
+    "panel_host_delete_confirm": {
+        "ru": "{header}\n\n⚠️ Точно удалить хост <b>{remark}</b>? Это действие необратимо.",
+        "en": "{header}\n\n⚠️ Delete host <b>{remark}</b>? This can't be undone.",
+        "tk": "{header}\n\n⚠️ <b>{remark}</b> hosty pozmakçymysyňyz? Bu amal yzyna gaýtarylmaýar.",
+    },
+    "panel_host_delete_success": {
+        "ru": "{icon} Хост удалён.",
+        "en": "{icon} Host deleted.",
+        "tk": "{icon} Host pozuldy.",
+    },
+    "panel_create_host_step_remark": {
+        "ru": "{header}\n🏠 <b>{tag}</b>\n\n📝 Введите remark (название) нового хоста:",
+        "en": "{header}\n🏠 <b>{tag}</b>\n\n📝 Enter the new host's remark (name):",
+        "tk": "{header}\n🏠 <b>{tag}</b>\n\n📝 Täze hostuň remark (ady) ýazyň:",
+    },
+    "panel_create_host_invalid_remark": {
+        "ru": "Remark не может быть пустым. Попробуйте ещё раз:",
+        "en": "The remark can't be empty. Try again:",
+        "tk": "Remark boş bolup bilmez. Täzeden synanyşyň:",
+    },
+    "panel_create_host_step_address": {
+        "ru": "{header}\n\n🌍 Теперь пришлите адрес хоста (домен или IP):",
+        "en": "{header}\n\n🌍 Now send the host's address (domain or IP):",
+        "tk": "{header}\n\n🌍 Indi hostuň salgysyny iberiň (domen ýa-da IP):",
+    },
+    "panel_create_host_invalid_address": {
+        "ru": "Похоже, это не адрес. Попробуйте ещё раз:",
+        "en": "That doesn't look like an address. Try again:",
+        "tk": "Bu salgy ýaly görnenok. Täzeden synanyşyň:",
+    },
+    "panel_create_host_step_port": {
+        "ru": "{header}\n\n🔌 Пришлите порт, либо «-» чтобы оставить пустым (порт inbound'а по умолчанию):",
+        "en": "{header}\n\n🔌 Send the port, or \"-\" to leave it empty (the inbound's default port):",
+        "tk": "{header}\n\n🔌 Porty iberiň, ýa-da boş goýmak üçin «-» (inboundyň öz porty):",
+    },
+    "panel_create_host_confirm": {
+        "ru": (
+            "{header}\n🏠 <b>{tag}</b>\n\n➕ Добавить хост?\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Адрес: <code>{address}</code>\n🔌 Порт: <code>{port}</code>"
+        ),
+        "en": (
+            "{header}\n🏠 <b>{tag}</b>\n\n➕ Add this host?\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Address: <code>{address}</code>\n🔌 Port: <code>{port}</code>"
+        ),
+        "tk": (
+            "{header}\n🏠 <b>{tag}</b>\n\n➕ Bu host goşulsynmy?\n\n"
+            "📝 Remark: <b>{remark}</b>\n🌍 Salgysy: <code>{address}</code>\n🔌 Port: <code>{port}</code>"
+        ),
+    },
+    "panel_create_host_success": {
+        "ru": "{icon} Хост <b>{remark}</b> добавлен.",
+        "en": "{icon} Host <b>{remark}</b> added.",
+        "tk": "{icon} <b>{remark}</b> hosty goşuldy.",
     },
     # --- Arsi WhoIs ---
     "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},

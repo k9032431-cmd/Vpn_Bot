@@ -604,6 +604,148 @@ def admin_delete_success_text(lang: str, username: str) -> str:
     return t(lang, "panel_admin_delete_success", icon=e("success", "✅"), username=html.escape(username))
 
 
+# --- Хосты подписки (Marzban/PasarGuard) ---
+
+
+def hosts_tags_text(lang: str, panel: dict, tags: list[str]) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
+    if not tags:
+        return t(lang, "panel_hosts_tags_empty", header=header)
+    return t(lang, "panel_hosts_tags_header", header=header)
+
+
+def hosts_list_text(lang: str, panel: dict, tag: str, hosts: list[dict]) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
+    if not hosts:
+        return t(lang, "panel_hosts_list_empty", header=header, tag=html.escape(tag))
+    return t(lang, "panel_hosts_list_header", header=header, tag=html.escape(tag), count=len(hosts))
+
+
+def host_list_label(host: dict) -> str:
+    emoji = "⛔" if host.get("is_disabled") else "🟢"
+    remark = host.get("remark") or "—"
+    return f"{emoji} {remark}"
+
+
+def _host_field(value) -> str:
+    return html.escape(str(value)) if value not in (None, "") else "—"
+
+
+def host_detail_text(lang: str, panel: dict, tag: str, host: dict) -> str:
+    disabled = bool(host.get("is_disabled"))
+    return t(
+        lang,
+        "panel_host_detail",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        tag=html.escape(tag),
+        status_emoji="⛔" if disabled else "🟢",
+        status_label=t(lang, "host_status_disabled" if disabled else "host_status_enabled"),
+        remark=_host_field(host.get("remark")),
+        address=_host_field(host.get("address")),
+        port=_host_field(host.get("port")),
+        sni=_host_field(host.get("sni")),
+        host=_host_field(host.get("host")),
+        path=_host_field(host.get("path")),
+        security=_host_field(host.get("security")),
+    )
+
+
+def host_edit_prompt_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_host_edit_prompt", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+_HOST_ERR_KEYS = {
+    "wrong_field_count": "panel_host_err_wrong_field_count",
+    "bad_port": "panel_host_err_bad_port",
+}
+
+
+def host_fields_error_text(lang: str, reason: str) -> str:
+    key = _HOST_ERR_KEYS.get(reason, "panel_host_err_wrong_field_count")
+    return t(lang, key)
+
+
+def host_edit_confirm_text(lang: str, panel: dict, host: dict) -> str:
+    return t(
+        lang,
+        "panel_host_edit_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=_host_field(host.get("remark")),
+        address=_host_field(host.get("address")),
+        port=_host_field(host.get("port")),
+        sni=_host_field(host.get("sni")),
+        host=_host_field(host.get("host")),
+        path=_host_field(host.get("path")),
+    )
+
+
+def host_edit_success_text(lang: str) -> str:
+    return t(lang, "panel_host_edit_success", icon=e("success", "✅"))
+
+
+def host_toggle_success_text(lang: str, is_disabled: bool) -> str:
+    return t(
+        lang,
+        "panel_host_toggle_success",
+        icon=e("success", "✅"),
+        status_label=t(lang, "host_status_disabled" if is_disabled else "host_status_enabled"),
+    )
+
+
+def host_delete_confirm_text(lang: str, panel: dict, remark: str) -> str:
+    return t(
+        lang,
+        "panel_host_delete_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(remark or "—"),
+    )
+
+
+def host_delete_success_text(lang: str) -> str:
+    return t(lang, "panel_host_delete_success", icon=e("success", "✅"))
+
+
+def create_host_step_remark_text(lang: str, panel: dict, tag: str) -> str:
+    return t(
+        lang,
+        "panel_create_host_step_remark",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        tag=html.escape(tag),
+    )
+
+
+def invalid_new_host_remark_text(lang: str) -> str:
+    return t(lang, "panel_create_host_invalid_remark")
+
+
+def create_host_step_address_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_create_host_step_address", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def invalid_new_host_address_text(lang: str) -> str:
+    return t(lang, "panel_create_host_invalid_address")
+
+
+def create_host_step_port_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_create_host_step_port", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+def create_host_confirm_text(lang: str, panel: dict, tag: str, remark: str, address: str, port: int | None) -> str:
+    return t(
+        lang,
+        "panel_create_host_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        tag=html.escape(tag),
+        remark=html.escape(remark),
+        address=html.escape(address),
+        port=port if port is not None else "—",
+    )
+
+
+def create_host_success_text(lang: str, remark: str) -> str:
+    return t(lang, "panel_create_host_success", icon=e("success", "✅"), remark=html.escape(remark))
+
+
 # --- Уведомление админам (всегда на русском, как и для Node) ---
 
 
