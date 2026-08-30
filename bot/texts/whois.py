@@ -56,15 +56,18 @@ def ip_result_text(lang: str, query: str, info) -> str:
         tor=_yn(lang, info.is_tor),
         hosting=_yn(lang, info.is_hosting),
         cloudflare=_yn(lang, info.is_cloudflare),
-        source=html.escape(info.source),
+    )
+
+
+def _tree_list(items: list[str]) -> str:
+    # The last entry closes the box-drawing tree with "└" instead of "├".
+    return "\n".join(
+        f"{'└' if i == len(items) - 1 else '├'} {html.escape(item)}" for i, item in enumerate(items)
     )
 
 
 def domain_result_text(lang: str, query: str, info) -> str:
-    if info.nameservers:
-        ns = "\n".join(f"├ <code>{html.escape(name)}</code>" for name in info.nameservers[:6])
-    else:
-        ns = "├ —"
+    ns = _tree_list(info.nameservers[:6]) if info.nameservers else "└ —"
     status = ", ".join(info.status) if info.status else "—"
     ip_extra = ", ".join(filter(None, [info.resolved_ip_country, info.resolved_ip_isp]))
     return t(
@@ -81,5 +84,4 @@ def domain_result_text(lang: str, query: str, info) -> str:
         cloudflare=_yn(lang, info.is_cloudflare_ns),
         resolved_ip=html.escape(info.resolved_ip or "—"),
         ip_extra=html.escape(f" ({ip_extra})" if ip_extra else ""),
-        source=html.escape(info.source),
     )

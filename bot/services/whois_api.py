@@ -58,7 +58,6 @@ class IPInfo:
     is_tor: bool
     is_hosting: bool
     is_cloudflare: bool
-    source: str
 
 
 @dataclass
@@ -74,7 +73,6 @@ class DomainInfo:
     resolved_ip: str | None
     resolved_ip_country: str | None
     resolved_ip_isp: str | None
-    source: str
 
 
 async def _reverse_dns(ip: str) -> str | None:
@@ -135,7 +133,6 @@ async def lookup_ip(ip: str) -> IPInfo:
         is_tor=bool(security.get("tor")),
         is_hosting=bool(security.get("hosting")),
         is_cloudflare=is_cloudflare,
-        source="ipwho.is",
     )
 
 
@@ -158,34 +155,49 @@ def _rdap_event(events: list, action: str) -> str | None:
     return None
 
 
-async def lookup_domain(domain: str) -> DomainInfo:
+async def _rdap_lookup(domain: str) -> dict | None:
     async with aiohttp.ClientSession(timeout=REQUEST_TIMEOUT, trust_env=True) as session:
         try:
             async with session.get(RDAP_URL_TEMPLATE.format(domain=domain)) as resp:
-                status = resp.status
+                if resp.status >= 400:
+                    return None
                 try:
                     payload = await resp.json(content_type=None)
                 except (aiohttp.ContentTypeError, ValueError):
-                    payload = None
-        except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError) as exc:
-            raise WhoisAPIError("connect_failed") from exc
+                    return None
+        except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError):
+            return None
+    return payload if isinstance(payload, dict) else None
 
-    if status == 404:
-        raise WhoisAPIError("not_found")
-    if status >= 400 or not isinstance(payload, dict):
-        raise WhoisAPIError("bad_response")
 
-    events = payload.get("events") or []
-    nameservers = [
-        str(ns.get("ldhName"))
-        for ns in (payload.get("nameservers") or [])
-        if isinstance(ns, dict) and ns.get("ldhName")
-    ]
-    registrar = None
-    for entity in payload.get("entities") or []:
-        if isinstance(entity, dict) and "registrar" in (entity.get("roles") or []):
-            registrar = _vcard_fn(entity.get("vcardArray")) or entity.get("handle")
-            break
+async def lookup_domain(domain: str) -> DomainInfo:
+    # Not every ccTLD registry runs an RDAP server (notably .ru and several
+    # others), so a missing/failed RDAP response isn't treated as a hard
+    # error here — it just means the whois-specific fields stay empty while
+    # the DNS-based lookup below still has a chance to find something.
+    payload = await _rdap_lookup(domain)
+
+    registrar = created = expires = updated = None
+    nameservers: list[str] = []
+    status: list[str] = []
+    domain_label = domain.lower()
+
+    if payload is not None:
+        events = payload.get("events") or []
+        nameservers = [
+            str(ns.get("ldhName"))
+            for ns in (payload.get("nameservers") or [])
+            if isinstance(ns, dict) and ns.get("ldhName")
+        ]
+        for entity in payload.get("entities") or []:
+            if isinstance(entity, dict) and "registrar" in (entity.get("roles") or []):
+                registrar = _vcard_fn(entity.get("vcardArray")) or entity.get("handle")
+                break
+        created = _rdap_event(events, "registration")
+        expires = _rdap_event(events, "expiration")
+        updated = _rdap_event(events, "last changed")
+        status = [str(s) for s in (payload.get("status") or [])]
+        domain_label = str(payload.get("ldhName", domain)).lower()
 
     resolved_ip = await _resolve_ip(domain)
     resolved_ip_country = None
@@ -198,17 +210,19 @@ async def lookup_domain(domain: str) -> DomainInfo:
         except WhoisAPIError:
             pass
 
+    if payload is None and not resolved_ip:
+        raise WhoisAPIError("not_found")
+
     return DomainInfo(
-        domain=str(payload.get("ldhName", domain)).lower(),
+        domain=domain_label,
         registrar=registrar,
-        created=_rdap_event(events, "registration"),
-        expires=_rdap_event(events, "expiration"),
-        updated=_rdap_event(events, "last changed"),
+        created=created,
+        expires=expires,
+        updated=updated,
         nameservers=nameservers,
-        status=[str(s) for s in (payload.get("status") or [])],
+        status=status,
         is_cloudflare_ns=any("cloudflare" in ns.lower() for ns in nameservers),
         resolved_ip=resolved_ip,
         resolved_ip_country=resolved_ip_country,
         resolved_ip_isp=resolved_ip_isp,
-        source="RDAP",
     )
