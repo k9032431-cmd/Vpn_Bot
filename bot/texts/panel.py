@@ -828,6 +828,137 @@ def inbound_delete_success_text(lang: str) -> str:
     return t(lang, "panel_inbound_delete_success", icon=e("success", "✅"))
 
 
+# --- Клиенты инбаунда (3X-UI) ---
+
+
+def _client_format_limit(lang: str, total_gb: int) -> str:
+    if not total_gb:
+        return t(lang, "client_limit_unlimited")
+    gb = total_gb / (1024**3)
+    gb_text = f"{gb:.0f}" if gb == int(gb) else f"{gb:.1f}"
+    return t(lang, "limit_gb", gb=gb_text)
+
+
+def _client_format_expire(lang: str, expiry_ms: int) -> str:
+    if not expiry_ms:
+        return t(lang, "client_expire_never")
+    dt = datetime.datetime.fromtimestamp(expiry_ms / 1000, tz=datetime.timezone.utc)
+    return dt.strftime("%Y-%m-%d")
+
+
+def _client_format_limit_ip(lang: str, limit_ip: int) -> str:
+    return str(limit_ip) if limit_ip else t(lang, "client_limit_ip_unlimited")
+
+
+def clients_list_text(lang: str, panel: dict, remark: str, clients: list[dict]) -> str:
+    header = panel_header(lang, panel["type"], panel["url"])
+    if not clients:
+        return t(lang, "panel_clients_list_empty", header=header, remark=html.escape(remark))
+    return t(lang, "panel_clients_list_header", header=header, remark=html.escape(remark), count=len(clients))
+
+
+def client_list_label(client: dict) -> str:
+    emoji = "🟢" if client.get("enable", True) else "⛔"
+    email = client.get("email") or "—"
+    return f"{emoji} {email}"
+
+
+def client_detail_text(lang: str, panel: dict, remark: str, client: dict, used_bytes: int) -> str:
+    enabled = bool(client.get("enable", True))
+    return t(
+        lang,
+        "panel_client_detail",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(remark),
+        email=html.escape(str(client.get("email") or "—")),
+        status_emoji="🟢" if enabled else "⛔",
+        status_label=t(lang, "client_status_enabled" if enabled else "client_status_disabled"),
+        used=_humanize_bytes(used_bytes),
+        limit=_client_format_limit(lang, int(client.get("totalGB", 0) or 0)),
+        expire=_client_format_expire(lang, int(client.get("expiryTime", 0) or 0)),
+        limit_ip=_client_format_limit_ip(lang, int(client.get("limitIp", 0) or 0)),
+    )
+
+
+def create_client_step_email_text(lang: str, panel: dict, remark: str) -> str:
+    return t(
+        lang,
+        "panel_create_client_step_email",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(remark),
+    )
+
+
+def invalid_new_client_email_text(lang: str) -> str:
+    return t(lang, "panel_create_client_invalid_email")
+
+
+def client_step_limits_text(lang: str, panel: dict) -> str:
+    return t(lang, "panel_client_step_limits", header=panel_header(lang, panel["type"], panel["url"]))
+
+
+_CLIENT_ERR_KEYS = {
+    "wrong_format": "panel_client_err_wrong_format",
+    "not_numbers": "panel_client_err_not_numbers",
+}
+
+
+def client_limits_error_text(lang: str, reason: str) -> str:
+    key = _CLIENT_ERR_KEYS.get(reason, "panel_client_err_wrong_format")
+    return t(lang, key)
+
+
+def create_client_confirm_text(
+    lang: str, panel: dict, remark: str, email: str, total_gb: int, expiry_ms: int
+) -> str:
+    return t(
+        lang,
+        "panel_create_client_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        remark=html.escape(remark),
+        email=html.escape(email),
+        limit=_client_format_limit(lang, total_gb),
+        expire=_client_format_expire(lang, expiry_ms),
+    )
+
+
+def create_client_success_text(lang: str, email: str) -> str:
+    return t(lang, "panel_create_client_success", icon=e("success", "✅"), email=html.escape(email))
+
+
+def client_edit_confirm_text(lang: str, panel: dict, total_gb: int, expiry_ms: int) -> str:
+    return t(
+        lang,
+        "panel_client_edit_confirm",
+        header=panel_header(lang, panel["type"], panel["url"]),
+        limit=_client_format_limit(lang, total_gb),
+        expire=_client_format_expire(lang, expiry_ms),
+    )
+
+
+def client_edit_success_text(lang: str) -> str:
+    return t(lang, "panel_client_edit_success", icon=e("success", "✅"))
+
+
+def client_toggle_success_text(lang: str, enabled: bool) -> str:
+    return t(
+        lang,
+        "panel_client_toggle_success",
+        icon=e("success", "✅"),
+        status_label=t(lang, "client_status_enabled" if enabled else "client_status_disabled"),
+    )
+
+
+def client_delete_confirm_text(lang: str, panel: dict, email: str) -> str:
+    return t(
+        lang, "panel_client_delete_confirm", header=panel_header(lang, panel["type"], panel["url"]), email=html.escape(email)
+    )
+
+
+def client_delete_success_text(lang: str) -> str:
+    return t(lang, "panel_client_delete_success", icon=e("success", "✅"))
+
+
 # --- Уведомление админам (всегда на русском, как и для Node) ---
 
 

@@ -114,6 +114,16 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_panel_inbound_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
     "btn_panel_inbound_apply": {"ru": "✅ Применить", "en": "✅ Apply", "tk": "✅ Ulan"},
     "btn_panel_inbounds_list": {"ru": "📡 К инбаундам", "en": "📡 Back to inbounds", "tk": "📡 Inboundlara gaýt"},
+    "btn_panel_clients": {"ru": "👥 Клиенты", "en": "👥 Clients", "tk": "👥 Müşderiler"},
+    "btn_panel_client_add": {"ru": "➕ Добавить клиента", "en": "➕ Add client", "tk": "➕ Müşderi goş"},
+    "btn_panel_client_edit": {"ru": "✏️ Лимит/срок", "en": "✏️ Limit/expiry", "tk": "✏️ Limit/möhlet"},
+    "btn_panel_client_toggle_on": {"ru": "✅ Включить", "en": "✅ Enable", "tk": "✅ Işjeňleşdir"},
+    "btn_panel_client_toggle_off": {"ru": "⛔ Отключить", "en": "⛔ Disable", "tk": "⛔ Öçür"},
+    "btn_panel_client_delete": {"ru": "🗑 Удалить клиента", "en": "🗑 Delete client", "tk": "🗑 Müşderi poz"},
+    "btn_panel_client_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "btn_panel_client_create_confirm": {"ru": "✅ Добавить", "en": "✅ Add", "tk": "✅ Goş"},
+    "btn_panel_client_apply": {"ru": "✅ Применить", "en": "✅ Apply", "tk": "✅ Ulan"},
+    "btn_panel_clients_list": {"ru": "👥 К клиентам", "en": "👥 Back to clients", "tk": "👥 Müşderilere gaýt"},
     "btn_panel_node_add": {"ru": "➕ Добавить ноду", "en": "➕ Add node", "tk": "➕ Node goş"},
     "btn_panel_node_reconnect": {"ru": "🔄 Переподключить", "en": "🔄 Reconnect", "tk": "🔄 Gaýtadan birik"},
     "btn_panel_node_delete": {"ru": "🗑 Удалить ноду", "en": "🗑 Delete node", "tk": "🗑 Node poz"},
@@ -1468,6 +1478,105 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Инбаунд удалён.",
         "en": "{icon} Inbound deleted.",
         "tk": "{icon} Inbound pozuldy.",
+    },
+    # --- Клиенты инбаунда (3X-UI) ---
+    "panel_clients_list_header": {
+        "ru": "{header}\n📡 <b>{remark}</b>\n👥 <b>Клиенты</b>\n\nВсего: {count}",
+        "en": "{header}\n📡 <b>{remark}</b>\n👥 <b>Clients</b>\n\nTotal: {count}",
+        "tk": "{header}\n📡 <b>{remark}</b>\n👥 <b>Müşderiler</b>\n\nJemi: {count}",
+    },
+    "panel_clients_list_empty": {
+        "ru": "{header}\n📡 <b>{remark}</b>\n👥 <b>Клиенты</b>\n\nПока клиентов нет.",
+        "en": "{header}\n📡 <b>{remark}</b>\n👥 <b>Clients</b>\n\nNo clients yet.",
+        "tk": "{header}\n📡 <b>{remark}</b>\n👥 <b>Müşderiler</b>\n\nHeniz müşderi ýok.",
+    },
+    "panel_client_detail": {
+        "ru": (
+            "{header}\n📡 <b>{remark}</b>\n\n👤 <b>{email}</b>\n{status_emoji} {status_label}\n\n"
+            "📊 Использовано: {used}\n📦 Лимит: {limit}\n⏳ Срок: {expire}\n🔢 Лимит IP: {limit_ip}"
+        ),
+        "en": (
+            "{header}\n📡 <b>{remark}</b>\n\n👤 <b>{email}</b>\n{status_emoji} {status_label}\n\n"
+            "📊 Used: {used}\n📦 Limit: {limit}\n⏳ Expiry: {expire}\n🔢 IP limit: {limit_ip}"
+        ),
+        "tk": (
+            "{header}\n📡 <b>{remark}</b>\n\n👤 <b>{email}</b>\n{status_emoji} {status_label}\n\n"
+            "📊 Ulanyldy: {used}\n📦 Limit: {limit}\n⏳ Möhlet: {expire}\n🔢 IP limiti: {limit_ip}"
+        ),
+    },
+    "client_status_enabled": {"ru": "Включён", "en": "Enabled", "tk": "Işjeň"},
+    "client_status_disabled": {"ru": "Отключён", "en": "Disabled", "tk": "Öçürilen"},
+    "client_limit_unlimited": {"ru": "без ограничений", "en": "unlimited", "tk": "çäksiz"},
+    "client_expire_never": {"ru": "бессрочно", "en": "never", "tk": "möhletsiz"},
+    "client_limit_ip_unlimited": {"ru": "без ограничений", "en": "unlimited", "tk": "çäksiz"},
+    "panel_create_client_step_email": {
+        "ru": "{header}\n📡 <b>{remark}</b>\n\n👤 Введите email/имя нового клиента:",
+        "en": "{header}\n📡 <b>{remark}</b>\n\n👤 Enter the new client's email/name:",
+        "tk": "{header}\n📡 <b>{remark}</b>\n\n👤 Täze müşderiniň email/adyny ýazyň:",
+    },
+    "panel_create_client_invalid_email": {
+        "ru": "Имя не может быть пустым. Попробуйте ещё раз:",
+        "en": "The name can't be empty. Try again:",
+        "tk": "At boş bolup bilmez. Täzeden synanyşyň:",
+    },
+    "panel_client_step_limits": {
+        "ru": (
+            "{header}\n\n📦 Пришлите лимит трафика в ГБ и срок действия в днях через «|», "
+            "например: <code>50|30</code>. «0» в любом поле — без ограничений/бессрочно."
+        ),
+        "en": (
+            "{header}\n\n📦 Send the traffic limit in GB and validity in days separated by \"|\", "
+            "e.g.: <code>50|30</code>. \"0\" in either field means unlimited/never expires."
+        ),
+        "tk": (
+            "{header}\n\n📦 Traffik limitini GB-de we möhletini gün bilen «|» arkaly iberiň, "
+            "mysal: <code>50|30</code>. Islendik meýdanda «0» — çäksiz/möhletsiz diýmek."
+        ),
+    },
+    "panel_client_err_wrong_format": {
+        "ru": "Нужно 2 числа через «|»: ГБ|дни. Пример: <code>50|30</code>",
+        "en": "Two numbers separated by \"|\" are needed: GB|days. Example: <code>50|30</code>",
+        "tk": "«|» bilen 2 san gerek: GB|gün. Mysal: <code>50|30</code>",
+    },
+    "panel_client_err_not_numbers": {
+        "ru": "Оба значения должны быть неотрицательными числами.",
+        "en": "Both values must be non-negative numbers.",
+        "tk": "Iki baha-da otrisatel bolmadyk san bolmaly.",
+    },
+    "panel_create_client_confirm": {
+        "ru": "{header}\n📡 <b>{remark}</b>\n\n➕ Добавить клиента <b>{email}</b>?\n\n📦 Лимит: {limit}\n⏳ Срок: {expire}",
+        "en": "{header}\n📡 <b>{remark}</b>\n\n➕ Add client <b>{email}</b>?\n\n📦 Limit: {limit}\n⏳ Expiry: {expire}",
+        "tk": "{header}\n📡 <b>{remark}</b>\n\n➕ <b>{email}</b> müşderisi goşulsynmy?\n\n📦 Limit: {limit}\n⏳ Möhlet: {expire}",
+    },
+    "panel_create_client_success": {
+        "ru": "{icon} Клиент <b>{email}</b> добавлен.",
+        "en": "{icon} Client <b>{email}</b> added.",
+        "tk": "{icon} <b>{email}</b> müşderisi goşuldy.",
+    },
+    "panel_client_edit_confirm": {
+        "ru": "{header}\n\n✏️ Применить: лимит — {limit}, срок — {expire}?",
+        "en": "{header}\n\n✏️ Apply: limit — {limit}, expiry — {expire}?",
+        "tk": "{header}\n\n✏️ Ulanylsynmy: limit — {limit}, möhlet — {expire}?",
+    },
+    "panel_client_edit_success": {
+        "ru": "{icon} Клиент обновлён.",
+        "en": "{icon} Client updated.",
+        "tk": "{icon} Müşderi täzelendi.",
+    },
+    "panel_client_toggle_success": {
+        "ru": "{icon} Клиент теперь {status_label}.",
+        "en": "{icon} The client is now {status_label}.",
+        "tk": "{icon} Müşderi indi {status_label}.",
+    },
+    "panel_client_delete_confirm": {
+        "ru": "{header}\n\n⚠️ Точно удалить клиента <b>{email}</b>? Это действие необратимо.",
+        "en": "{header}\n\n⚠️ Delete client <b>{email}</b>? This can't be undone.",
+        "tk": "{header}\n\n⚠️ <b>{email}</b> müşderisini pozmakçymysyňyz? Bu amal yzyna gaýtarylmaýar.",
+    },
+    "panel_client_delete_success": {
+        "ru": "{icon} Клиент удалён.",
+        "en": "{icon} Client deleted.",
+        "tk": "{icon} Müşderi pozuldy.",
     },
     # --- Arsi WhoIs ---
     "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},

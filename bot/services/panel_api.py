@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import secrets
+import time
+import uuid
 from dataclasses import dataclass
 from urllib.parse import urlparse, urlsplit, urlunsplit
 
@@ -640,3 +643,98 @@ def parse_inbound_fields_input(raw: str) -> dict:
             raise InboundFieldsError("bad_port")
         updates["port"] = port
     return updates
+
+
+# --- 3X-UI client management ---
+#
+# 3x-ui forks vary on their dedicated addClient/updateClient/delClient
+# endpoints, so instead all client CRUD here goes through the same
+# already-verified "resend the whole inbound" path as inbound editing:
+# parse settings.clients out of the inbound's settings JSON, mutate the
+# list locally, re-serialize, and call threexui_update_inbound. This is
+# more portable than guessing a per-fork client-endpoint URL/payload shape.
+
+
+def _inbound_settings(inbound: dict) -> dict:
+    try:
+        settings = json.loads(inbound.get("settings") or "{}")
+    except (json.JSONDecodeError, TypeError):
+        settings = {}
+    return settings if isinstance(settings, dict) else {}
+
+
+def get_inbound_clients(inbound: dict) -> list[dict]:
+    clients = _inbound_settings(inbound).get("clients")
+    return clients if isinstance(clients, list) else []
+
+
+def client_label_id(client: dict) -> str:
+    return str(client.get("id") or client.get("password") or client.get("email") or "?")
+
+
+def client_stat_for(inbound: dict, client: dict) -> dict | None:
+    stats = inbound.get("clientStats")
+    if not isinstance(stats, list):
+        return None
+    email = client.get("email")
+    return next((s for s in stats if isinstance(s, dict) and s.get("email") == email), None)
+
+
+def with_inbound_clients(inbound: dict, clients: list[dict]) -> dict:
+    """Returns a copy of `inbound` with its settings.clients replaced —
+    the result is what should be passed to threexui_update_inbound."""
+    settings = dict(_inbound_settings(inbound))
+    settings["clients"] = clients
+    new_inbound = dict(inbound)
+    new_inbound["settings"] = json.dumps(settings)
+    return new_inbound
+
+
+def new_3xui_client(protocol: str, email: str, data_limit_gb: float | None, expire_days: int | None) -> dict:
+    total_gb = int(data_limit_gb * 1024**3) if data_limit_gb else 0
+    expiry_time = int((time.time() + expire_days * 86400) * 1000) if expire_days else 0
+    client: dict = {
+        "email": email,
+        "limitIp": 0,
+        "totalGB": total_gb,
+        "expiryTime": expiry_time,
+        "enable": True,
+        "tgId": "",
+        "subId": secrets.token_hex(8),
+        "reset": 0,
+    }
+    if protocol in ("trojan", "shadowsocks"):
+        client["password"] = secrets.token_urlsafe(12)
+        if protocol == "shadowsocks":
+            client["method"] = ""
+    else:
+        # vless, vmess, and any unrecognized protocol fall back to the
+        # id-based client shape, which covers the two most common cases.
+        client["id"] = str(uuid.uuid4())
+        if protocol == "vless":
+            client["flow"] = ""
+    return client
+
+
+class ClientFieldsError(Exception):
+    """str(exc) is a short reason code the texts layer turns into a message."""
+
+
+def parse_client_limits_input(raw: str) -> tuple[int, int]:
+    """Parses the "GB|дней" line into (totalGB in bytes, expiryTime in ms).
+    "0" for either segment means unlimited/never — same convention as the
+    Marzban user create/edit flow."""
+    parts = raw.split("|")
+    if len(parts) != 2:
+        raise ClientFieldsError("wrong_format")
+    gb_raw, days_raw = (p.strip() for p in parts)
+    try:
+        gb = float(gb_raw.replace(",", "."))
+        days = int(days_raw)
+    except ValueError as exc:
+        raise ClientFieldsError("not_numbers") from exc
+    if gb < 0 or days < 0:
+        raise ClientFieldsError("not_numbers")
+    total_gb = int(gb * 1024**3) if gb else 0
+    expiry_time = int((time.time() + days * 86400) * 1000) if days else 0
+    return total_gb, expiry_time

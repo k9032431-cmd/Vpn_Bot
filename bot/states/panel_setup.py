@@ -51,3 +51,14 @@ class PanelHostCreateStates(StatesGroup):
 class PanelInboundEditStates(StatesGroup):
     waiting_fields = State()
     confirming = State()
+
+
+class PanelClientEditStates(StatesGroup):
+    waiting_limits = State()
+    confirming = State()
+
+
+class PanelClientCreateStates(StatesGroup):
+    waiting_email = State()
+    waiting_limits = State()
+    confirming = State()

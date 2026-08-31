@@ -34,6 +34,13 @@ from bot.keyboards.panel import (
     panel_host_new_cancel_keyboard,
     panel_hosts_list_keyboard,
     panel_hosts_tags_keyboard,
+    panel_client_cancel_keyboard,
+    panel_client_create_confirm_keyboard,
+    panel_client_delete_confirm_keyboard,
+    panel_client_detail_keyboard,
+    panel_client_edit_confirm_keyboard,
+    panel_client_new_cancel_keyboard,
+    panel_clients_keyboard,
     panel_inbound_cancel_keyboard,
     panel_inbound_delete_confirm_keyboard,
     panel_inbound_detail_keyboard,
@@ -52,11 +59,14 @@ from bot.keyboards.panel import (
     panel_users_keyboard,
 )
 from bot.services.panel_api import (
+    ClientFieldsError,
     CoreConfigError,
     HostFieldsError,
     InboundFieldsError,
     PanelAPIError,
+    client_stat_for,
     count_3xui_clients,
+    get_inbound_clients,
     inbound_client_count,
     is_valid_panel_url,
     list_3xui_clients,
@@ -84,8 +94,10 @@ from bot.services.panel_api import (
     marzban_restart_core,
     marzban_set_core_config,
     marzban_set_hosts,
+    new_3xui_client,
     new_host_entry,
     normalize_panel_url,
+    parse_client_limits_input,
     parse_core_config_input,
     parse_host_fields_input,
     parse_inbound_fields_input,
@@ -93,10 +105,13 @@ from bot.services.panel_api import (
     threexui_get_inbounds,
     threexui_login,
     threexui_update_inbound,
+    with_inbound_clients,
 )
 from bot.services.panel_store import panel_store
 from bot.states.panel_setup import (
     PanelAdminCreateStates,
+    PanelClientCreateStates,
+    PanelClientEditStates,
     PanelCoreEditStates,
     PanelHostCreateStates,
     PanelHostEditStates,
@@ -2058,4 +2073,397 @@ async def cb_inbound_delete_confirm(callback: CallbackQuery, lang: str) -> None:
 
     await callback.message.edit_text(
         texts.inbound_delete_success_text(lang), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+    )
+
+
+# --- Client management (3X-UI only) ---
+#
+# All client CRUD goes through the same "resend the whole inbound" path
+# as inbound editing (see threexui_update_inbound) — clients live inside
+# the inbound's settings JSON, so they're mutated locally (by list
+# position, since the unique field differs per protocol: id for
+# VLESS/VMess, password for Trojan/Shadowsocks) and resubmitted whole.
+
+
+async def _render_clients_screen(callback: CallbackQuery, lang: str, panel_id: str, inbound_id: int) -> None:
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await _show_panel_list(callback, lang)
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    inbound = _find_inbound(inbounds, inbound_id)
+    if not inbound:
+        await _render_inbounds_screen(callback, lang, panel_id)
+        return
+
+    clients = get_inbound_clients(inbound)
+    remark = str(inbound.get("remark") or f"#{inbound_id}")
+    await callback.message.edit_text(
+        texts.clients_list_text(lang, panel, remark, clients),
+        reply_markup=panel_clients_keyboard(lang, panel_id, inbound_id, clients),
+    )
+
+
+@router.callback_query(F.data.startswith("pinb:clients:"))
+async def cb_inbound_clients(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    await _render_clients_screen(callback, lang, panel_id, int(inbound_id_raw))
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pclient:view:"))
+async def cb_client_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, panel_id, inbound_id_raw, client_index_raw = callback.data.split(":", 4)
+    inbound_id, client_index = int(inbound_id_raw), int(client_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    inbound = _find_inbound(inbounds, inbound_id)
+    clients = get_inbound_clients(inbound) if inbound else []
+    if not inbound or client_index >= len(clients):
+        await _render_inbounds_screen(callback, lang, panel_id)
+        await callback.answer()
+        return
+
+    client = clients[client_index]
+    stat = client_stat_for(inbound, client)
+    used_bytes = int(stat.get("up", 0) or 0) + int(stat.get("down", 0) or 0) if stat else 0
+    remark = str(inbound.get("remark") or f"#{inbound_id}")
+    await callback.message.edit_text(
+        texts.client_detail_text(lang, panel, remark, client, used_bytes),
+        reply_markup=panel_client_detail_keyboard(
+            lang, panel_id, inbound_id, client_index, bool(client.get("enable", True))
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pclient:editstart:"))
+async def cb_client_edit_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw, client_index_raw = callback.data.split(":", 4)
+    inbound_id, client_index = int(inbound_id_raw), int(client_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] != "3xui":
+        await callback.answer()
+        return
+    await state.clear()
+    await state.update_data(panel_id=panel_id, inbound_id=inbound_id, client_index=client_index)
+    await state.set_state(PanelClientEditStates.waiting_limits)
+    await callback.message.edit_text(
+        texts.client_step_limits_text(lang, panel),
+        reply_markup=panel_client_cancel_keyboard(lang, panel_id, inbound_id, client_index),
+    )
+    await callback.answer()
+
+
+@router.message(PanelClientEditStates.waiting_limits)
+async def process_client_edit_limits(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, inbound_id, client_index = data["panel_id"], data["inbound_id"], data["client_index"]
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    try:
+        total_gb, expiry_ms = parse_client_limits_input(message.text or "")
+    except ClientFieldsError as exc:
+        await message.answer(
+            texts.client_limits_error_text(lang, str(exc)),
+            reply_markup=panel_client_cancel_keyboard(lang, panel_id, inbound_id, client_index),
+        )
+        return
+
+    await state.update_data(pending_total_gb=total_gb, pending_expiry_ms=expiry_ms)
+    await state.set_state(PanelClientEditStates.confirming)
+    await message.answer(
+        texts.client_edit_confirm_text(lang, panel, total_gb, expiry_ms),
+        reply_markup=panel_client_edit_confirm_keyboard(lang, panel_id, inbound_id, client_index),
+    )
+
+
+@router.callback_query(PanelClientEditStates.confirming, F.data.startswith("pclient:editcnf:"))
+async def cb_client_edit_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, inbound_id, client_index = data["panel_id"], data["inbound_id"], data["client_index"]
+    total_gb, expiry_ms = data.get("pending_total_gb", 0), data.get("pending_expiry_ms", 0)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+        clients = get_inbound_clients(inbound)
+        if client_index >= len(clients):
+            raise PanelAPIError("bad_response")
+        clients[client_index]["totalGB"] = total_gb
+        clients[client_index]["expiryTime"] = expiry_ms
+        updated_inbound = with_inbound_clients(inbound, clients)
+        await threexui_update_inbound(panel["url"], cookies, updated_inbound)
+        enabled = bool(clients[client_index].get("enable", True))
+    except PanelAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.client_edit_success_text(lang),
+        reply_markup=panel_client_detail_keyboard(lang, panel_id, inbound_id, client_index, enabled),
+    )
+
+
+@router.callback_query(F.data.startswith("pclient:toggle:"))
+async def cb_client_toggle(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw, client_index_raw = callback.data.split(":", 4)
+    inbound_id, client_index = int(inbound_id_raw), int(client_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+        clients = get_inbound_clients(inbound)
+        if client_index >= len(clients):
+            raise PanelAPIError("bad_response")
+        clients[client_index]["enable"] = not bool(clients[client_index].get("enable", True))
+        updated_inbound = with_inbound_clients(inbound, clients)
+        await threexui_update_inbound(panel["url"], cookies, updated_inbound)
+        enabled = clients[client_index]["enable"]
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.client_toggle_success_text(lang, enabled),
+        reply_markup=panel_client_detail_keyboard(lang, panel_id, inbound_id, client_index, enabled),
+    )
+
+
+@router.callback_query(F.data.startswith("pclient:delask:"))
+async def cb_client_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw, client_index_raw = callback.data.split(":", 4)
+    inbound_id, client_index = int(inbound_id_raw), int(client_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        clients = get_inbound_clients(inbound) if inbound else []
+        email = str(clients[client_index].get("email") or "?") if client_index < len(clients) else "?"
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        texts.client_delete_confirm_text(lang, panel, email),
+        reply_markup=panel_client_delete_confirm_keyboard(lang, panel_id, inbound_id, client_index),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pclient:delcnf:"))
+async def cb_client_delete_confirm(callback: CallbackQuery, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw, client_index_raw = callback.data.split(":", 4)
+    inbound_id, client_index = int(inbound_id_raw), int(client_index_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await callback.answer()
+        return
+    await callback.answer()
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+        clients = get_inbound_clients(inbound)
+        if client_index >= len(clients):
+            raise PanelAPIError("bad_response")
+        del clients[client_index]
+        updated_inbound = with_inbound_clients(inbound, clients)
+        await threexui_update_inbound(panel["url"], cookies, updated_inbound)
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await callback.message.edit_text(
+        texts.client_delete_success_text(lang),
+        reply_markup=panel_clients_keyboard(lang, panel_id, inbound_id, clients),
+    )
+
+
+@router.callback_query(F.data.startswith("pclient:new:"))
+async def cb_client_new(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, panel_id, inbound_id_raw = callback.data.split(":", 3)
+    inbound_id = int(inbound_id_raw)
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel or panel["type"] != "3xui":
+        await callback.answer()
+        return
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+    except PanelAPIError as exc:
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        await callback.answer()
+        return
+
+    remark = str(inbound.get("remark") or f"#{inbound_id}")
+    await state.clear()
+    await state.update_data(
+        panel_id=panel_id, inbound_id=inbound_id, remark=remark, protocol=str(inbound.get("protocol", "vless"))
+    )
+    await state.set_state(PanelClientCreateStates.waiting_email)
+    await callback.message.edit_text(
+        texts.create_client_step_email_text(lang, panel, remark),
+        reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
+    )
+    await callback.answer()
+
+
+@router.message(PanelClientCreateStates.waiting_email)
+async def process_client_email(message: Message, state: FSMContext, lang: str) -> None:
+    email = message.text.strip() if message.text else ""
+    data = await state.get_data()
+    panel_id, inbound_id = data["panel_id"], data["inbound_id"]
+    if not email:
+        await message.answer(
+            texts.invalid_new_client_email_text(lang),
+            reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
+        )
+        return
+
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    await state.update_data(client_email=email)
+    await state.set_state(PanelClientCreateStates.waiting_limits)
+    await message.answer(
+        texts.client_step_limits_text(lang, panel),
+        reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
+    )
+
+
+@router.message(PanelClientCreateStates.waiting_limits)
+async def process_client_create_limits(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, inbound_id = data["panel_id"], data["inbound_id"]
+    panel = await panel_store.get(message.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        return
+
+    try:
+        total_gb, expiry_ms = parse_client_limits_input(message.text or "")
+    except ClientFieldsError as exc:
+        await message.answer(
+            texts.client_limits_error_text(lang, str(exc)),
+            reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
+        )
+        return
+
+    data = await state.update_data(pending_total_gb=total_gb, pending_expiry_ms=expiry_ms)
+    await state.set_state(PanelClientCreateStates.confirming)
+    await message.answer(
+        texts.create_client_confirm_text(lang, panel, data["remark"], data["client_email"], total_gb, expiry_ms),
+        reply_markup=panel_client_create_confirm_keyboard(lang, panel_id, inbound_id),
+    )
+
+
+@router.callback_query(PanelClientCreateStates.confirming, F.data.startswith("pclient:newcnf:"))
+async def cb_client_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    panel_id, inbound_id = data["panel_id"], data["inbound_id"]
+    panel = await panel_store.get(callback.from_user.id, panel_id)
+    if not panel:
+        await state.clear()
+        await callback.answer()
+        return
+    await callback.answer()
+
+    new_client = new_3xui_client(data["protocol"], data["client_email"], None, None)
+    new_client["totalGB"] = data.get("pending_total_gb", 0)
+    new_client["expiryTime"] = data.get("pending_expiry_ms", 0)
+
+    try:
+        cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
+        inbounds = await threexui_get_inbounds(panel["url"], cookies)
+        inbound = _find_inbound(inbounds, inbound_id)
+        if not inbound:
+            raise PanelAPIError("bad_response")
+        clients = get_inbound_clients(inbound)
+        clients.append(new_client)
+        updated_inbound = with_inbound_clients(inbound, clients)
+        await threexui_update_inbound(panel["url"], cookies, updated_inbound)
+    except PanelAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(
+            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        )
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        texts.create_client_success_text(lang, new_client["email"]),
+        reply_markup=panel_clients_keyboard(lang, panel_id, inbound_id, clients),
     )
