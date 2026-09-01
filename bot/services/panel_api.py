@@ -304,7 +304,11 @@ async def marzban_add_node(
         "port": port,
         "api_port": api_port,
         "usage_coefficient": 1,
-        "add_as_new_host": True,
+        # Deliberately false: auto-adding the node as a host on every
+        # existing inbound is a bigger, riskier change than "just add the
+        # node" — the admin can add it as a host explicitly (via the Hosts
+        # section) if/when they actually want that.
+        "add_as_new_host": False,
     }
     async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
         payload = await _marzban_call(session, "POST", f"{url}/api/node", headers=headers, json=body)
