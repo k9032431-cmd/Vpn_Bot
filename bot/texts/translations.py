@@ -1900,6 +1900,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} Server deleted.",
         "tk": "{icon} Serwer pozuldy.",
     },
+    "cloud_page_indicator": {
+        "ru": "\n\n📄 Страница {page}/{total}",
+        "en": "\n\n📄 Page {page}/{total}",
+        "tk": "\n\n📄 Sahypa {page}/{total}",
+    },
     "cloud_create_choose_zone": {
         "ru": "🌍 <b>Новый сервер — шаг 1/4</b>\n\nВыберите зону (дата-центр):",
         "en": "🌍 <b>New server — step 1/4</b>\n\nChoose a zone (data center):",

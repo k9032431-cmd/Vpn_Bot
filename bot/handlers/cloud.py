@@ -19,10 +19,10 @@ from bot.keyboards.cloud import (
     cloud_error_keyboard,
     create_cancel_keyboard,
     create_confirm_keyboard,
-    create_pick_keyboard,
     ip_add_confirm_keyboard,
     ip_remove_confirm_keyboard,
     ips_list_keyboard,
+    paginated_pick_keyboard,
     plan_confirm_keyboard,
     plan_must_stop_keyboard,
     provider_list_keyboard,
@@ -41,6 +41,7 @@ from bot.keyboards.cloud import (
 from bot.services.cloud_store import cloud_store
 from bot.services.upcloud_api import (
     UpCloudAPIError,
+    storage_tier_for_plan,
     upcloud_add_ip,
     upcloud_attach_storage,
     upcloud_create_backup,
@@ -380,6 +381,44 @@ async def cb_server_delete(callback: CallbackQuery, lang: str) -> None:
 
 
 # --- Server creation ---
+#
+# Zones/plans/templates are all "pick one from a possibly-long catalog"
+# screens with the identical shape: fetch the full list once, stash it in
+# FSM state, then page through it 10-at-a-time. The page itself is never
+# stored — each ◀️/▶️ tap just re-renders the same stashed list at the
+# requested page, so there's nothing to go stale.
+
+
+def _zone_options(zones: list[dict]) -> list[tuple[str, str]]:
+    return [(f"{z['description']} ({z['id']})", f"ccreate:zone:{i}") for i, z in enumerate(zones)]
+
+
+def _plan_options(plans: list[dict]) -> list[tuple[str, str]]:
+    return [
+        (f"{p['name']} ({p['core_number']} CPU / {p['memory_amount']} MB)", f"ccreate:plan:{i}")
+        for i, p in enumerate(plans)
+    ]
+
+
+def _template_options(templates: list[dict]) -> list[tuple[str, str]]:
+    return [(tpl["title"], f"ccreate:tmpl:{i}") for i, tpl in enumerate(templates)]
+
+
+async def _render_create_page(
+    callback: CallbackQuery,
+    lang: str,
+    header_fn,
+    options: list[tuple[str, str]],
+    page: int,
+    nav_prefix: str,
+    cancel_callback: str = "ccreate:cancel",
+) -> None:
+    total_pages = max(1, -(-len(options) // 10))
+    page = max(0, min(page, total_pages - 1))
+    await callback.message.edit_text(
+        header_fn(lang, page, total_pages),
+        reply_markup=paginated_pick_keyboard(lang, options, page, nav_prefix, cancel_callback),
+    )
 
 
 @router.callback_query(F.data.startswith("csrv:add:"))
@@ -398,10 +437,18 @@ async def cb_server_add(callback: CallbackQuery, state: FSMContext, lang: str) -
         return
 
     await state.clear()
-    await state.update_data(account_id=account_id, zones=[{"id": z.id, "description": z.description} for z in zones])
+    zone_dicts = [{"id": z.id, "description": z.description} for z in zones]
+    await state.update_data(account_id=account_id, zones=zone_dicts)
     await state.set_state(CloudServerCreateStates.choosing_zone)
-    options = [(f"{z.description} ({z.id})", f"ccreate:zone:{i}") for i, z in enumerate(zones)]
-    await callback.message.edit_text(texts.create_choose_zone_text(lang), reply_markup=create_pick_keyboard(lang, options))
+    await _render_create_page(callback, lang, texts.create_choose_zone_text, _zone_options(zone_dicts), 0, "ccreate:zonepage")
+
+
+@router.callback_query(F.data.startswith("ccreate:zonepage:"), CloudServerCreateStates.choosing_zone)
+async def cb_create_zone_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(callback, lang, texts.create_choose_zone_text, _zone_options(data["zones"]), page, "ccreate:zonepage")
 
 
 @router.callback_query(F.data == "ccreate:cancel", CloudServerCreateStates)
@@ -435,16 +482,18 @@ async def cb_create_pick_zone(callback: CallbackQuery, state: FSMContext, lang: 
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
-    await state.update_data(
-        zone=zone["id"],
-        plans=[{"name": p.name, "core_number": p.core_number, "memory_amount": p.memory_amount} for p in plans],
-    )
+    plan_dicts = [{"name": p.name, "core_number": p.core_number, "memory_amount": p.memory_amount} for p in plans]
+    await state.update_data(zone=zone["id"], plans=plan_dicts)
     await state.set_state(CloudServerCreateStates.choosing_plan)
-    options = [
-        (f"{p.name} ({p.core_number} CPU / {p.memory_amount} MB)", f"ccreate:plan:{i}")
-        for i, p in enumerate(plans)
-    ]
-    await callback.message.edit_text(texts.create_choose_plan_text(lang), reply_markup=create_pick_keyboard(lang, options))
+    await _render_create_page(callback, lang, texts.create_choose_plan_text, _plan_options(plan_dicts), 0, "ccreate:planpage")
+
+
+@router.callback_query(F.data.startswith("ccreate:planpage:"), CloudServerCreateStates.choosing_plan)
+async def cb_create_plan_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(callback, lang, texts.create_choose_plan_text, _plan_options(data["plans"]), page, "ccreate:planpage")
 
 
 @router.callback_query(F.data.startswith("ccreate:plan:"), CloudServerCreateStates.choosing_plan)
@@ -465,17 +514,21 @@ async def cb_create_pick_plan(callback: CallbackQuery, state: FSMContext, lang: 
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
-    # UpCloud's public template catalog can be long — show the most common
-    # ones first, capped so the keyboard stays on one screen.
-    templates = templates[:20]
-    await state.update_data(
-        plan=plan["name"],
-        templates=[{"uuid": tpl.uuid, "title": tpl.title} for tpl in templates],
-    )
+    template_dicts = [{"uuid": tpl.uuid, "title": tpl.title} for tpl in templates]
+    await state.update_data(plan=plan["name"], templates=template_dicts)
     await state.set_state(CloudServerCreateStates.choosing_template)
-    options = [(tpl.title, f"ccreate:tmpl:{i}") for i, tpl in enumerate(templates)]
-    await callback.message.edit_text(
-        texts.create_choose_template_text(lang), reply_markup=create_pick_keyboard(lang, options)
+    await _render_create_page(
+        callback, lang, texts.create_choose_template_text, _template_options(template_dicts), 0, "ccreate:tmplpage"
+    )
+
+
+@router.callback_query(F.data.startswith("ccreate:tmplpage:"), CloudServerCreateStates.choosing_template)
+async def cb_create_template_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.create_choose_template_text, _template_options(data["templates"]), page, "ccreate:tmplpage"
     )
 
 
@@ -567,14 +620,36 @@ async def cb_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
+    plan_names = [p.name for p in plans]
     await state.clear()
-    await state.update_data(
-        account_id=account_id, server_uuid=server_uuid, current_plan=server.plan, plans=[p.name for p in plans]
-    )
+    await state.update_data(account_id=account_id, server_uuid=server_uuid, current_plan=server.plan, plans=plan_names)
     await state.set_state(CloudPlanChangeStates.choosing_plan)
-    options = [(p.name, f"cplan:pick:{i}") for i, p in enumerate(plans)]
-    await callback.message.edit_text(
-        texts.plan_choose_text(lang, server.plan), reply_markup=create_pick_keyboard(lang, options, "cplan:cancel")
+    options = [(name, f"cplan:pick:{i}") for i, name in enumerate(plan_names)]
+    await _render_create_page(
+        callback,
+        lang,
+        lambda plan_lang, page, total: texts.plan_choose_text(plan_lang, server.plan, page, total),
+        options,
+        0,
+        "cplan:page",
+        "cplan:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("cplan:page:"), CloudPlanChangeStates.choosing_plan)
+async def cb_plan_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    options = [(name, f"cplan:pick:{i}") for i, name in enumerate(data["plans"])]
+    await _render_create_page(
+        callback,
+        lang,
+        lambda plan_lang, p, total: texts.plan_choose_text(plan_lang, data["current_plan"], p, total),
+        options,
+        page,
+        "cplan:page",
+        "cplan:cancel",
     )
 
 
@@ -696,8 +771,14 @@ async def cb_storage_add(callback: CallbackQuery, state: FSMContext, lang: str) 
     account = await _get_account(callback, lang, account_id)
     if not account:
         return
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
     await state.clear()
-    await state.update_data(account_id=account_id, server_uuid=server_uuid)
+    await state.update_data(account_id=account_id, server_uuid=server_uuid, server_plan=server.plan)
     await state.set_state(CloudDiskStates.waiting_size)
     await callback.answer()
     await callback.message.edit_text(
@@ -739,7 +820,12 @@ async def cb_storage_attach_confirm(callback: CallbackQuery, state: FSMContext, 
     await callback.answer()
     try:
         server = await upcloud_attach_storage(
-            account["username"], account["password"], data["server_uuid"], title=f"disk-{data['size']}gb", size=data["size"]
+            account["username"],
+            account["password"],
+            data["server_uuid"],
+            title=f"disk-{data['size']}gb",
+            size=data["size"],
+            tier=storage_tier_for_plan(data["server_plan"]),
         )
     except UpCloudAPIError as exc:
         await state.clear()

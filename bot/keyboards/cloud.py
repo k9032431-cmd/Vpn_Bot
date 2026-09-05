@@ -12,6 +12,8 @@ from bot.texts.cloud import (
 )
 from bot.texts.translations import t
 
+PAGE_SIZE = 10
+
 
 def provider_list_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -115,15 +117,38 @@ def server_delete_confirm_keyboard(lang: str, account_id: str, server_uuid: str)
     return builder.as_markup()
 
 
-def create_pick_keyboard(
-    lang: str, options: list[tuple[str, str]], cancel_callback: str = "ccreate:cancel"
+def paginated_pick_keyboard(
+    lang: str,
+    options: list[tuple[str, str]],
+    page: int,
+    nav_prefix: str,
+    cancel_callback: str = "ccreate:cancel",
 ) -> InlineKeyboardMarkup:
-    """options: list of (label, callback_data) pairs, e.g. zones/plans/templates."""
+    """Renders one page (PAGE_SIZE items) of a (label, callback_data) list —
+    e.g. zones/plans/templates — with ◀️/▶️ navigation when there's more
+    than one page, so a long UpCloud catalog never overflows one screen."""
+    total_pages = max(1, -(-len(options) // PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    page_options = options[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]
+
     builder = InlineKeyboardBuilder()
-    for label, callback_data in options:
+    for label, callback_data in page_options:
         builder.button(text=label, callback_data=callback_data)
+    rows = [1] * len(page_options)
+
+    nav_count = 0
+    if page > 0:
+        builder.button(text="◀️", callback_data=f"{nav_prefix}:{page - 1}")
+        nav_count += 1
+    if page < total_pages - 1:
+        builder.button(text="▶️", callback_data=f"{nav_prefix}:{page + 1}")
+        nav_count += 1
+    if nav_count:
+        rows.append(nav_count)
+
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback)
-    builder.adjust(*([1] * len(options)), 1)
+    rows.append(1)
+    builder.adjust(*rows)
     return builder.as_markup()
 
 

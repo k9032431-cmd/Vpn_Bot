@@ -162,16 +162,22 @@ def server_deleted_text(lang: str) -> str:
     return t(lang, "cloud_server_deleted", icon=e("success", "✅"))
 
 
-def create_choose_zone_text(lang: str) -> str:
-    return t(lang, "cloud_create_choose_zone")
+def _page_suffix(lang: str, page: int, total_pages: int) -> str:
+    if total_pages <= 1:
+        return ""
+    return t(lang, "cloud_page_indicator", page=page + 1, total=total_pages)
 
 
-def create_choose_plan_text(lang: str) -> str:
-    return t(lang, "cloud_create_choose_plan")
+def create_choose_zone_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "cloud_create_choose_zone") + _page_suffix(lang, page, total_pages)
 
 
-def create_choose_template_text(lang: str) -> str:
-    return t(lang, "cloud_create_choose_template")
+def create_choose_plan_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "cloud_create_choose_plan") + _page_suffix(lang, page, total_pages)
+
+
+def create_choose_template_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "cloud_create_choose_template") + _page_suffix(lang, page, total_pages)
 
 
 def create_waiting_hostname_text(lang: str) -> str:
@@ -218,8 +224,8 @@ def plan_must_stop_text(lang: str) -> str:
     return t(lang, "cloud_plan_must_stop", icon=e("warning", "⚠️"))
 
 
-def plan_choose_text(lang: str, current_plan: str) -> str:
-    return t(lang, "cloud_plan_choose", current=current_plan)
+def plan_choose_text(lang: str, current_plan: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "cloud_plan_choose", current=current_plan) + _page_suffix(lang, page, total_pages)
 
 
 def plan_confirm_text(lang: str, current_plan: str, new_plan: str) -> str:

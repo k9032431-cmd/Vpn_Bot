@@ -224,6 +224,14 @@ async def upcloud_get_server(
     return _parse_server_detail(server)
 
 
+def storage_tier_for_plan(plan_name: str) -> str:
+    """UpCloud's cheap "DEV-" burstable plans only support standard (HDD)
+    storage — attaching or cloning a MaxIOPS (SSD) disk on one of them fails
+    with a plan/storage mismatch error. Every other plan gets MaxIOPS,
+    matching UpCloud's own "create server" default."""
+    return "standard" if plan_name.upper().startswith("DEV-") else "maxiops"
+
+
 async def upcloud_create_server(
     username: str,
     password: str,
@@ -260,7 +268,7 @@ async def upcloud_create_server(
                         "storage": template_uuid,
                         "title": f"{title}-disk1",
                         "size": storage_size,
-                        "tier": "maxiops",
+                        "tier": storage_tier_for_plan(plan),
                     }
                 ]
             },
