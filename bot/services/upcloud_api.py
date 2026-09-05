@@ -264,8 +264,11 @@ async def upcloud_create_server(
             # refuse to clone without the metadata service enabled on the
             # server ("Metadata must be enabled when cloning a cloud-init
             # template") — always on, since it's harmless for templates
-            # that don't need it.
-            "metadata": True,
+            # that don't need it. Like "create_password" above, UpCloud
+            # wants the string "yes"/"no" here, not a JSON boolean (a bare
+            # `true` is rejected as "The attribute metadata has an invalid
+            # value").
+            "metadata": "yes",
             "login_user": login_user,
             "storage_devices": {
                 "storage_device": [
