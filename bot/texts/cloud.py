@@ -206,3 +206,173 @@ def create_success_text(lang: str, server) -> str:
         ips=_ip_list(server) if server.ip_addresses else t(lang, "cloud_server_no_ip"),
         password_line=password_line,
     )
+
+
+# --- Plan change ---
+
+
+def plan_must_stop_text(lang: str) -> str:
+    return t(lang, "cloud_plan_must_stop", icon=e("warning", "⚠️"))
+
+
+def plan_choose_text(lang: str, current_plan: str) -> str:
+    return t(lang, "cloud_plan_choose", current=current_plan)
+
+
+def plan_confirm_text(lang: str, current_plan: str, new_plan: str) -> str:
+    return t(lang, "cloud_plan_confirm", current=current_plan, new=new_plan)
+
+
+def plan_changed_text(lang: str) -> str:
+    return t(lang, "cloud_plan_changed", icon=e("success", "✅"))
+
+
+# --- Storage / disks ---
+
+
+def storage_header_text(lang: str, server, has_storages: bool) -> str:
+    body_key = "cloud_storage_hint" if has_storages else "cloud_storage_empty"
+    return t(
+        lang,
+        "cloud_storage_header",
+        title=html.escape(server.title or server.hostname),
+        body=t(lang, body_key),
+    )
+
+
+def storage_list_label(storage) -> str:
+    return f"💽 {storage.title} — {storage.size} GB"
+
+
+def storage_detail_text(lang: str, storage) -> str:
+    return t(
+        lang,
+        "cloud_storage_detail",
+        title=html.escape(storage.title),
+        size=storage.size,
+        type=storage.type,
+        tier=storage.tier,
+    )
+
+
+def storage_detach_confirm_text(lang: str, storage) -> str:
+    return t(lang, "cloud_storage_detach_confirm", icon=e("warning", "⚠️"), title=html.escape(storage.title))
+
+
+def storage_delete_confirm_text(lang: str, storage) -> str:
+    return t(lang, "cloud_storage_delete_confirm", icon=e("warning", "⚠️"), title=html.escape(storage.title))
+
+
+def storage_detached_text(lang: str) -> str:
+    return t(lang, "cloud_storage_detached", icon=e("success", "✅"))
+
+
+def storage_deleted_text(lang: str) -> str:
+    return t(lang, "cloud_storage_deleted", icon=e("success", "✅"))
+
+
+def storage_waiting_size_text(lang: str) -> str:
+    return t(lang, "cloud_storage_waiting_size")
+
+
+def storage_invalid_size_text(lang: str) -> str:
+    return t(lang, "cloud_storage_invalid_size")
+
+
+def storage_confirm_attach_text(lang: str, size: int) -> str:
+    return t(lang, "cloud_storage_confirm_attach", size=size)
+
+
+def storage_attached_text(lang: str) -> str:
+    return t(lang, "cloud_storage_attached", icon=e("success", "✅"))
+
+
+def storage_waiting_resize_text(lang: str, current_size: int) -> str:
+    return t(lang, "cloud_storage_waiting_resize", current=current_size)
+
+
+def storage_confirm_resize_text(lang: str, title: str, old_size: int, new_size: int) -> str:
+    return t(lang, "cloud_storage_confirm_resize", title=html.escape(title), old=old_size, new=new_size)
+
+
+def storage_resized_text(lang: str) -> str:
+    return t(lang, "cloud_storage_resized", icon=e("success", "✅"))
+
+
+# --- Backups ---
+
+
+def backups_header_text(lang: str, storage, has_backups: bool) -> str:
+    body_key = "cloud_backups_hint" if has_backups else "cloud_backups_empty"
+    return t(lang, "cloud_backups_header", title=html.escape(storage.title), body=t(lang, body_key))
+
+
+def backup_list_label(backup) -> str:
+    return f"🗄 {backup.title}"
+
+
+def backup_detail_text(lang: str, backup) -> str:
+    return f"🗄 <b>{html.escape(backup.title)}</b>\n\n📏 {backup.size} GB"
+
+
+def backup_create_confirm_text(lang: str, storage) -> str:
+    return t(lang, "cloud_backup_create_confirm", title=html.escape(storage.title))
+
+
+def backup_created_text(lang: str) -> str:
+    return t(lang, "cloud_backup_created", icon=e("success", "✅"))
+
+
+def backup_restore_confirm_text(lang: str, backup) -> str:
+    return t(lang, "cloud_backup_restore_confirm", icon=e("warning", "⚠️"), title=html.escape(backup.title))
+
+
+def backup_restored_text(lang: str) -> str:
+    return t(lang, "cloud_backup_restored", icon=e("success", "✅"))
+
+
+def backup_delete_confirm_text(lang: str, backup) -> str:
+    return t(lang, "cloud_backup_delete_confirm", icon=e("warning", "⚠️"), title=html.escape(backup.title))
+
+
+def backup_deleted_text(lang: str) -> str:
+    return t(lang, "cloud_backup_deleted", icon=e("success", "✅"))
+
+
+# --- IP addresses ---
+
+
+def ips_header_text(lang: str, server, has_ips: bool) -> str:
+    body_key = "cloud_ips_hint" if has_ips else "cloud_ips_empty"
+    return t(
+        lang,
+        "cloud_ips_header",
+        title=html.escape(server.title or server.hostname),
+        body=t(lang, body_key),
+    )
+
+
+def ip_list_label(ip) -> str:
+    return f"🌐 {ip.address}"
+
+
+def ip_add_confirm_text(lang: str, server) -> str:
+    return t(lang, "cloud_ip_add_confirm", title=html.escape(server.title or server.hostname))
+
+
+def ip_added_text(lang: str, address: str) -> str:
+    return t(lang, "cloud_ip_added", icon=e("success", "✅"), address=address)
+
+
+def ip_remove_confirm_text(lang: str, server, address: str) -> str:
+    return t(
+        lang,
+        "cloud_ip_remove_confirm",
+        icon=e("warning", "⚠️"),
+        address=address,
+        title=html.escape(server.title or server.hostname),
+    )
+
+
+def ip_removed_text(lang: str) -> str:
+    return t(lang, "cloud_ip_removed", icon=e("success", "✅"))

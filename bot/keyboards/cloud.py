@@ -1,7 +1,15 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.texts.cloud import ACTIVE_PROVIDERS, PROVIDERS, account_list_label, server_list_label
+from bot.texts.cloud import (
+    ACTIVE_PROVIDERS,
+    PROVIDERS,
+    account_list_label,
+    backup_list_label,
+    ip_list_label,
+    server_list_label,
+    storage_list_label,
+)
 from bot.texts.translations import t
 
 
@@ -88,9 +96,12 @@ def server_detail_keyboard(lang: str, account_id: str, server) -> InlineKeyboard
     else:
         builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"csrv:stop:{account_id}:{server.uuid}")
     builder.button(text=t(lang, "btn_cloud_server_restart"), callback_data=f"csrv:restart:{account_id}:{server.uuid}")
+    builder.button(text=t(lang, "btn_cloud_server_plan"), callback_data=f"cplan:start:{account_id}:{server.uuid}")
+    builder.button(text=t(lang, "btn_cloud_server_storage"), callback_data=f"csto:list:{account_id}:{server.uuid}")
+    builder.button(text=t(lang, "btn_cloud_server_ips"), callback_data=f"cip:list:{account_id}:{server.uuid}")
     builder.button(text=t(lang, "btn_cloud_server_delete"), callback_data=f"csrv:delask:{account_id}:{server.uuid}")
     builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"cacc:servers:{account_id}")
-    builder.adjust(2, 1, 1)
+    builder.adjust(2, 1, 2, 1, 1)
     return builder.as_markup()
 
 
@@ -104,12 +115,14 @@ def server_delete_confirm_keyboard(lang: str, account_id: str, server_uuid: str)
     return builder.as_markup()
 
 
-def create_pick_keyboard(lang: str, options: list[tuple[str, str]]) -> InlineKeyboardMarkup:
+def create_pick_keyboard(
+    lang: str, options: list[tuple[str, str]], cancel_callback: str = "ccreate:cancel"
+) -> InlineKeyboardMarkup:
     """options: list of (label, callback_data) pairs, e.g. zones/plans/templates."""
     builder = InlineKeyboardBuilder()
     for label, callback_data in options:
         builder.button(text=label, callback_data=callback_data)
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback)
     builder.adjust(*([1] * len(options)), 1)
     return builder.as_markup()
 
@@ -125,5 +138,194 @@ def create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="ccreate:confirm")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Plan change ---
+
+
+def plan_must_stop_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"csrv:stop:{account_id}:{server_uuid}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_plan_confirm"), callback_data="cplan:confirm")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="cplan:cancel")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Storage / disks ---
+#
+# Every callback below carries account_id + server_uuid (+ a storage/backup
+# list-position index where relevant) explicitly, the same "re-fetch by
+# index" addressing already used for Marzban hosts and 3X-UI inbounds/
+# clients — no server-side state to go stale, and it survives the user
+# jumping around between screens.
+
+
+def storage_list_keyboard(lang: str, account_id: str, server_uuid: str, storages: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, storage in enumerate(storages):
+        builder.button(text=storage_list_label(storage), callback_data=f"csto:view:{account_id}:{server_uuid}:{i}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_storage_add"), callback_data=f"csto:add:{account_id}:{server_uuid}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def storage_detail_keyboard(lang: str, account_id: str, server_uuid: str, index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_storage_resize"), callback_data=f"csto:rsz:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_backups"), callback_data=f"cbak:list:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_backup_create"), callback_data=f"cbak:mk:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_detach"), callback_data=f"csto:dt:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_delete"), callback_data=f"csto:del:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:list:{account_id}:{server_uuid}")
+    builder.adjust(1, 1, 1, 1, 1, 1)
+    return builder.as_markup()
+
+
+def storage_delete_confirm_keyboard(lang: str, account_id: str, server_uuid: str, index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_storage_delete_confirm"), callback_data=f"csto:delc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:view:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def storage_detach_confirm_keyboard(lang: str, account_id: str, server_uuid: str, index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_storage_detach_confirm"), callback_data=f"csto:dtc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:view:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def storage_wizard_cancel_keyboard(lang: str, cancel_callback: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback)
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def storage_attach_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_storage_attach_confirm"), callback_data="csto:confirm_attach")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csto:cancel_attach")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def storage_resize_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_storage_resize_confirm"), callback_data="csto:confirm_resize")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csto:cancel_resize")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Backups ---
+
+
+def backups_list_keyboard(
+    lang: str, account_id: str, server_uuid: str, storage_index: int, backups: list
+) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{storage_index}"
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for j, backup in enumerate(backups):
+        builder.button(text=backup_list_label(backup), callback_data=f"cbak:view:{tail}:{j}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_backup_create_confirm"), callback_data=f"cbak:mk:{tail}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"csto:view:{tail}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def backup_create_confirm_keyboard(lang: str, account_id: str, server_uuid: str, storage_index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{storage_index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_backup_create_confirm"), callback_data=f"cbak:mkc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:list:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def backup_detail_keyboard(lang: str, account_id: str, server_uuid: str, storage_index: int, backup_index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{storage_index}:{backup_index}"
+    list_tail = f"{account_id}:{server_uuid}:{storage_index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_backup_restore"), callback_data=f"cbak:rs:{tail}")
+    builder.button(text=t(lang, "btn_cloud_backup_delete"), callback_data=f"cbak:dl:{tail}")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:list:{list_tail}")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def backup_restore_confirm_keyboard(lang: str, account_id: str, server_uuid: str, storage_index: int, backup_index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{storage_index}:{backup_index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_backup_restore_confirm"), callback_data=f"cbak:rsc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:view:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def backup_delete_confirm_keyboard(lang: str, account_id: str, server_uuid: str, storage_index: int, backup_index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{storage_index}:{backup_index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_backup_delete_confirm"), callback_data=f"cbak:dlc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:view:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- IP addresses ---
+
+
+def ips_list_keyboard(lang: str, account_id: str, server_uuid: str, ips: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, ip in enumerate(ips):
+        builder.button(text=ip_list_label(ip), callback_data=f"cip:rm:{account_id}:{server_uuid}:{i}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_ip_add"), callback_data=f"cip:add:{account_id}:{server_uuid}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def ip_add_confirm_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_ip_add_confirm"), callback_data=f"cip:addc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def ip_remove_confirm_keyboard(lang: str, account_id: str, server_uuid: str, index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_uuid}:{index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_ip_remove_confirm"), callback_data=f"cip:rmc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{account_id}:{server_uuid}")
     builder.adjust(1, 1)
     return builder.as_markup()

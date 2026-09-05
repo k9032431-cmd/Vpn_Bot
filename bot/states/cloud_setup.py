@@ -13,3 +13,15 @@ class CloudServerCreateStates(StatesGroup):
     choosing_template = State()
     waiting_hostname = State()
     confirming = State()
+
+
+class CloudPlanChangeStates(StatesGroup):
+    choosing_plan = State()
+    confirming = State()
+
+
+class CloudDiskStates(StatesGroup):
+    waiting_size = State()
+    confirming_attach = State()
+    waiting_resize_size = State()
+    confirming_resize = State()

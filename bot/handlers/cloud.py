@@ -10,34 +10,66 @@ from bot.keyboards.cloud import (
     account_dashboard_keyboard,
     account_list_keyboard,
     account_remove_confirm_keyboard,
+    backup_create_confirm_keyboard,
+    backup_delete_confirm_keyboard,
+    backup_detail_keyboard,
+    backup_restore_confirm_keyboard,
+    backups_list_keyboard,
     cloud_cancel_keyboard,
     cloud_error_keyboard,
     create_cancel_keyboard,
     create_confirm_keyboard,
     create_pick_keyboard,
+    ip_add_confirm_keyboard,
+    ip_remove_confirm_keyboard,
+    ips_list_keyboard,
+    plan_confirm_keyboard,
+    plan_must_stop_keyboard,
     provider_list_keyboard,
     provider_soon_keyboard,
     server_delete_confirm_keyboard,
     server_detail_keyboard,
     servers_list_keyboard,
+    storage_attach_confirm_keyboard,
+    storage_delete_confirm_keyboard,
+    storage_detach_confirm_keyboard,
+    storage_detail_keyboard,
+    storage_list_keyboard,
+    storage_resize_confirm_keyboard,
+    storage_wizard_cancel_keyboard,
 )
 from bot.services.cloud_store import cloud_store
 from bot.services.upcloud_api import (
     UpCloudAPIError,
+    upcloud_add_ip,
+    upcloud_attach_storage,
+    upcloud_create_backup,
     upcloud_create_server,
     upcloud_delete_server,
+    upcloud_delete_storage,
+    upcloud_detach_storage,
     upcloud_get_account,
     upcloud_get_server,
+    upcloud_list_backups,
     upcloud_list_plans,
     upcloud_list_servers,
     upcloud_list_templates,
     upcloud_list_zones,
     upcloud_login,
+    upcloud_modify_server,
+    upcloud_remove_ip,
+    upcloud_resize_storage,
     upcloud_restart_server,
+    upcloud_restore_backup,
     upcloud_start_server,
     upcloud_stop_server,
 )
-from bot.states.cloud_setup import CloudServerCreateStates, CloudSetupStates
+from bot.states.cloud_setup import (
+    CloudDiskStates,
+    CloudPlanChangeStates,
+    CloudServerCreateStates,
+    CloudSetupStates,
+)
 from bot.texts import cloud as texts
 from bot.texts.cloud import ACTIVE_PROVIDERS, PROVIDERS
 
@@ -73,6 +105,28 @@ async def _show_servers(callback: CallbackQuery, lang: str, account: dict) -> No
     await callback.message.edit_text(
         texts.servers_header_text(lang, account, bool(servers)),
         reply_markup=servers_list_keyboard(lang, account["id"], servers),
+    )
+
+
+async def _get_account(callback: CallbackQuery, lang: str, account_id: str) -> dict | None:
+    account = await cloud_store.get(callback.from_user.id, account_id)
+    if not account:
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+    return account
+
+
+async def _redisplay_server(callback: CallbackQuery, lang: str, account_id: str, server_uuid: str) -> None:
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.server_detail_text(lang, server), reply_markup=server_detail_keyboard(lang, account_id, server)
     )
 
 
@@ -481,3 +535,762 @@ async def cb_create_confirm(callback: CallbackQuery, state: FSMContext, lang: st
         texts.create_success_text(lang, server),
         reply_markup=server_detail_keyboard(lang, data["account_id"], server),
     )
+
+
+# --- Plan change ---
+
+
+@router.callback_query(F.data.startswith("cplan:start:"))
+async def cb_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, server_uuid = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    if server.state != "stopped":
+        await callback.message.edit_text(
+            texts.plan_must_stop_text(lang), reply_markup=plan_must_stop_keyboard(lang, account_id, server_uuid)
+        )
+        return
+
+    try:
+        plans = await upcloud_list_plans(account["username"], account["password"])
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    await state.clear()
+    await state.update_data(
+        account_id=account_id, server_uuid=server_uuid, current_plan=server.plan, plans=[p.name for p in plans]
+    )
+    await state.set_state(CloudPlanChangeStates.choosing_plan)
+    options = [(p.name, f"cplan:pick:{i}") for i, p in enumerate(plans)]
+    await callback.message.edit_text(
+        texts.plan_choose_text(lang, server.plan), reply_markup=create_pick_keyboard(lang, options, "cplan:cancel")
+    )
+
+
+@router.callback_query(F.data == "cplan:cancel", CloudPlanChangeStates)
+async def cb_plan_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.clear()
+    await callback.answer()
+    await _redisplay_server(callback, lang, data["account_id"], data["server_uuid"])
+
+
+@router.callback_query(F.data.startswith("cplan:pick:"), CloudPlanChangeStates.choosing_plan)
+async def cb_plan_pick(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    new_plan = data["plans"][index]
+    await state.update_data(new_plan=new_plan)
+    await state.set_state(CloudPlanChangeStates.confirming)
+    await callback.message.edit_text(
+        texts.plan_confirm_text(lang, data["current_plan"], new_plan), reply_markup=plan_confirm_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cplan:confirm", CloudPlanChangeStates.confirming)
+async def cb_plan_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await _get_account(callback, lang, data["account_id"])
+    if not account:
+        await state.clear()
+        return
+    await callback.answer()
+    try:
+        server = await upcloud_modify_server(
+            account["username"], account["password"], data["server_uuid"], plan=data["new_plan"]
+        )
+    except UpCloudAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await state.clear()
+    await callback.message.edit_text(
+        f"{texts.plan_changed_text(lang)}\n\n{texts.server_detail_text(lang, server)}",
+        reply_markup=server_detail_keyboard(lang, data["account_id"], server),
+    )
+
+
+# --- Storage / disks ---
+
+
+async def _show_storage_list(callback: CallbackQuery, lang: str, account: dict, account_id: str, server_uuid: str) -> None:
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.storage_header_text(lang, server, bool(server.storage_devices)),
+        reply_markup=storage_list_keyboard(lang, account_id, server_uuid, server.storage_devices),
+    )
+
+
+@router.callback_query(F.data.startswith("csto:list:"))
+async def cb_storage_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_uuid = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_storage_list(callback, lang, account, account_id, server_uuid)
+
+
+@router.callback_query(F.data.startswith("csto:view:"))
+async def cb_storage_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    if index >= len(server.storage_devices):
+        await callback.answer()
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    storage = server.storage_devices[index]
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.storage_detail_text(lang, storage),
+        reply_markup=storage_detail_keyboard(lang, account_id, server_uuid, index),
+    )
+
+
+class _ResolveFailed(Exception):
+    """Raised by the _resolve_* helpers once they've already rendered an
+    error message on a failed API call — callers just stop on catching it."""
+
+
+async def _resolve_storage(callback: CallbackQuery, lang: str, account: dict, server_uuid: str, index: int):
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        raise _ResolveFailed from exc
+    if index >= len(server.storage_devices):
+        return None
+    return server.storage_devices[index]
+
+
+@router.callback_query(F.data.startswith("csto:add:"))
+async def cb_storage_add(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, server_uuid = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await state.clear()
+    await state.update_data(account_id=account_id, server_uuid=server_uuid)
+    await state.set_state(CloudDiskStates.waiting_size)
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.storage_waiting_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_attach")
+    )
+
+
+@router.callback_query(F.data == "csto:cancel_attach", CloudDiskStates)
+async def cb_storage_add_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.clear()
+    await callback.answer()
+    account = await _get_account(callback, lang, data["account_id"])
+    if not account:
+        return
+    await _show_storage_list(callback, lang, account, data["account_id"], data["server_uuid"])
+
+
+@router.message(CloudDiskStates.waiting_size)
+async def process_disk_size(message: Message, state: FSMContext, lang: str) -> None:
+    raw = message.text.strip() if message.text else ""
+    if not raw.isdigit() or not (10 <= int(raw) <= 4096):
+        await message.answer(
+            texts.storage_invalid_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_attach")
+        )
+        return
+    await state.update_data(size=int(raw))
+    await state.set_state(CloudDiskStates.confirming_attach)
+    await message.answer(texts.storage_confirm_attach_text(lang, int(raw)), reply_markup=storage_attach_confirm_keyboard(lang))
+
+
+@router.callback_query(F.data == "csto:confirm_attach", CloudDiskStates.confirming_attach)
+async def cb_storage_attach_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await _get_account(callback, lang, data["account_id"])
+    if not account:
+        await state.clear()
+        return
+    await callback.answer()
+    try:
+        server = await upcloud_attach_storage(
+            account["username"], account["password"], data["server_uuid"], title=f"disk-{data['size']}gb", size=data["size"]
+        )
+    except UpCloudAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await state.clear()
+    await callback.message.edit_text(
+        texts.storage_attached_text(lang),
+        reply_markup=storage_list_keyboard(lang, data["account_id"], data["server_uuid"], server.storage_devices),
+    )
+
+
+@router.callback_query(F.data.startswith("csto:rsz:"))
+async def cb_storage_resize_ask(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    if storage is None:
+        await callback.answer()
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+
+    await state.clear()
+    await state.update_data(
+        account_id=account_id,
+        server_uuid=server_uuid,
+        index=index,
+        storage_uuid=storage.uuid,
+        storage_title=storage.title,
+        current_size=storage.size,
+    )
+    await state.set_state(CloudDiskStates.waiting_resize_size)
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.storage_waiting_resize_text(lang, storage.size),
+        reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_resize"),
+    )
+
+
+@router.callback_query(F.data == "csto:cancel_resize", CloudDiskStates)
+async def cb_storage_resize_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.clear()
+    await callback.answer()
+    account_id, server_uuid, index = data["account_id"], data["server_uuid"], data["index"]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        return
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    await callback.message.edit_text(
+        texts.storage_detail_text(lang, storage), reply_markup=storage_detail_keyboard(lang, account_id, server_uuid, index)
+    )
+
+
+@router.message(CloudDiskStates.waiting_resize_size)
+async def process_disk_resize(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    raw = message.text.strip() if message.text else ""
+    if not raw.isdigit() or not (data["current_size"] < int(raw) <= 10240):
+        await message.answer(
+            texts.storage_invalid_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_resize")
+        )
+        return
+    await state.update_data(new_size=int(raw))
+    await state.set_state(CloudDiskStates.confirming_resize)
+    await message.answer(
+        texts.storage_confirm_resize_text(lang, data["storage_title"], data["current_size"], int(raw)),
+        reply_markup=storage_resize_confirm_keyboard(lang),
+    )
+
+
+@router.callback_query(F.data == "csto:confirm_resize", CloudDiskStates.confirming_resize)
+async def cb_storage_resize_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await _get_account(callback, lang, data["account_id"])
+    if not account:
+        await state.clear()
+        return
+    await callback.answer()
+    try:
+        await upcloud_resize_storage(account["username"], account["password"], data["storage_uuid"], data["new_size"])
+    except UpCloudAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    account_id, server_uuid, index = data["account_id"], data["server_uuid"], data["index"]
+    await state.clear()
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        return
+    await callback.message.edit_text(
+        texts.storage_resized_text(lang),
+        reply_markup=storage_detail_keyboard(lang, account_id, server_uuid, index)
+        if storage
+        else storage_list_keyboard(lang, account_id, server_uuid, []),
+    )
+
+
+@router.callback_query(F.data.startswith("csto:dt:"))
+async def cb_storage_detach_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    await callback.message.edit_text(
+        texts.storage_detach_confirm_text(lang, storage),
+        reply_markup=storage_detach_confirm_keyboard(lang, account_id, server_uuid, index),
+    )
+
+
+@router.callback_query(F.data.startswith("csto:dtc:"))
+async def cb_storage_detach(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    try:
+        await upcloud_detach_storage(account["username"], account["password"], server_uuid, storage.uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.storage_detached_text(lang), reply_markup=None)
+    await _show_storage_list(callback, lang, account, account_id, server_uuid)
+
+
+@router.callback_query(F.data.startswith("csto:del:"))
+async def cb_storage_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    await callback.message.edit_text(
+        texts.storage_delete_confirm_text(lang, storage),
+        reply_markup=storage_delete_confirm_keyboard(lang, account_id, server_uuid, index),
+    )
+
+
+@router.callback_query(F.data.startswith("csto:delc:"))
+async def cb_storage_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    try:
+        await upcloud_delete_storage(account["username"], account["password"], storage.uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.storage_deleted_text(lang), reply_markup=None)
+    await _show_storage_list(callback, lang, account, account_id, server_uuid)
+
+
+# --- Backups ---
+
+
+async def _show_backups(callback: CallbackQuery, lang: str, account: dict, account_id: str, server_uuid: str, index: int, storage) -> None:
+    try:
+        backups = await upcloud_list_backups(account["username"], account["password"], storage.uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.backups_header_text(lang, storage, bool(backups)),
+        reply_markup=backups_list_keyboard(lang, account_id, server_uuid, index, backups),
+    )
+
+
+@router.callback_query(F.data.startswith("cbak:list:"))
+async def cb_backups_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+
+
+@router.callback_query(F.data.startswith("cbak:mk:"))
+async def cb_backup_create_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    await callback.message.edit_text(
+        texts.backup_create_confirm_text(lang, storage),
+        reply_markup=backup_create_confirm_keyboard(lang, account_id, server_uuid, index),
+    )
+
+
+@router.callback_query(F.data.startswith("cbak:mkc:"))
+async def cb_backup_create(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    try:
+        await upcloud_create_backup(account["username"], account["password"], storage.uuid, title=f"{storage.title}-backup")
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.backup_created_text(lang), reply_markup=None)
+    await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+
+
+async def _resolve_backup(callback: CallbackQuery, lang: str, account: dict, storage_uuid: str, backup_index: int):
+    try:
+        backups = await upcloud_list_backups(account["username"], account["password"], storage_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        raise _ResolveFailed from exc
+    if backup_index >= len(backups):
+        return None
+    return backups[backup_index]
+
+
+async def _resolve_storage_and_backup(callback: CallbackQuery, lang: str, account: dict, server_uuid: str, index: int, backup_index: int):
+    """Resolves both levels for a backup-scoped callback; returns (storage, backup),
+    with either possibly None if the list moved (e.g. deleted from elsewhere)."""
+    storage = await _resolve_storage(callback, lang, account, server_uuid, index)
+    if storage is None:
+        return None, None
+    backup = await _resolve_backup(callback, lang, account, storage.uuid, backup_index)
+    return storage, backup
+
+
+@router.callback_query(F.data.startswith("cbak:view:"))
+async def cb_backup_view(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw, backup_index_raw = callback.data.split(":", 5)
+    index, backup_index = int(index_raw), int(backup_index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    if backup is None:
+        await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+        return
+    await callback.message.edit_text(
+        texts.backup_detail_text(lang, backup),
+        reply_markup=backup_detail_keyboard(lang, account_id, server_uuid, index, backup_index),
+    )
+
+
+@router.callback_query(F.data.startswith("cbak:rs:"))
+async def cb_backup_restore_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw, backup_index_raw = callback.data.split(":", 5)
+    index, backup_index = int(index_raw), int(backup_index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    if backup is None:
+        await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+        return
+    await callback.message.edit_text(
+        texts.backup_restore_confirm_text(lang, backup),
+        reply_markup=backup_restore_confirm_keyboard(lang, account_id, server_uuid, index, backup_index),
+    )
+
+
+@router.callback_query(F.data.startswith("cbak:rsc:"))
+async def cb_backup_restore(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw, backup_index_raw = callback.data.split(":", 5)
+    index, backup_index = int(index_raw), int(backup_index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    if backup is None:
+        await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+        return
+    try:
+        await upcloud_restore_backup(account["username"], account["password"], backup.uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.backup_restored_text(lang), reply_markup=None)
+    await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+
+
+@router.callback_query(F.data.startswith("cbak:dl:"))
+async def cb_backup_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw, backup_index_raw = callback.data.split(":", 5)
+    index, backup_index = int(index_raw), int(backup_index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    if backup is None:
+        await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+        return
+    await callback.message.edit_text(
+        texts.backup_delete_confirm_text(lang, backup),
+        reply_markup=backup_delete_confirm_keyboard(lang, account_id, server_uuid, index, backup_index),
+    )
+
+
+@router.callback_query(F.data.startswith("cbak:dlc:"))
+async def cb_backup_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw, backup_index_raw = callback.data.split(":", 5)
+    index, backup_index = int(index_raw), int(backup_index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if storage is None:
+        await _show_storage_list(callback, lang, account, account_id, server_uuid)
+        return
+    if backup is None:
+        await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+        return
+    try:
+        await upcloud_delete_storage(account["username"], account["password"], backup.uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.backup_deleted_text(lang), reply_markup=None)
+    await _show_backups(callback, lang, account, account_id, server_uuid, index, storage)
+
+
+# --- IP addresses ---
+
+
+async def _show_ips(callback: CallbackQuery, lang: str, account: dict, account_id: str, server_uuid: str) -> None:
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    public_ips = [ip for ip in server.ip_addresses if ip.access == "public"]
+    await callback.message.edit_text(
+        texts.ips_header_text(lang, server, bool(public_ips)),
+        reply_markup=ips_list_keyboard(lang, account_id, server_uuid, public_ips),
+    )
+
+
+@router.callback_query(F.data.startswith("cip:list:"))
+async def cb_ips_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_uuid = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_ips(callback, lang, account, account_id, server_uuid)
+
+
+@router.callback_query(F.data.startswith("cip:add:"))
+async def cb_ip_add_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.ip_add_confirm_text(lang, server), reply_markup=ip_add_confirm_keyboard(lang, account_id, server_uuid)
+    )
+
+
+@router.callback_query(F.data.startswith("cip:addc:"))
+async def cb_ip_add(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        ip = await upcloud_add_ip(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.ip_added_text(lang, ip.address), reply_markup=None)
+    await _show_ips(callback, lang, account, account_id, server_uuid)
+
+
+async def _resolve_public_ip(account: dict, server_uuid: str, index: int):
+    server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    public_ips = [ip for ip in server.ip_addresses if ip.access == "public"]
+    if index >= len(public_ips):
+        return None, server
+    return public_ips[index], server
+
+
+@router.callback_query(F.data.startswith("cip:rm:"))
+async def cb_ip_remove_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        ip, server = await _resolve_public_ip(account, server_uuid, index)
+    except UpCloudAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    if ip is None:
+        await _show_ips(callback, lang, account, account_id, server_uuid)
+        return
+    await callback.message.edit_text(
+        texts.ip_remove_confirm_text(lang, server, ip.address),
+        reply_markup=ip_remove_confirm_keyboard(lang, account_id, server_uuid, index),
+    )
+
+
+@router.callback_query(F.data.startswith("cip:rmc:"))
+async def cb_ip_remove(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_uuid, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        ip, _server = await _resolve_public_ip(account, server_uuid, index)
+    except UpCloudAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    if ip is None:
+        await _show_ips(callback, lang, account, account_id, server_uuid)
+        return
+    try:
+        await upcloud_remove_ip(account["username"], account["password"], ip.address)
+    except UpCloudAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.ip_removed_text(lang), reply_markup=None)
+    await _show_ips(callback, lang, account, account_id, server_uuid)

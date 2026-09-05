@@ -1696,21 +1696,30 @@ _STRINGS: dict[str, dict[str, str]] = {
     "cloud_step_username_upcloud": {
         "ru": (
             "🔑 <b>Подключение UpCloud</b>\n\n"
-            "Введите <b>API-логин</b> — имя суб-аккаунта с доступом к API "
-            "(создаётся в панели UpCloud: People → сотрудник с правами API), "
-            "а не email от основного аккаунта."
+            "Введите <b>логин</b> вашего аккаунта UpCloud — тот же username, "
+            "которым вы входите на upcloud.com (не email).\n\n"
+            "⚠️ У аккаунта должна быть включена опция <b>«Permit API connections»</b> "
+            "(Account → Account settings) и <b>выключена двухфакторная аутентификация</b> "
+            "— так требует сам API UpCloud, без исключений. Если у вас включена 2FA, "
+            "создайте отдельного пользователя без неё в разделе People."
         ),
         "en": (
             "🔑 <b>Connect UpCloud</b>\n\n"
-            "Enter the <b>API username</b> — an API-access sub-account name "
-            "(created in the UpCloud panel: People → a user with API rights), "
-            "not the main account's email."
+            "Enter your UpCloud account <b>username</b> — the same one you use to "
+            "log in at upcloud.com (not your email).\n\n"
+            "⚠️ That account needs <b>\"Permit API connections\"</b> enabled "
+            "(Account → Account settings) and <b>two-factor authentication turned off</b> "
+            "— that's a hard requirement of UpCloud's own API, not this bot. If your "
+            "account has 2FA on, create a separate user without it under People."
         ),
         "tk": (
             "🔑 <b>UpCloud birikdirmek</b>\n\n"
-            "<b>API-login</b> giriziň — API girişi bolan sub-hasabyň ady "
-            "(UpCloud panelinde döredilýär: People → API hukukly ulanyjy), "
-            "esasy hasabyň e-poçtasy däl."
+            "UpCloud hasabyňyzyň <b>username</b>-ini giriziň — upcloud.com-a "
+            "girýän ulanyjy adyňyz (e-poçta däl).\n\n"
+            "⚠️ Şol hasapda <b>«Permit API connections»</b> açyk bolmaly "
+            "(Account → Account settings) we <b>iki faktorly tassyklama öçürilen</b> "
+            "bolmaly — bu UpCloud API-siniň öz talaby. 2FA açyk bolsa, People "
+            "bölüminde ony öçürilen aýratyn ulanyjy dörediň."
         ),
     },
     "cloud_step_password": {
@@ -1961,6 +1970,175 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🔑 Root password: <code>{password}</code> (save it, it won't be shown again)",
         "tk": "🔑 Root paroly: <code>{password}</code> (ýatda saklaň, indi görkezilmez)",
     },
+    # --- Cloud VPS: server detail extra buttons ---
+    "btn_cloud_server_plan": {"ru": "⚙️ Изменить план", "en": "⚙️ Change plan", "tk": "⚙️ Meýilnamany üýtget"},
+    "btn_cloud_server_storage": {"ru": "💾 Диски", "en": "💾 Disks", "tk": "💾 Diskler"},
+    "btn_cloud_server_ips": {"ru": "🌐 IP-адреса", "en": "🌐 IP addresses", "tk": "🌐 IP salgylar"},
+    # --- Cloud VPS: plan change ---
+    "cloud_plan_must_stop": {
+        "ru": "{icon} Чтобы сменить план, сервер сначала нужно выключить.",
+        "en": "{icon} The server must be stopped before its plan can be changed.",
+        "tk": "{icon} Meýilnamany üýtgetmek üçin serweri öçürmeli.",
+    },
+    "cloud_plan_choose": {
+        "ru": "⚙️ <b>Смена плана</b>\n\nТекущий план: {current}. Выберите новый:",
+        "en": "⚙️ <b>Change plan</b>\n\nCurrent plan: {current}. Choose a new one:",
+        "tk": "⚙️ <b>Meýilnamany üýtgetmek</b>\n\nHäzirki meýilnama: {current}. Täzesini saýlaň:",
+    },
+    "cloud_plan_confirm": {
+        "ru": "Сменить план <b>{current}</b> → <b>{new}</b>?\n\n💰 Это изменит стоимость обслуживания сервера.",
+        "en": "Change plan <b>{current}</b> → <b>{new}</b>?\n\n💰 This will change the server's billing rate.",
+        "tk": "<b>{current}</b> → <b>{new}</b> meýilnama üýtgesinmi?\n\n💰 Bu serweriň bahasyny üýtgeder.",
+    },
+    "btn_cloud_plan_confirm": {"ru": "✅ Сменить план", "en": "✅ Change plan", "tk": "✅ Meýilnamany üýtget"},
+    "cloud_plan_changed": {"ru": "{icon} План изменён.", "en": "{icon} Plan changed.", "tk": "{icon} Meýilnama üýtgedildi."},
+    # --- Cloud VPS: storage/disks ---
+    "cloud_storage_header": {
+        "ru": "💾 <b>Диски — {title}</b>\n\n{body}",
+        "en": "💾 <b>Disks — {title}</b>\n\n{body}",
+        "tk": "💾 <b>Diskler — {title}</b>\n\n{body}",
+    },
+    "cloud_storage_empty": {"ru": "<i>Дисков не найдено.</i>", "en": "<i>No disks found.</i>", "tk": "<i>Disk tapylmady.</i>"},
+    "cloud_storage_hint": {
+        "ru": "<i>Выберите диск или добавьте новый.</i>",
+        "en": "<i>Pick a disk or add a new one.</i>",
+        "tk": "<i>Diski saýlaň ýa-da täzesini goşuň.</i>",
+    },
+    "btn_cloud_storage_add": {"ru": "➕ Добавить диск", "en": "➕ Add disk", "tk": "➕ Disk goş"},
+    "btn_cloud_storage_back": {"ru": "⬅️ К серверу", "en": "⬅️ Back to server", "tk": "⬅️ Servere gaýt"},
+    "cloud_storage_detail": {
+        "ru": "💽 <b>{title}</b>\n\n📏 Размер: {size} GB\n🏷 Тип: {type}\n⚙️ Tier: {tier}",
+        "en": "💽 <b>{title}</b>\n\n📏 Size: {size} GB\n🏷 Type: {type}\n⚙️ Tier: {tier}",
+        "tk": "💽 <b>{title}</b>\n\n📏 Ölçegi: {size} GB\n🏷 Görnüşi: {type}\n⚙️ Tier: {tier}",
+    },
+    "btn_cloud_storage_resize": {"ru": "📏 Изменить размер", "en": "📏 Resize", "tk": "📏 Ölçegini üýtget"},
+    "btn_cloud_storage_backups": {"ru": "📋 Бэкапы", "en": "📋 Backups", "tk": "📋 Ätiýaçlyk nusgalar"},
+    "btn_cloud_storage_backup_create": {"ru": "➕ Создать бэкап", "en": "➕ Create backup", "tk": "➕ Ätiýaçlyk döret"},
+    "btn_cloud_storage_detach": {"ru": "🔌 Отключить диск", "en": "🔌 Detach disk", "tk": "🔌 Diski aýyr"},
+    "btn_cloud_storage_detach_confirm": {"ru": "🔌 Да, отключить", "en": "🔌 Yes, detach", "tk": "🔌 Hawa, aýyr"},
+    "btn_cloud_storage_delete": {"ru": "🗑 Удалить диск", "en": "🗑 Delete disk", "tk": "🗑 Diski poz"},
+    "btn_cloud_storage_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "cloud_storage_detach_confirm": {
+        "ru": "{icon} Отключить диск <b>{title}</b> от сервера?",
+        "en": "{icon} Detach disk <b>{title}</b> from the server?",
+        "tk": "{icon} <b>{title}</b> diskini serwerden aýyrmalymy?",
+    },
+    "cloud_storage_delete_confirm": {
+        "ru": "{icon} <b>Удалить диск {title}?</b>\n\n⚠️ Все данные на нём будут потеряны безвозвратно.",
+        "en": "{icon} <b>Delete disk {title}?</b>\n\n⚠️ All data on it will be permanently lost.",
+        "tk": "{icon} <b>{title} diski pozulsynmy?</b>\n\n⚠️ Ondaky ähli maglumat hemişelik ýitiriler.",
+    },
+    "cloud_storage_detached": {"ru": "{icon} Диск отключён.", "en": "{icon} Disk detached.", "tk": "{icon} Disk aýryldy."},
+    "cloud_storage_deleted": {"ru": "{icon} Диск удалён.", "en": "{icon} Disk deleted.", "tk": "{icon} Disk pozuldy."},
+    "cloud_storage_waiting_size": {
+        "ru": "📏 Введите размер нового диска в GB (например, 25):",
+        "en": "📏 Enter the new disk's size in GB (e.g. 25):",
+        "tk": "📏 Täze diskiň ölçegini GB-de giriziň (mysal: 25):",
+    },
+    "cloud_storage_invalid_size": {
+        "ru": "Некорректный размер. Введите целое число от 10 до 4096 (GB):",
+        "en": "Invalid size. Enter a whole number from 10 to 4096 (GB):",
+        "tk": "Ölçeg nädogry. 10 bilen 4096 aralygynda bitin san giriziň (GB):",
+    },
+    "cloud_storage_confirm_attach": {
+        "ru": "Создать и подключить новый диск на <b>{size} GB</b> к серверу?\n\n💰 Это платный ресурс.",
+        "en": "Create and attach a new <b>{size} GB</b> disk to the server?\n\n💰 This is a billable resource.",
+        "tk": "Servere täze <b>{size} GB</b> disk döredip birikdirmelimi?\n\n💰 Bu tölegli resurs.",
+    },
+    "btn_cloud_storage_attach_confirm": {"ru": "✅ Добавить диск", "en": "✅ Add disk", "tk": "✅ Disk goş"},
+    "cloud_storage_attached": {"ru": "{icon} Диск добавлен.", "en": "{icon} Disk added.", "tk": "{icon} Disk goşuldy."},
+    "cloud_storage_waiting_resize": {
+        "ru": "📏 Текущий размер: {current} GB. Введите новый размер в GB (только увеличение):",
+        "en": "📏 Current size: {current} GB. Enter the new size in GB (growing only):",
+        "tk": "📏 Häzirki ölçeg: {current} GB. Täze ölçegi giriziň (diňe ulaltmak):",
+    },
+    "cloud_storage_confirm_resize": {
+        "ru": "Изменить размер диска <b>{title}</b>: {old} GB → {new} GB?",
+        "en": "Resize disk <b>{title}</b>: {old} GB → {new} GB?",
+        "tk": "<b>{title}</b> diskiniň ölçegini üýtget: {old} GB → {new} GB?",
+    },
+    "btn_cloud_storage_resize_confirm": {"ru": "✅ Изменить размер", "en": "✅ Resize", "tk": "✅ Ölçegini üýtget"},
+    "cloud_storage_resized": {"ru": "{icon} Размер диска изменён.", "en": "{icon} Disk resized.", "tk": "{icon} Disk ölçegi üýtgedildi."},
+    # --- Cloud VPS: backups ---
+    "cloud_backups_header": {
+        "ru": "📋 <b>Бэкапы — {title}</b>\n\n{body}",
+        "en": "📋 <b>Backups — {title}</b>\n\n{body}",
+        "tk": "📋 <b>Ätiýaçlyk nusgalar — {title}</b>\n\n{body}",
+    },
+    "cloud_backups_empty": {"ru": "<i>Бэкапов пока нет.</i>", "en": "<i>No backups yet.</i>", "tk": "<i>Entek ätiýaçlyk nusga ýok.</i>"},
+    "cloud_backups_hint": {
+        "ru": "<i>Выберите бэкап или создайте новый.</i>",
+        "en": "<i>Pick a backup or create a new one.</i>",
+        "tk": "<i>Ätiýaçlyk nusgany saýlaň ýa-da täzesini dörediň.</i>",
+    },
+    "btn_cloud_backups_back": {"ru": "⬅️ К диску", "en": "⬅️ Back to disk", "tk": "⬅️ Diske gaýt"},
+    "cloud_backup_create_confirm": {
+        "ru": "Создать бэкап диска <b>{title}</b> сейчас?\n\n💰 Это платный ресурс.",
+        "en": "Create a backup of disk <b>{title}</b> now?\n\n💰 This is a billable resource.",
+        "tk": "<b>{title}</b> diskiniň ätiýaçlyk nusgasyny häzir döretmelimi?\n\n💰 Bu tölegli resurs.",
+    },
+    "btn_cloud_backup_create_confirm": {"ru": "✅ Создать бэкап", "en": "✅ Create backup", "tk": "✅ Ätiýaçlyk döret"},
+    "cloud_backup_created": {"ru": "{icon} Бэкап создан.", "en": "{icon} Backup created.", "tk": "{icon} Ätiýaçlyk nusga döredildi."},
+    "btn_cloud_backup_restore": {"ru": "♻️ Восстановить", "en": "♻️ Restore", "tk": "♻️ Dikelt"},
+    "btn_cloud_backup_restore_confirm": {"ru": "♻️ Да, восстановить", "en": "♻️ Yes, restore", "tk": "♻️ Hawa, dikelt"},
+    "cloud_backup_restore_confirm": {
+        "ru": (
+            "{icon} <b>Восстановить диск из бэкапа {title}?</b>\n\n"
+            "⚠️ Все текущие данные на диске будут заменены содержимым бэкапа. "
+            "Сервер должен быть выключен."
+        ),
+        "en": (
+            "{icon} <b>Restore the disk from backup {title}?</b>\n\n"
+            "⚠️ All current data on the disk will be replaced with the backup's contents. "
+            "The server must be stopped."
+        ),
+        "tk": (
+            "{icon} <b>Disk {title} ätiýaçlyk nusgasyndan dikeldilsinmi?</b>\n\n"
+            "⚠️ Diskdäki ähli häzirki maglumat ätiýaçlyk nusgasynyň mazmuny bilen çalşyrylar. "
+            "Serwer öçürilen bolmaly."
+        ),
+    },
+    "cloud_backup_restored": {"ru": "{icon} Диск восстановлен из бэкапа.", "en": "{icon} Disk restored from backup.", "tk": "{icon} Disk ätiýaçlyk nusgasyndan dikeldildi."},
+    "btn_cloud_backup_delete": {"ru": "🗑 Удалить бэкап", "en": "🗑 Delete backup", "tk": "🗑 Ätiýaçlyk nusgany poz"},
+    "btn_cloud_backup_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "cloud_backup_delete_confirm": {
+        "ru": "{icon} Удалить бэкап <b>{title}</b>?",
+        "en": "{icon} Delete backup <b>{title}</b>?",
+        "tk": "{icon} <b>{title}</b> ätiýaçlyk nusgasy pozulsynmy?",
+    },
+    "cloud_backup_deleted": {"ru": "{icon} Бэкап удалён.", "en": "{icon} Backup deleted.", "tk": "{icon} Ätiýaçlyk nusga pozuldy."},
+    # --- Cloud VPS: IP addresses ---
+    "cloud_ips_header": {
+        "ru": "🌐 <b>IP-адреса — {title}</b>\n\n{body}",
+        "en": "🌐 <b>IP addresses — {title}</b>\n\n{body}",
+        "tk": "🌐 <b>IP salgylar — {title}</b>\n\n{body}",
+    },
+    "cloud_ips_empty": {"ru": "<i>Публичных IP не найдено.</i>", "en": "<i>No public IPs found.</i>", "tk": "<i>Public IP tapylmady.</i>"},
+    "cloud_ips_hint": {
+        "ru": "<i>Выберите IP, чтобы удалить, или добавьте новый.</i>",
+        "en": "<i>Pick an IP to remove, or add a new one.</i>",
+        "tk": "<i>Aýyrmak üçin IP saýlaň ýa-da täzesini goşuň.</i>",
+    },
+    "btn_cloud_ip_add": {"ru": "➕ Добавить IP", "en": "➕ Add IP", "tk": "➕ IP goş"},
+    "btn_cloud_ips_back": {"ru": "⬅️ К серверу", "en": "⬅️ Back to server", "tk": "⬅️ Servere gaýt"},
+    "cloud_ip_add_confirm": {
+        "ru": "Добавить новый публичный IPv4-адрес к серверу <b>{title}</b>?\n\n💰 Это платный ресурс.",
+        "en": "Add a new public IPv4 address to server <b>{title}</b>?\n\n💰 This is a billable resource.",
+        "tk": "<b>{title}</b> serwerine täze public IPv4 salgy goşulsynmy?\n\n💰 Bu tölegli resurs.",
+    },
+    "btn_cloud_ip_add_confirm": {"ru": "✅ Добавить IP", "en": "✅ Add IP", "tk": "✅ IP goş"},
+    "cloud_ip_added": {
+        "ru": "{icon} Новый IP добавлен: <code>{address}</code>",
+        "en": "{icon} New IP added: <code>{address}</code>",
+        "tk": "{icon} Täze IP goşuldy: <code>{address}</code>",
+    },
+    "btn_cloud_ip_remove_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, remove", "tk": "🗑 Hawa, aýyr"},
+    "cloud_ip_remove_confirm": {
+        "ru": "{icon} Удалить IP <code>{address}</code> от сервера <b>{title}</b>?",
+        "en": "{icon} Remove IP <code>{address}</code> from server <b>{title}</b>?",
+        "tk": "{icon} <code>{address}</code> IP-ni <b>{title}</b> serwerinden aýyrmalymy?",
+    },
+    "cloud_ip_removed": {"ru": "{icon} IP удалён.", "en": "{icon} IP removed.", "tk": "{icon} IP aýryldy."},
 }
 
 

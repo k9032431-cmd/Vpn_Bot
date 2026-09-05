@@ -60,6 +60,17 @@ class IPAddressInfo:
 
 
 @dataclass
+class StorageDeviceInfo:
+    uuid: str
+    title: str
+    size: int
+    tier: str = "maxiops"
+    type: str = "disk"  # "disk" | "backup" | "cdrom" | "template"
+    address: str = ""  # e.g. "virtio:1" — the device's attachment slot on its server
+    origin: str = ""  # for backups: the uuid of the storage they were taken from
+
+
+@dataclass
 class ServerInfo:
     uuid: str
     title: str
@@ -70,6 +81,7 @@ class ServerInfo:
     core_number: int = 0
     memory_amount: int = 0
     ip_addresses: list[IPAddressInfo] = field(default_factory=list)
+    storage_devices: list[StorageDeviceInfo] = field(default_factory=list)
     password: str | None = None  # only set right after creation
 
 
@@ -166,11 +178,30 @@ def _parse_server_summary(raw: dict) -> ServerInfo:
     )
 
 
+def _parse_storage_device(raw: dict) -> StorageDeviceInfo:
+    return StorageDeviceInfo(
+        uuid=raw.get("storage") or raw.get("uuid", ""),
+        title=raw.get("storage_title") or raw.get("title", ""),
+        size=int(raw.get("storage_size") or raw.get("size", 0) or 0),
+        tier=raw.get("tier", "maxiops"),
+        type=raw.get("type", "disk"),
+        address=raw.get("address", ""),
+        origin=raw.get("origin", ""),
+    )
+
+
 def _parse_server_detail(raw: dict) -> ServerInfo:
     server = _parse_server_summary(raw)
     ip_addresses = raw.get("ip_addresses", {})
     entries = ip_addresses.get("ip_address", []) if isinstance(ip_addresses, dict) else []
     server.ip_addresses = [_parse_ip(item) for item in entries if isinstance(item, dict)]
+    storage_devices = raw.get("storage_devices", {})
+    storage_entries = (
+        storage_devices.get("storage_device", []) if isinstance(storage_devices, dict) else []
+    )
+    server.storage_devices = [
+        _parse_storage_device(item) for item in storage_entries if isinstance(item, dict)
+    ]
     return server
 
 
@@ -322,6 +353,130 @@ async def upcloud_delete_server(
     await _request(
         "DELETE", f"/server/{server_uuid}", username, password, base_url=base_url, params=params
     )
+
+
+# --- IP addresses ---
+#
+# Unlike AWS/Azure "elastic IPs", an UpCloud IP address is created already
+# bound to a server (the create call takes the target server as a field)
+# and can't be re-pointed at a different server afterwards — releasing it
+# with upcloud_remove_ip is the only way to free it up.
+
+
+async def upcloud_add_ip(
+    username: str,
+    password: str,
+    server_uuid: str,
+    *,
+    family: str = "IPv4",
+    base_url: str | None = None,
+) -> IPAddressInfo:
+    body = {"ip_address": {"access": "public", "family": family, "server": server_uuid}}
+    payload = await _request("POST", "/ip_address", username, password, base_url=base_url, json_body=body)
+    ip = payload.get("ip_address", {}) if isinstance(payload, dict) else {}
+    return _parse_ip(ip)
+
+
+async def upcloud_remove_ip(
+    username: str, password: str, address: str, *, base_url: str | None = None
+) -> None:
+    await _request("DELETE", f"/ip_address/{address}", username, password, base_url=base_url)
+
+
+# --- Storage devices & backups ---
+
+
+async def upcloud_attach_storage(
+    username: str,
+    password: str,
+    server_uuid: str,
+    *,
+    title: str,
+    size: int,
+    tier: str = "maxiops",
+    base_url: str | None = None,
+) -> ServerInfo:
+    """Creates a brand-new disk and attaches it to the server in one call
+    (UpCloud's "attach" endpoint supports ``action: create`` inline instead
+    of requiring a separately-created storage uuid)."""
+    body = {
+        "storage_device": {
+            "action": "create",
+            "title": title,
+            "size": size,
+            "tier": tier,
+        }
+    }
+    payload = await _request(
+        "POST", f"/server/{server_uuid}/storage/attach", username, password, base_url=base_url, json_body=body
+    )
+    server = payload.get("server", {}) if isinstance(payload, dict) else {}
+    return _parse_server_detail(server)
+
+
+async def upcloud_detach_storage(
+    username: str, password: str, server_uuid: str, storage_uuid: str, *, base_url: str | None = None
+) -> ServerInfo:
+    body = {"storage_device": {"storage": storage_uuid}}
+    payload = await _request(
+        "POST", f"/server/{server_uuid}/storage/detach", username, password, base_url=base_url, json_body=body
+    )
+    server = payload.get("server", {}) if isinstance(payload, dict) else {}
+    return _parse_server_detail(server)
+
+
+async def upcloud_resize_storage(
+    username: str, password: str, storage_uuid: str, new_size: int, *, base_url: str | None = None
+) -> StorageDeviceInfo:
+    payload = await _request(
+        "PUT",
+        f"/storage/{storage_uuid}",
+        username,
+        password,
+        base_url=base_url,
+        json_body={"storage": {"size": new_size}},
+    )
+    storage = payload.get("storage", {}) if isinstance(payload, dict) else {}
+    return _parse_storage_device(storage)
+
+
+async def upcloud_delete_storage(
+    username: str, password: str, storage_uuid: str, *, base_url: str | None = None
+) -> None:
+    await _request("DELETE", f"/storage/{storage_uuid}", username, password, base_url=base_url)
+
+
+async def upcloud_create_backup(
+    username: str, password: str, storage_uuid: str, *, title: str, base_url: str | None = None
+) -> StorageDeviceInfo:
+    payload = await _request(
+        "POST",
+        f"/storage/{storage_uuid}/backup",
+        username,
+        password,
+        base_url=base_url,
+        json_body={"storage": {"title": title}},
+    )
+    storage = payload.get("storage", {}) if isinstance(payload, dict) else {}
+    return _parse_storage_device(storage)
+
+
+async def upcloud_list_backups(
+    username: str, password: str, storage_uuid: str, *, base_url: str | None = None
+) -> list[StorageDeviceInfo]:
+    payload = await _request(
+        "GET", "/storage", username, password, base_url=base_url, params={"type": "backup"}
+    )
+    storages = payload.get("storages", {}) if isinstance(payload, dict) else {}
+    entries = storages.get("storage", []) if isinstance(storages, dict) else []
+    backups = [_parse_storage_device(item) for item in entries if isinstance(item, dict)]
+    return [b for b in backups if b.origin == storage_uuid]
+
+
+async def upcloud_restore_backup(
+    username: str, password: str, backup_uuid: str, *, base_url: str | None = None
+) -> None:
+    await _request("POST", f"/storage/{backup_uuid}/restore", username, password, base_url=base_url)
 
 
 # --- Catalog: zones, plans, templates ---
