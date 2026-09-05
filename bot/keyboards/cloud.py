@@ -167,15 +167,21 @@ def create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-# --- Plan change ---
+# --- Generic "server must be stopped first" gate ---
+# UpCloud refuses several operations (plan change, delete, backup restore)
+# while the server is running — this same keyboard (stop it / go back)
+# covers all of them.
 
 
-def plan_must_stop_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKeyboardMarkup:
+def must_stop_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"csrv:stop:{account_id}:{server_uuid}")
     builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}")
     builder.adjust(1, 1)
     return builder.as_markup()
+
+
+# --- Plan change ---
 
 
 def plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:

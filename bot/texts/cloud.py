@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import re
 
 from .premium_emoji import e
 from .translations import t
@@ -69,9 +70,25 @@ def connecting_text(lang: str) -> str:
     return t(lang, "cloud_connecting")
 
 
+_SERVER_STATE_ERROR_RE = re.compile(r"is in state '(\w+)'")
+
+
 def _error_reason(lang: str, reason: str) -> str:
     if reason.startswith("detail:"):
-        return html.escape(reason.split(":", 1)[1])
+        msg = reason.split(":", 1)[1]
+        # UpCloud blocks several operations while the server is in a given
+        # state (e.g. "not allowed while the server ... is in state
+        # 'started'/'maintenance'") — translate that into guidance instead
+        # of showing the raw UUID-laden message.
+        state_match = _SERVER_STATE_ERROR_RE.search(msg)
+        if state_match:
+            state = state_match.group(1)
+            if state == "started":
+                return t(lang, "cloud_err_state_started")
+            if state == "maintenance":
+                return t(lang, "cloud_err_state_maintenance")
+            return t(lang, "cloud_err_state_other", state=state)
+        return html.escape(msg)
     key = _CLOUD_ERR_KEYS.get(reason, "cloud_err_bad_response")
     return t(lang, key)
 
@@ -222,6 +239,14 @@ def create_success_text(lang: str, server) -> str:
 
 def plan_must_stop_text(lang: str) -> str:
     return t(lang, "cloud_plan_must_stop", icon=e("warning", "⚠️"))
+
+
+def delete_must_stop_text(lang: str) -> str:
+    return t(lang, "cloud_delete_must_stop", icon=e("warning", "⚠️"))
+
+
+def restore_must_stop_text(lang: str) -> str:
+    return t(lang, "cloud_restore_must_stop", icon=e("warning", "⚠️"))
 
 
 def plan_choose_text(lang: str, current_plan: str, page: int = 0, total_pages: int = 1) -> str:

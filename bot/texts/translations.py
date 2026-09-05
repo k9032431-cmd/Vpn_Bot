@@ -1997,6 +1997,31 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} The server must be stopped before its plan can be changed.",
         "tk": "{icon} Meýilnamany üýtgetmek üçin serweri öçürmeli.",
     },
+    "cloud_delete_must_stop": {
+        "ru": "{icon} Чтобы удалить сервер, его сначала нужно выключить.",
+        "en": "{icon} The server must be stopped before it can be deleted.",
+        "tk": "{icon} Serweri pozmak üçin ony öçürmeli.",
+    },
+    "cloud_restore_must_stop": {
+        "ru": "{icon} Чтобы восстановить бэкап, сервер сначала нужно выключить.",
+        "en": "{icon} The server must be stopped before restoring a backup.",
+        "tk": "{icon} Ätiýaçlyk nusgany dikeltmek üçin serweri öçürmeli.",
+    },
+    "cloud_err_state_started": {
+        "ru": "Сервер сейчас включён — для этого действия его нужно сначала выключить.",
+        "en": "The server is currently running — it must be stopped for this action.",
+        "tk": "Serwer häzir işleýär — bu amal üçin ony öçürmeli.",
+    },
+    "cloud_err_state_maintenance": {
+        "ru": "Сервер сейчас в процессе обслуживания (например, после другого действия) — подождите немного и попробуйте снова.",
+        "en": "The server is currently undergoing maintenance (e.g. right after another action) — wait a bit and try again.",
+        "tk": "Serwer häzir hyzmat astynda (mysal üçin başga bir amaldan soň) — birazajyk garaşyp gaýtadan synanyň.",
+    },
+    "cloud_err_state_other": {
+        "ru": "Сервер сейчас в состоянии «{state}» — это действие временно недоступно, попробуйте чуть позже.",
+        "en": "The server is currently in state \"{state}\" — this action isn't available right now, try again shortly.",
+        "tk": "Serwer häzir «{state}» ýagdaýynda — bu amal häzirlikçe elýeterli däl, azajykdan soň synanyň.",
+    },
     "cloud_plan_choose": {
         "ru": "⚙️ <b>Смена плана</b>\n\nТекущий план: {current}. Выберите новый:",
         "en": "⚙️ <b>Change plan</b>\n\nCurrent plan: {current}. Choose a new one:",

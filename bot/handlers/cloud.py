@@ -23,9 +23,9 @@ from bot.keyboards.cloud import (
     ip_add_confirm_keyboard,
     ip_remove_confirm_keyboard,
     ips_list_keyboard,
+    must_stop_keyboard,
     paginated_pick_keyboard,
     plan_confirm_keyboard,
-    plan_must_stop_keyboard,
     provider_list_keyboard,
     provider_soon_keyboard,
     server_delete_confirm_keyboard,
@@ -357,6 +357,13 @@ async def cb_server_delete_ask(callback: CallbackQuery, lang: str) -> None:
     except UpCloudAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+
+    if server.state != "stopped":
+        await callback.message.edit_text(
+            texts.delete_must_stop_text(lang), reply_markup=must_stop_keyboard(lang, account_id, server_uuid)
+        )
+        return
+
     await callback.message.edit_text(
         texts.server_delete_confirm_text(lang, server),
         reply_markup=server_delete_confirm_keyboard(lang, account_id, server_uuid),
@@ -611,7 +618,7 @@ async def cb_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -
 
     if server.state != "stopped":
         await callback.message.edit_text(
-            texts.plan_must_stop_text(lang), reply_markup=plan_must_stop_keyboard(lang, account_id, server_uuid)
+            texts.plan_must_stop_text(lang), reply_markup=must_stop_keyboard(lang, account_id, server_uuid)
         )
         return
 
@@ -1167,6 +1174,18 @@ async def cb_backup_restore_ask(callback: CallbackQuery, lang: str) -> None:
     index, backup_index = int(index_raw), int(backup_index_raw)
     account = await _get_account(callback, lang, account_id)
     if not account:
+        return
+    try:
+        server = await upcloud_get_server(account["username"], account["password"], server_uuid)
+    except UpCloudAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    if server.state != "stopped":
+        await callback.answer()
+        await callback.message.edit_text(
+            texts.restore_must_stop_text(lang), reply_markup=must_stop_keyboard(lang, account_id, server_uuid)
+        )
         return
     try:
         storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)
