@@ -204,12 +204,14 @@ async def process_password(message: Message, state: FSMContext, lang: str) -> No
         await _login(data["provider"], data["username"], password)
     except UpCloudAPIError as exc:
         await state.clear()
-        await status_message.edit_text(texts.login_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        await status_message.edit_text(
+            texts.login_error_text(lang, str(exc), data["provider"]), reply_markup=cloud_error_keyboard(lang)
+        )
         return
     except Exception:  # noqa: BLE001 - surface unexpected errors to the user
         await state.clear()
         await status_message.edit_text(
-            texts.login_error_text(lang, "bad_response"), reply_markup=cloud_error_keyboard(lang)
+            texts.login_error_text(lang, "bad_response", data["provider"]), reply_markup=cloud_error_keyboard(lang)
         )
         return
 

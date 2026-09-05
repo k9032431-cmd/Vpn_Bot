@@ -76,8 +76,11 @@ def _error_reason(lang: str, reason: str) -> str:
     return t(lang, key)
 
 
-def login_error_text(lang: str, reason: str) -> str:
-    return t(lang, "cloud_login_error", icon=e("error", "❌"), reason=_error_reason(lang, reason))
+def login_error_text(lang: str, reason: str, provider: str | None = None) -> str:
+    error_text = _error_reason(lang, reason)
+    if reason == "wrong_credentials" and provider == "upcloud":
+        error_text += t(lang, "cloud_err_wrong_credentials_hint_upcloud")
+    return t(lang, "cloud_login_error", icon=e("error", "❌"), reason=error_text)
 
 
 def action_error_text(lang: str, reason: str) -> str:

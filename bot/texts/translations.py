@@ -1696,30 +1696,18 @@ _STRINGS: dict[str, dict[str, str]] = {
     "cloud_step_username_upcloud": {
         "ru": (
             "🔑 <b>Подключение UpCloud</b>\n\n"
-            "Введите <b>логин</b> вашего аккаунта UpCloud — тот же username, "
-            "которым вы входите на upcloud.com (не email).\n\n"
-            "⚠️ У аккаунта должна быть включена опция <b>«Permit API connections»</b> "
-            "(Account → Account settings) и <b>выключена двухфакторная аутентификация</b> "
-            "— так требует сам API UpCloud, без исключений. Если у вас включена 2FA, "
-            "создайте отдельного пользователя без неё в разделе People."
+            "Введите <b>логин</b> от вашего аккаунта UpCloud — тот же, которым "
+            "вы входите на upcloud.com."
         ),
         "en": (
             "🔑 <b>Connect UpCloud</b>\n\n"
-            "Enter your UpCloud account <b>username</b> — the same one you use to "
-            "log in at upcloud.com (not your email).\n\n"
-            "⚠️ That account needs <b>\"Permit API connections\"</b> enabled "
-            "(Account → Account settings) and <b>two-factor authentication turned off</b> "
-            "— that's a hard requirement of UpCloud's own API, not this bot. If your "
-            "account has 2FA on, create a separate user without it under People."
+            "Enter your UpCloud account's <b>username</b> — the same one you use "
+            "to log in at upcloud.com."
         ),
         "tk": (
             "🔑 <b>UpCloud birikdirmek</b>\n\n"
             "UpCloud hasabyňyzyň <b>username</b>-ini giriziň — upcloud.com-a "
-            "girýän ulanyjy adyňyz (e-poçta däl).\n\n"
-            "⚠️ Şol hasapda <b>«Permit API connections»</b> açyk bolmaly "
-            "(Account → Account settings) we <b>iki faktorly tassyklama öçürilen</b> "
-            "bolmaly — bu UpCloud API-siniň öz talaby. 2FA açyk bolsa, People "
-            "bölüminde ony öçürilen aýratyn ulanyjy dörediň."
+            "girýän ulanyjy adyňyz."
         ),
     },
     "cloud_step_password": {
@@ -1760,9 +1748,33 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Amal ýerine ýetirilmedi</b>\n\n{reason}",
     },
     "cloud_err_wrong_credentials": {
-        "ru": "Неверный API-логин или пароль.",
-        "en": "Wrong API username or password.",
-        "tk": "API-login ýa-da parol nädogry.",
+        "ru": "Неверный логин или пароль.",
+        "en": "Wrong username or password.",
+        "tk": "Login ýa-da parol nädogry.",
+    },
+    "cloud_err_wrong_credentials_hint_upcloud": {
+        "ru": (
+            "\n\n<i>Если логин и пароль точно верные — на сайте UpCloud "
+            "(Account → Account settings) должна быть включена опция «Permit API "
+            "connections», а для этого аккаунта выключена двухфакторная "
+            "аутентификация (2FA). Без этого UpCloud не пускает по API даже с "
+            "правильным паролем — это ограничение самого UpCloud, не бота.</i>"
+        ),
+        "en": (
+            "\n\n<i>If the username and password are definitely correct — on "
+            "upcloud.com (Account → Account settings), this account needs "
+            "\"Permit API connections\" enabled and two-factor authentication "
+            "(2FA) turned off. Without that UpCloud rejects API access even with "
+            "the right password — that's UpCloud's own limitation, not this "
+            "bot's.</i>"
+        ),
+        "tk": (
+            "\n\n<i>Login we parol dogry bolsa — upcloud.com sahypasynda "
+            "(Account → Account settings) bu hasapda «Permit API connections» "
+            "açyk bolmaly we iki faktorly tassyklama (2FA) öçürilen bolmaly. "
+            "Bolmasa UpCloud dogry parol bilenem API arkaly girmäge rugsat "
+            "bermeýär — bu UpCloud-yň öz çäklendirmesi, botyň däl.</i>"
+        ),
     },
     "cloud_err_connect_failed": {
         "ru": "Не удалось связаться с провайдером — проверьте подключение к интернету и повторите попытку.",
