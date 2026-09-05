@@ -12,7 +12,7 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder.button(text=t(lang, "btn_panel"), callback_data="menu:panel")
     builder.button(text=t(lang, "btn_profile"), callback_data="menu:profile")
     builder.button(text=t(lang, "btn_whois"), callback_data="menu:whois")
-    builder.button(text=t(lang, "btn_cloud_vpn"), callback_data="menu:cloud_vpn")
+    builder.button(text=t(lang, "btn_cloud_vps"), callback_data="menu:cloud_vps")
     builder.button(text=t(lang, "btn_cloud_account"), callback_data="menu:cloud_account")
     builder.button(text=t(lang, "btn_crypt"), callback_data="menu:crypt")
     builder.button(text=t(lang, "btn_language"), callback_data="menu:language")

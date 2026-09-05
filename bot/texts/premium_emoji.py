@@ -26,8 +26,8 @@ IDS: dict[str, str] = {
     "marzban": "",
     # pasarguard — заголовок PasarGuard
     "pasarguard": "",
-    # cloud_vpn — раздел Cloud VPN
-    "cloud_vpn": "",
+    # cloud_vps — раздел Cloud VPS
+    "cloud_vps": "",
     # cloud_account — раздел Cloud Account
     "cloud_account": "",
     # crypt — раздел Crypt/Decrypt

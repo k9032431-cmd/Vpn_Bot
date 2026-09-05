@@ -7,7 +7,6 @@ from .support import format_support_contact
 from .translations import t
 
 _SECTION_ICON = {
-    "cloud_vpn": ("cloud_vpn", "☁️"),
     "cloud_account": ("cloud_account", "👤"),
     "crypt": ("crypt", "🔐"),
     "info": ("info", "ℹ️"),

@@ -43,7 +43,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     # --- Button labels ---
     "btn_node": {"ru": "🖥 Node", "en": "🖥 Node", "tk": "🖥 Node"},
-    "btn_cloud_vpn": {"ru": "☁️ Cloud VPN", "en": "☁️ Cloud VPN", "tk": "☁️ Cloud VPN"},
+    "btn_cloud_vps": {"ru": "☁️ Cloud VPS", "en": "☁️ Cloud VPS", "tk": "☁️ Cloud VPS"},
     "btn_cloud_account": {"ru": "📇 Cloud Account", "en": "📇 Cloud Account", "tk": "📇 Cloud Account"},
     "btn_crypt": {"ru": "🔐 Crypt/Decrypt", "en": "🔐 Crypt/Decrypt", "tk": "🔐 Crypt/Decrypt"},
     "btn_language": {"ru": "💬 Язык", "en": "💬 Language", "tk": "💬 Dil"},
@@ -181,23 +181,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "🗑 Hawa, poz",
     },
     # --- Section placeholders ---
-    "section_cloud_vpn": {
-        "ru": (
-            "{icon} <b>Cloud VPN</b> 📶\n\n"
-            "<i>Управление облачными VPN-подключениями появится здесь совсем скоро.</i>\n\n"
-            "🛠️ Уже в разработке"
-        ),
-        "en": (
-            "{icon} <b>Cloud VPN</b> 📶\n\n"
-            "<i>Cloud VPN connection management is coming here very soon.</i>\n\n"
-            "🛠️ Already in the works"
-        ),
-        "tk": (
-            "{icon} <b>Cloud VPN</b> 📶\n\n"
-            "<i>Bulut VPN birikmelerini dolandyrmak ýakynda bu ýerde peýda bolar.</i>\n\n"
-            "🛠️ Eýýäm işlenilýär"
-        ),
-    },
     "section_cloud_account": {
         "ru": (
             "{icon} <b>Cloud Account</b> 🔑\n\n"
@@ -1660,6 +1643,324 @@ _STRINGS: dict[str, dict[str, str]] = {
     "whois_l_dns_a": {"ru": "🔢 DNS A", "en": "🔢 DNS A", "tk": "🔢 DNS A"},
     "whois_l_dns_mx": {"ru": "📧 DNS MX", "en": "📧 DNS MX", "tk": "📧 DNS MX"},
     "whois_l_dns_txt": {"ru": "📝 DNS TXT", "en": "📝 DNS TXT", "tk": "📝 DNS TXT"},
+    # --- Cloud VPS ---
+    "cloud_provider_list": {
+        "ru": (
+            "{icon} <b>Cloud VPS</b> 🖥\n\n"
+            "<i>Покупка и управление серверами напрямую через API облачных "
+            "провайдеров — выберите провайдера:</i>"
+        ),
+        "en": (
+            "{icon} <b>Cloud VPS</b> 🖥\n\n"
+            "<i>Buy and manage servers directly through cloud-provider APIs — "
+            "choose a provider:</i>"
+        ),
+        "tk": (
+            "{icon} <b>Cloud VPS</b> 🖥\n\n"
+            "<i>Bulut provaýderleriň API-si arkaly serwer satyn almak we dolandyrmak — "
+            "provaýderi saýlaň:</i>"
+        ),
+    },
+    "btn_cloud_provider_upcloud": {"ru": "☁️ UpCloud", "en": "☁️ UpCloud", "tk": "☁️ UpCloud"},
+    "btn_cloud_provider_aws": {"ru": "🟧 AWS (скоро)", "en": "🟧 AWS (soon)", "tk": "🟧 AWS (ýakynda)"},
+    "btn_cloud_provider_azure": {"ru": "🔷 Azure (скоро)", "en": "🔷 Azure (soon)", "tk": "🔷 Azure (ýakynda)"},
+    "btn_cloud_provider_linode": {"ru": "🟩 Linode (скоро)", "en": "🟩 Linode (soon)", "tk": "🟩 Linode (ýakynda)"},
+    "btn_cloud_provider_kamatera": {
+        "ru": "🟪 Kamatera (скоро)",
+        "en": "🟪 Kamatera (soon)",
+        "tk": "🟪 Kamatera (ýakynda)",
+    },
+    "cloud_provider_soon": {
+        "ru": "{icon} Этот провайдер появится здесь в одном из следующих обновлений — сейчас доступен UpCloud.",
+        "en": "{icon} This provider is coming in a future update — UpCloud is available right now.",
+        "tk": "{icon} Bu provaýder indiki täzelenmede goşular — häzir UpCloud elýeterli.",
+    },
+    "title_cloud_provider_upcloud": {"ru": "UpCloud", "en": "UpCloud", "tk": "UpCloud"},
+    "cloud_account_list_header": {
+        "ru": "{icon} <b>{provider}</b>\n\n{body}",
+        "en": "{icon} <b>{provider}</b>\n\n{body}",
+        "tk": "{icon} <b>{provider}</b>\n\n{body}",
+    },
+    "cloud_account_list_empty": {
+        "ru": "<i>Пока нет подключённых аккаунтов.</i>",
+        "en": "<i>No accounts connected yet.</i>",
+        "tk": "<i>Entek birikdirilen hasap ýok.</i>",
+    },
+    "cloud_account_list_hint": {
+        "ru": "<i>Выберите аккаунт или подключите новый.</i>",
+        "en": "<i>Pick an account or connect a new one.</i>",
+        "tk": "<i>Hasaby saýlaň ýa-da täzesini birikdiriň.</i>",
+    },
+    "btn_cloud_account_add": {"ru": "➕ Подключить аккаунт", "en": "➕ Connect account", "tk": "➕ Hasap birikdir"},
+    "btn_cloud_provider_list": {"ru": "☁️ К провайдерам", "en": "☁️ Back to providers", "tk": "☁️ Provaýderlere gaýt"},
+    "cloud_step_username_upcloud": {
+        "ru": (
+            "🔑 <b>Подключение UpCloud</b>\n\n"
+            "Введите <b>API-логин</b> — имя суб-аккаунта с доступом к API "
+            "(создаётся в панели UpCloud: People → сотрудник с правами API), "
+            "а не email от основного аккаунта."
+        ),
+        "en": (
+            "🔑 <b>Connect UpCloud</b>\n\n"
+            "Enter the <b>API username</b> — an API-access sub-account name "
+            "(created in the UpCloud panel: People → a user with API rights), "
+            "not the main account's email."
+        ),
+        "tk": (
+            "🔑 <b>UpCloud birikdirmek</b>\n\n"
+            "<b>API-login</b> giriziň — API girişi bolan sub-hasabyň ady "
+            "(UpCloud panelinde döredilýär: People → API hukukly ulanyjy), "
+            "esasy hasabyň e-poçtasy däl."
+        ),
+    },
+    "cloud_step_password": {
+        "ru": "🔒 Теперь введите пароль от этого аккаунта (сообщение удалится сразу после отправки):",
+        "en": "🔒 Now enter that account's password (the message is deleted right after you send it):",
+        "tk": "🔒 Indi şol hasabyň parolyny giriziň (habar iberilenden soň derrew pozulýar):",
+    },
+    "cloud_empty_password": {
+        "ru": "Пароль не может быть пустым. Попробуйте ещё раз:",
+        "en": "The password can't be empty. Try again:",
+        "tk": "Parol boş bolup bilmez. Gaýtadan synanyň:",
+    },
+    "cloud_connecting": {
+        "ru": "🔌 Подключаюсь к провайдеру...",
+        "en": "🔌 Connecting to the provider...",
+        "tk": "🔌 Provaýdere birikilýär...",
+    },
+    "cloud_login_error": {
+        "ru": (
+            "{icon} <b>Не удалось подключиться</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Проверьте логин и пароль и попробуйте снова"
+        ),
+        "en": (
+            "{icon} <b>Couldn't connect</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Check the username and password and try again"
+        ),
+        "tk": (
+            "{icon} <b>Birikdirip bolmady</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Login we paroly barlaň we gaýtadan synanyň"
+        ),
+    },
+    "cloud_action_error": {
+        "ru": "{icon} <b>Не получилось выполнить действие</b>\n\n{reason}",
+        "en": "{icon} <b>Couldn't complete the action</b>\n\n{reason}",
+        "tk": "{icon} <b>Amal ýerine ýetirilmedi</b>\n\n{reason}",
+    },
+    "cloud_err_wrong_credentials": {
+        "ru": "Неверный API-логин или пароль.",
+        "en": "Wrong API username or password.",
+        "tk": "API-login ýa-da parol nädogry.",
+    },
+    "cloud_err_connect_failed": {
+        "ru": "Не удалось связаться с провайдером — проверьте подключение к интернету и повторите попытку.",
+        "en": "Couldn't reach the provider — check the connection and try again.",
+        "tk": "Provaýder bilen habarlaşyp bolmady — internet birikmesini barlaň we gaýtadan synanyň.",
+    },
+    "cloud_err_bad_response": {
+        "ru": "Провайдер ответил в неожиданном формате.",
+        "en": "The provider responded in an unexpected format.",
+        "tk": "Provaýder garaşylmadyk formatda jogap berdi.",
+    },
+    "cloud_connected": {
+        "ru": "{icon} Аккаунт {provider} успешно подключен 🚀",
+        "en": "{icon} {provider} account connected successfully 🚀",
+        "tk": "{icon} {provider} hasaby üstünlikli birikdirildi 🚀",
+    },
+    "btn_cloud_cancel": {"ru": "❌ Отмена", "en": "❌ Cancel", "tk": "❌ Ýatyr"},
+    "cloud_account_dashboard": {
+        "ru": (
+            "☁️ <b>{provider}</b>\n\n"
+            "👤 Аккаунт: <code>{username}</code>\n"
+            "💰 Баланс: {credits} {currency}"
+        ),
+        "en": (
+            "☁️ <b>{provider}</b>\n\n"
+            "👤 Account: <code>{username}</code>\n"
+            "💰 Balance: {credits} {currency}"
+        ),
+        "tk": (
+            "☁️ <b>{provider}</b>\n\n"
+            "👤 Hasap: <code>{username}</code>\n"
+            "💰 Balans: {credits} {currency}"
+        ),
+    },
+    "btn_cloud_servers": {"ru": "🖥 Серверы", "en": "🖥 Servers", "tk": "🖥 Serwerler"},
+    "btn_cloud_account_remove": {"ru": "🗑 Убрать аккаунт", "en": "🗑 Remove account", "tk": "🗑 Hasaby aýyr"},
+    "btn_cloud_account_remove_confirm": {"ru": "🗑 Да, убрать", "en": "🗑 Yes, remove", "tk": "🗑 Hawa, aýyr"},
+    "btn_cloud_account_list": {"ru": "⬅️ К аккаунтам", "en": "⬅️ Back to accounts", "tk": "⬅️ Hasaplara gaýt"},
+    "btn_cloud_account_dashboard": {"ru": "⬅️ К аккаунту", "en": "⬅️ Back to account", "tk": "⬅️ Hasaba gaýt"},
+    "cloud_account_remove_confirm": {
+        "ru": "{icon} Убрать аккаунт <b>{username}</b> из бота? Сами серверы в облаке не удаляются.",
+        "en": "{icon} Remove account <b>{username}</b> from the bot? The cloud servers themselves stay untouched.",
+        "tk": "{icon} <b>{username}</b> hasabyny botdan aýyrmalymy? Buluddaky serwerler pozulmaz.",
+    },
+    "cloud_account_removed": {
+        "ru": "{icon} Аккаунт убран.",
+        "en": "{icon} Account removed.",
+        "tk": "{icon} Hasap aýryldy.",
+    },
+    "cloud_servers_header": {
+        "ru": "🖥 <b>Серверы — {username}</b>\n\n{body}",
+        "en": "🖥 <b>Servers — {username}</b>\n\n{body}",
+        "tk": "🖥 <b>Serwerler — {username}</b>\n\n{body}",
+    },
+    "cloud_servers_empty": {
+        "ru": "<i>Серверов пока нет.</i>",
+        "en": "<i>No servers yet.</i>",
+        "tk": "<i>Entek serwer ýok.</i>",
+    },
+    "cloud_servers_hint": {
+        "ru": "<i>Выберите сервер или создайте новый.</i>",
+        "en": "<i>Pick a server or create a new one.</i>",
+        "tk": "<i>Serweri saýlaň ýa-da täzesini dörediň.</i>",
+    },
+    "btn_cloud_server_add": {"ru": "➕ Создать сервер", "en": "➕ Create server", "tk": "➕ Serwer döret"},
+    "btn_cloud_servers_list": {"ru": "🖥 К серверам", "en": "🖥 Back to servers", "tk": "🖥 Serwerlere gaýt"},
+    "cloud_server_detail": {
+        "ru": (
+            "🖥 <b>{title}</b>\n\n"
+            "🌐 Hostname: <code>{hostname}</code>\n"
+            "🚦 Статус: {state}\n"
+            "📍 Зона: {zone}\n"
+            "⚙️ План: {plan} ({cores} CPU / {memory} MB RAM)\n"
+            "🌍 IP: {ips}"
+        ),
+        "en": (
+            "🖥 <b>{title}</b>\n\n"
+            "🌐 Hostname: <code>{hostname}</code>\n"
+            "🚦 State: {state}\n"
+            "📍 Zone: {zone}\n"
+            "⚙️ Plan: {plan} ({cores} CPU / {memory} MB RAM)\n"
+            "🌍 IP: {ips}"
+        ),
+        "tk": (
+            "🖥 <b>{title}</b>\n\n"
+            "🌐 Hostname: <code>{hostname}</code>\n"
+            "🚦 Ýagdaýy: {state}\n"
+            "📍 Zolak: {zone}\n"
+            "⚙️ Meýilnama: {plan} ({cores} CPU / {memory} MB RAM)\n"
+            "🌍 IP: {ips}"
+        ),
+    },
+    "cloud_server_no_ip": {"ru": "—", "en": "—", "tk": "—"},
+    "btn_cloud_server_start": {"ru": "▶️ Включить", "en": "▶️ Start", "tk": "▶️ Işe girizmek"},
+    "btn_cloud_server_stop": {"ru": "⏹ Выключить", "en": "⏹ Stop", "tk": "⏹ Duruzmak"},
+    "btn_cloud_server_restart": {"ru": "🔄 Перезагрузить", "en": "🔄 Restart", "tk": "🔄 Täzeden başlat"},
+    "btn_cloud_server_delete": {"ru": "🗑 Удалить сервер", "en": "🗑 Delete server", "tk": "🗑 Serweri poz"},
+    "btn_cloud_server_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "cloud_server_action_ok": {
+        "ru": "{icon} Команда отправлена, статус сервера скоро обновится.",
+        "en": "{icon} Command sent, the server's status will update shortly.",
+        "tk": "{icon} Buýruk iberildi, serweriň ýagdaýy ýakynda täzelener.",
+    },
+    "cloud_server_delete_confirm": {
+        "ru": (
+            "{icon} <b>Удалить сервер {title}?</b>\n\n"
+            "⚠️ Действие необратимо: сервер и его диски будут удалены "
+            "на стороне провайдера безвозвратно."
+        ),
+        "en": (
+            "{icon} <b>Delete server {title}?</b>\n\n"
+            "⚠️ This is irreversible: the server and its disks will be "
+            "permanently deleted on the provider's side."
+        ),
+        "tk": (
+            "{icon} <b>{title} serweri pozulsynmy?</b>\n\n"
+            "⚠️ Bu amal yzyna gaýtarylmaz: serwer we onuň disklari "
+            "provaýderde hemişelik pozular."
+        ),
+    },
+    "cloud_server_deleted": {
+        "ru": "{icon} Сервер удалён.",
+        "en": "{icon} Server deleted.",
+        "tk": "{icon} Serwer pozuldy.",
+    },
+    "cloud_create_choose_zone": {
+        "ru": "🌍 <b>Новый сервер — шаг 1/4</b>\n\nВыберите зону (дата-центр):",
+        "en": "🌍 <b>New server — step 1/4</b>\n\nChoose a zone (data center):",
+        "tk": "🌍 <b>Täze serwer — 1/4 ädim</b>\n\nZolak saýlaň (maglumat merkezi):",
+    },
+    "cloud_create_choose_plan": {
+        "ru": "⚙️ <b>Новый сервер — шаг 2/4</b>\n\nВыберите тарифный план:",
+        "en": "⚙️ <b>New server — step 2/4</b>\n\nChoose a plan:",
+        "tk": "⚙️ <b>Täze serwer — 2/4 ädim</b>\n\nMeýilnama saýlaň:",
+    },
+    "cloud_create_choose_template": {
+        "ru": "💿 <b>Новый сервер — шаг 3/4</b>\n\nВыберите операционную систему:",
+        "en": "💿 <b>New server — step 3/4</b>\n\nChoose an operating system:",
+        "tk": "💿 <b>Täze serwer — 3/4 ädim</b>\n\nOperasion ulgamy saýlaň:",
+    },
+    "cloud_create_waiting_hostname": {
+        "ru": "✏️ <b>Новый сервер — шаг 4/4</b>\n\nВведите hostname сервера (например, my-server.example.com):",
+        "en": "✏️ <b>New server — step 4/4</b>\n\nEnter the server's hostname (e.g. my-server.example.com):",
+        "tk": "✏️ <b>Täze serwer — 4/4 ädim</b>\n\nServeriň hostname-ini giriziň (mysal: my-server.example.com):",
+    },
+    "cloud_create_invalid_hostname": {
+        "ru": "Некорректный hostname. Используйте только буквы, цифры, точки и дефисы. Попробуйте ещё раз:",
+        "en": "Invalid hostname. Use only letters, digits, dots and hyphens. Try again:",
+        "tk": "Hostname nädogry. Diňe harp, san, nokat we defis ulanyň. Gaýtadan synanyň:",
+    },
+    "cloud_create_confirm": {
+        "ru": (
+            "✅ <b>Проверьте параметры сервера</b>\n\n"
+            "🌐 Hostname: <code>{hostname}</code>\n"
+            "📍 Зона: {zone}\n"
+            "⚙️ План: {plan}\n"
+            "💿 ОС: {template}\n\n"
+            "💰 Это создаст платный ресурс на стороне провайдера. Создать?"
+        ),
+        "en": (
+            "✅ <b>Review server parameters</b>\n\n"
+            "🌐 Hostname: <code>{hostname}</code>\n"
+            "📍 Zone: {zone}\n"
+            "⚙️ Plan: {plan}\n"
+            "💿 OS: {template}\n\n"
+            "💰 This will create a billable resource with the provider. Create it?"
+        ),
+        "tk": (
+            "✅ <b>Serweriň parametrlerini barlaň</b>\n\n"
+            "🌐 Hostname: <code>{hostname}</code>\n"
+            "📍 Zolak: {zone}\n"
+            "⚙️ Meýilnama: {plan}\n"
+            "💿 OS: {template}\n\n"
+            "💰 Bu provaýderde tölegli resurs dörediler. Döredilsinmi?"
+        ),
+    },
+    "btn_cloud_create_confirm": {"ru": "✅ Создать", "en": "✅ Create", "tk": "✅ Döret"},
+    "cloud_creating": {
+        "ru": "🚀 Создаю сервер, это может занять до минуты...",
+        "en": "🚀 Creating the server, this can take up to a minute...",
+        "tk": "🚀 Serwer döredilýär, bir minuda çenli wagt alyp biler...",
+    },
+    "cloud_create_success": {
+        "ru": (
+            "{icon} <b>Сервер создан!</b>\n\n"
+            "🖥 {title}\n"
+            "🌐 IP: {ips}\n"
+            "{password_line}"
+        ),
+        "en": (
+            "{icon} <b>Server created!</b>\n\n"
+            "🖥 {title}\n"
+            "🌐 IP: {ips}\n"
+            "{password_line}"
+        ),
+        "tk": (
+            "{icon} <b>Serwer döredildi!</b>\n\n"
+            "🖥 {title}\n"
+            "🌐 IP: {ips}\n"
+            "{password_line}"
+        ),
+    },
+    "cloud_create_password_line": {
+        "ru": "🔑 Пароль root: <code>{password}</code> (сохраните, повторно показан не будет)",
+        "en": "🔑 Root password: <code>{password}</code> (save it, it won't be shown again)",
+        "tk": "🔑 Root paroly: <code>{password}</code> (ýatda saklaň, indi görkezilmez)",
+    },
 }
 
 
