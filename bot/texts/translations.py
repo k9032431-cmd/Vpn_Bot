@@ -2007,6 +2007,26 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} The server must be stopped before restoring a backup.",
         "tk": "{icon} Ätiýaçlyk nusgany dikeltmek üçin serweri öçürmeli.",
     },
+    "cloud_server_in_maintenance": {
+        "ru": (
+            "{icon} <b>Сервер сейчас в процессе обслуживания</b>\n\n"
+            "Это временное состояние UpCloud (обычно сразу после другого действия) — "
+            "большинство операций, включая выключение, пока недоступны. Подождите "
+            "несколько минут и попробуйте снова."
+        ),
+        "en": (
+            "{icon} <b>The server is currently undergoing maintenance</b>\n\n"
+            "This is a temporary UpCloud state (usually right after another action) — "
+            "most operations, including stopping it, aren't available yet. Wait a few "
+            "minutes and try again."
+        ),
+        "tk": (
+            "{icon} <b>Serwer häzir hyzmat astynda</b>\n\n"
+            "Bu UpCloud-yň wagtlaýyn ýagdaýy (adatça başga bir amaldan soň) — köp amallar, "
+            "şol sanda öçürmek, häzirlikçe elýeterli däl. Birnäçe minut garaşyp gaýtadan "
+            "synanyň."
+        ),
+    },
     "cloud_err_state_started": {
         "ru": "Сервер сейчас включён — для этого действия его нужно сначала выключить.",
         "en": "The server is currently running — it must be stopped for this action.",

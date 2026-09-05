@@ -11,6 +11,7 @@ from bot.keyboards.cloud import (
     account_dashboard_keyboard,
     account_list_keyboard,
     account_remove_confirm_keyboard,
+    back_to_server_keyboard,
     backup_create_confirm_keyboard,
     backup_delete_confirm_keyboard,
     backup_detail_keyboard,
@@ -130,6 +131,23 @@ async def _redisplay_server(callback: CallbackQuery, lang: str, account_id: str,
     await callback.message.edit_text(
         texts.server_detail_text(lang, server), reply_markup=server_detail_keyboard(lang, account_id, server)
     )
+
+
+async def _require_stopped(callback: CallbackQuery, lang: str, account_id: str, server, must_stop_text: str) -> bool:
+    """Gates an action that needs a stopped server. Returns True if it's
+    stopped and the caller can proceed. Otherwise shows the right screen —
+    a "stop it first" prompt normally, or a wait-only screen when UpCloud
+    itself has the server in 'maintenance' (where the Stop button would
+    just fail with the same error) — and returns False."""
+    if server.state == "stopped":
+        return True
+    if server.state == "maintenance":
+        await callback.message.edit_text(
+            texts.server_in_maintenance_text(lang), reply_markup=back_to_server_keyboard(lang, account_id, server.uuid)
+        )
+    else:
+        await callback.message.edit_text(must_stop_text, reply_markup=must_stop_keyboard(lang, account_id, server.uuid))
+    return False
 
 
 # --- Provider list & account connect ---
@@ -358,10 +376,7 @@ async def cb_server_delete_ask(callback: CallbackQuery, lang: str) -> None:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
-    if server.state != "stopped":
-        await callback.message.edit_text(
-            texts.delete_must_stop_text(lang), reply_markup=must_stop_keyboard(lang, account_id, server_uuid)
-        )
+    if not await _require_stopped(callback, lang, account_id, server, texts.delete_must_stop_text(lang)):
         return
 
     await callback.message.edit_text(
@@ -616,10 +631,7 @@ async def cb_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
-    if server.state != "stopped":
-        await callback.message.edit_text(
-            texts.plan_must_stop_text(lang), reply_markup=must_stop_keyboard(lang, account_id, server_uuid)
-        )
+    if not await _require_stopped(callback, lang, account_id, server, texts.plan_must_stop_text(lang)):
         return
 
     try:
@@ -1181,11 +1193,8 @@ async def cb_backup_restore_ask(callback: CallbackQuery, lang: str) -> None:
         await callback.answer()
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
-    if server.state != "stopped":
-        await callback.answer()
-        await callback.message.edit_text(
-            texts.restore_must_stop_text(lang), reply_markup=must_stop_keyboard(lang, account_id, server_uuid)
-        )
+    await callback.answer()
+    if not await _require_stopped(callback, lang, account_id, server, texts.restore_must_stop_text(lang)):
         return
     try:
         storage, backup = await _resolve_storage_and_backup(callback, lang, account, server_uuid, index, backup_index)

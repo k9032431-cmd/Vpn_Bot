@@ -249,6 +249,10 @@ def restore_must_stop_text(lang: str) -> str:
     return t(lang, "cloud_restore_must_stop", icon=e("warning", "⚠️"))
 
 
+def server_in_maintenance_text(lang: str) -> str:
+    return t(lang, "cloud_server_in_maintenance", icon=e("warning", "⚠️"))
+
+
 def plan_choose_text(lang: str, current_plan: str, page: int = 0, total_pages: int = 1) -> str:
     return t(lang, "cloud_plan_choose", current=current_plan) + _page_suffix(lang, page, total_pages)
 

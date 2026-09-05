@@ -181,6 +181,17 @@ def must_stop_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKe
     return builder.as_markup()
 
 
+def back_to_server_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKeyboardMarkup:
+    # No "Stop" button here on purpose: while the server is in 'maintenance'
+    # (UpCloud's own transient state right after another action), stopping
+    # it would fail with the exact same "not allowed" error — there's
+    # nothing to do but wait, so only offer a way back.
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 # --- Plan change ---
 
 
