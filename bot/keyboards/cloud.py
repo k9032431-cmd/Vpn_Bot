@@ -12,7 +12,7 @@ from bot.texts.cloud import (
 )
 from bot.texts.translations import t
 
-PAGE_SIZE = 10
+PAGE_SIZE = 5
 
 
 def provider_list_keyboard(lang: str) -> InlineKeyboardMarkup:

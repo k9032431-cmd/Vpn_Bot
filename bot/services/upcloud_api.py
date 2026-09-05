@@ -260,6 +260,12 @@ async def upcloud_create_server(
             "hostname": hostname,
             "plan": plan,
             "password_delivery": "none",
+            # Modern UpCloud storage templates are cloud-init based and
+            # refuse to clone without the metadata service enabled on the
+            # server ("Metadata must be enabled when cloning a cloud-init
+            # template") — always on, since it's harmless for templates
+            # that don't need it.
+            "metadata": True,
             "login_user": login_user,
             "storage_devices": {
                 "storage_device": [

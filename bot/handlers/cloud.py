@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.cloud import (
+    PAGE_SIZE,
     account_dashboard_keyboard,
     account_list_keyboard,
     account_remove_confirm_keyboard,
@@ -413,7 +414,7 @@ async def _render_create_page(
     nav_prefix: str,
     cancel_callback: str = "ccreate:cancel",
 ) -> None:
-    total_pages = max(1, -(-len(options) // 10))
+    total_pages = max(1, -(-len(options) // PAGE_SIZE))
     page = max(0, min(page, total_pages - 1))
     await callback.message.edit_text(
         header_fn(lang, page, total_pages),
