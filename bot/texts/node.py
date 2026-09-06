@@ -78,41 +78,7 @@ def invalid_cert_text(lang: str) -> str:
     return t(lang, "invalid_cert")
 
 
-def step_choose_ports_text(lang: str, node_type: str) -> str:
-    key = "step_choose_ports_marzban" if node_type == "marzban" else "step_choose_ports_pasarguard"
-    return t(lang, key, header=node_header(lang, node_type))
-
-
-def step_service_port_text(lang: str, node_type: str) -> str:
-    key = "step_service_port_marzban" if node_type == "marzban" else "step_service_port_pasarguard"
-    return t(lang, key)
-
-
-def step_xray_port_text(lang: str) -> str:
-    return t(lang, "step_xray_port")
-
-
-def invalid_port_text(lang: str) -> str:
-    return t(lang, "invalid_port")
-
-
-def _ports_label(lang: str, node_type: str, service_port: int | None, xray_port: int | None) -> str:
-    if service_port is None:
-        return t(lang, "ports_default_label" if node_type == "marzban" else "ports_default_label_pasarguard")
-    if node_type == "marzban":
-        return f"{service_port} / {xray_port}"
-    return str(service_port)
-
-
-def confirmation_text(
-    lang: str,
-    node_type: str,
-    host: str,
-    ssh_user: str,
-    auth_method: str,
-    service_port: int | None = None,
-    xray_port: int | None = None,
-) -> str:
+def confirmation_text(lang: str, node_type: str, host: str, ssh_user: str, auth_method: str) -> str:
     auth_label = t(lang, "auth_method_key" if auth_method == "key" else "auth_method_password")
     return t(
         lang,
@@ -121,7 +87,6 @@ def confirmation_text(
         host=html.escape(host),
         user=html.escape(ssh_user),
         auth_method=auth_label,
-        ports=_ports_label(lang, node_type, service_port, xray_port),
     )
 
 
@@ -156,15 +121,6 @@ def result_text(
         t(lang, "result_dir", dir=directory),
         t(lang, "result_status", status=html.escape(container_status)),
     ]
-    if node_type == "marzban":
-        lines.append(
-            t(
-                lang,
-                "result_ports_marzban",
-                service_port=extra["service_port"],
-                xray_api_port=extra["xray_api_port"],
-            )
-        )
     if node_type == "pasarguard":
         lines += [
             "",

@@ -18,9 +18,7 @@ __all__ = [
 
 MARZBAN_DIR = "/var/lib/marzban-node"
 MARZBAN_CERT_FILENAME = "ssl_client_cert.pem"
-MARZBAN_DEFAULT_SERVICE_PORT = 62050
-MARZBAN_DEFAULT_XRAY_API_PORT = 62051
-MARZBAN_COMPOSE_TEMPLATE = """services:
+MARZBAN_COMPOSE = """services:
   marzban-node:
     image: gozargah/marzban-node:latest
     container_name: marzban-node
@@ -29,14 +27,12 @@ MARZBAN_COMPOSE_TEMPLATE = """services:
     environment:
       SSL_CLIENT_CERT_FILE: "/var/lib/marzban-node/ssl_client_cert.pem"
       SERVICE_PROTOCOL: "rest"
-      SERVICE_PORT: "{service_port}"
-      XRAY_API_PORT: "{xray_api_port}"
     volumes:
       - /var/lib/marzban-node:/var/lib/marzban-node
 """
 
 PASARGUARD_DIR = "/var/lib/pg-node"
-PASARGUARD_DEFAULT_PORT = 62050
+PASARGUARD_PORT = 62050
 PASARGUARD_COMPOSE = """services:
   node:
     image: pasarguard/node:latest
@@ -100,12 +96,7 @@ async def install_marzban_node(
     cert_pem: str,
     progress: ProgressCallback,
     lang: str,
-    service_port: int | None = None,
-    xray_api_port: int | None = None,
 ) -> NodeInstallResult:
-    service_port = service_port or MARZBAN_DEFAULT_SERVICE_PORT
-    xray_api_port = xray_api_port or MARZBAN_DEFAULT_XRAY_API_PORT
-
     await progress(texts.progress_connecting(lang))
     session = await RemoteSession.connect(target)
     try:
@@ -114,10 +105,7 @@ async def install_marzban_node(
 
         await progress(texts.progress_uploading_marzban(lang))
         await session.deploy_file(cert_pem, MARZBAN_CERT_FILENAME, MARZBAN_DIR, mode="600")
-        compose_content = MARZBAN_COMPOSE_TEMPLATE.format(
-            service_port=service_port, xray_api_port=xray_api_port
-        )
-        await session.deploy_file(compose_content, "docker-compose.yml", MARZBAN_DIR, mode="644")
+        await session.deploy_file(MARZBAN_COMPOSE, "docker-compose.yml", MARZBAN_DIR, mode="644")
 
         await progress(texts.progress_launching(lang, "marzban-node"))
         await session.run_checked(
@@ -134,7 +122,6 @@ async def install_marzban_node(
             host=target.host,
             directory=MARZBAN_DIR,
             container_status=container_status,
-            extra={"service_port": service_port, "xray_api_port": xray_api_port},
         )
     finally:
         await session.close()
@@ -144,9 +131,7 @@ async def install_pasarguard_node(
     target: SSHTarget,
     progress: ProgressCallback,
     lang: str,
-    port: int | None = None,
 ) -> NodeInstallResult:
-    port = port or PASARGUARD_DEFAULT_PORT
     await progress(texts.progress_connecting(lang))
     session = await RemoteSession.connect(target)
     try:
@@ -188,7 +173,7 @@ async def install_pasarguard_node(
             "SSL_CERT_FILE = {certs_dir}/ssl_cert.pem\n"
             "SSL_KEY_FILE = {certs_dir}/ssl_key.pem\n"
             "API_KEY = {api_key}\n"
-        ).format(port=port, certs_dir=certs_dir, api_key=api_key)
+        ).format(port=PASARGUARD_PORT, certs_dir=certs_dir, api_key=api_key)
 
         await progress(texts.progress_uploading_pasarguard(lang))
         await session.deploy_file(PASARGUARD_COMPOSE, "docker-compose.yml", PASARGUARD_DIR, mode="644")
@@ -212,7 +197,7 @@ async def install_pasarguard_node(
             host=target.host,
             directory=PASARGUARD_DIR,
             container_status=container_status,
-            extra={"api_key": api_key, "port": port, "cert": node_cert},
+            extra={"api_key": api_key, "port": PASARGUARD_PORT, "cert": node_cert},
         )
     finally:
         await session.close()

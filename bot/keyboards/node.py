@@ -22,15 +22,6 @@ def auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def ports_choice_keyboard(lang: str) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_ports_default"), callback_data="nodeports:default")
-    builder.button(text=t(lang, "btn_ports_custom"), callback_data="nodeports:custom")
-    builder.button(text=t(lang, "btn_cancel"), callback_data="nodesetup:cancel")
-    builder.adjust(1, 1, 1)
-    return builder.as_markup()
-
-
 def cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cancel"), callback_data="nodesetup:cancel")

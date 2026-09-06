@@ -13,7 +13,6 @@ from bot.keyboards.node import (
     confirm_install_keyboard,
     node_menu_keyboard,
     node_result_keyboard,
-    ports_choice_keyboard,
 )
 from bot.services.node_installer import install_marzban_node, install_pasarguard_node
 from bot.services.ssh_client import NodeInstallError, SSHTarget
@@ -157,7 +156,7 @@ async def _after_secret_collected(message: Message, state: FSMContext, lang: str
         await state.set_state(NodeSetupStates.waiting_cert)
         await message.answer(texts.ask_cert_text(lang), reply_markup=cancel_keyboard(lang))
     else:
-        await _ask_ports(message, state, lang)
+        await _show_confirmation(message, state, lang)
 
 
 @router.message(NodeSetupStates.waiting_cert, F.document)
@@ -179,64 +178,6 @@ async def _handle_cert_content(message: Message, state: FSMContext, lang: str, c
         await message.answer(texts.invalid_cert_text(lang), reply_markup=cancel_keyboard(lang))
         return
     await state.update_data(cert_pem=content)
-    await _ask_ports(message, state, lang)
-
-
-async def _ask_ports(target_message: Message, state: FSMContext, lang: str) -> None:
-    data = await state.get_data()
-    await state.set_state(NodeSetupStates.choosing_ports)
-    await target_message.answer(
-        texts.step_choose_ports_text(lang, data["node_type"]), reply_markup=ports_choice_keyboard(lang)
-    )
-
-
-@router.callback_query(NodeSetupStates.choosing_ports, F.data == "nodeports:default")
-async def cb_ports_default(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    await _show_confirmation(callback.message, state, lang)
-    await callback.answer()
-
-
-@router.callback_query(NodeSetupStates.choosing_ports, F.data == "nodeports:custom")
-async def cb_ports_custom(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    data = await state.get_data()
-    await state.set_state(NodeSetupStates.waiting_service_port)
-    await callback.message.edit_text(
-        texts.step_service_port_text(lang, data["node_type"]), reply_markup=cancel_keyboard(lang)
-    )
-    await callback.answer()
-
-
-def _parse_port(raw: str) -> int | None:
-    raw = raw.strip()
-    if not raw.isdigit():
-        return None
-    port = int(raw)
-    return port if 1 <= port <= 65535 else None
-
-
-@router.message(NodeSetupStates.waiting_service_port)
-async def process_service_port(message: Message, state: FSMContext, lang: str) -> None:
-    port = _parse_port(message.text or "")
-    if port is None:
-        await message.answer(texts.invalid_port_text(lang), reply_markup=cancel_keyboard(lang))
-        return
-
-    data = await state.update_data(service_port=port)
-    if data["node_type"] == "marzban":
-        await state.set_state(NodeSetupStates.waiting_xray_port)
-        await message.answer(texts.step_xray_port_text(lang), reply_markup=cancel_keyboard(lang))
-    else:
-        await _show_confirmation(message, state, lang)
-
-
-@router.message(NodeSetupStates.waiting_xray_port)
-async def process_xray_port(message: Message, state: FSMContext, lang: str) -> None:
-    port = _parse_port(message.text or "")
-    if port is None:
-        await message.answer(texts.invalid_port_text(lang), reply_markup=cancel_keyboard(lang))
-        return
-
-    await state.update_data(xray_port=port)
     await _show_confirmation(message, state, lang)
 
 
@@ -245,15 +186,7 @@ async def _show_confirmation(message: Message, state: FSMContext, lang: str) -> 
     await state.set_state(NodeSetupStates.confirming)
     auth_method = "key" if data.get("ssh_key") else "password"
     await message.answer(
-        texts.confirmation_text(
-            lang,
-            data["node_type"],
-            data["host"],
-            data["ssh_user"],
-            auth_method,
-            service_port=data.get("service_port"),
-            xray_port=data.get("xray_port"),
-        ),
+        texts.confirmation_text(lang, data["node_type"], data["host"], data["ssh_user"], auth_method),
         reply_markup=confirm_install_keyboard(lang),
     )
 
@@ -311,16 +244,9 @@ async def cb_confirm_install(callback: CallbackQuery, state: FSMContext, lang: s
 
     try:
         if data["node_type"] == "marzban":
-            result = await install_marzban_node(
-                target,
-                data["cert_pem"],
-                progress,
-                lang,
-                service_port=data.get("service_port"),
-                xray_api_port=data.get("xray_port"),
-            )
+            result = await install_marzban_node(target, data["cert_pem"], progress, lang)
         else:
-            result = await install_pasarguard_node(target, progress, lang, port=data.get("service_port"))
+            result = await install_pasarguard_node(target, progress, lang)
     except NodeInstallError as exc:
         await state.clear()
         await status_message.edit_text(

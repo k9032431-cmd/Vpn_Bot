@@ -417,8 +417,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📋 <b>Проверьте данные:</b>\n"
             "🌍 Сервер: <code>{host}</code>\n"
             "👤 Пользователь: <code>{user}</code>\n"
-            "🔐 Вход: {auth_method}\n"
-            "🔌 Порты: {ports}\n\n"
+            "🔐 Вход: {auth_method}\n\n"
             "🚀 Всё готово — начинаем установку?"
         ),
         "en": (
@@ -426,8 +425,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📋 <b>Please confirm:</b>\n"
             "🌍 Server: <code>{host}</code>\n"
             "👤 User: <code>{user}</code>\n"
-            "🔐 Login via: {auth_method}\n"
-            "🔌 Ports: {ports}\n\n"
+            "🔐 Login via: {auth_method}\n\n"
             "🚀 Ready — start the installation?"
         ),
         "tk": (
@@ -435,86 +433,9 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📋 <b>Maglumatlary barlaň:</b>\n"
             "🌍 Server: <code>{host}</code>\n"
             "👤 Ulanyjy: <code>{user}</code>\n"
-            "🔐 Giriş: {auth_method}\n"
-            "🔌 Portlar: {ports}\n\n"
+            "🔐 Giriş: {auth_method}\n\n"
             "🚀 Taýyn — ornaşdyrmaga başlaýarysmy?"
         ),
-    },
-    "btn_ports_default": {"ru": "🔌 Порты по умолчанию", "en": "🔌 Default ports", "tk": "🔌 Ýerine ýetiriji portlar"},
-    "btn_ports_custom": {"ru": "⚙️ Свои порты", "en": "⚙️ Custom ports", "tk": "⚙️ Öz portlarym"},
-    "step_choose_ports_marzban": {
-        "ru": (
-            "{header}\n\n"
-            "🔌 Marzban Node по умолчанию использует порты <code>62050</code> (основной) и "
-            "<code>62051</code> (Xray API). Если ваш провайдер (например, trial-аккаунт "
-            "UpCloud) разрешает только определённый список портов — укажите свои."
-        ),
-        "en": (
-            "{header}\n\n"
-            "🔌 Marzban Node uses ports <code>62050</code> (main) and <code>62051</code> "
-            "(Xray API) by default. If your provider (e.g. an UpCloud trial account) only "
-            "allows a fixed list of ports — set your own."
-        ),
-        "tk": (
-            "{header}\n\n"
-            "🔌 Marzban Node ýerine ýetirmede <code>62050</code> (esasy) we <code>62051</code> "
-            "(Xray API) portlaryny ulanýar. Eger siziň provaýderiňiz (mysal üçin UpCloud "
-            "trial hasaby) diňe belli portlara rugsat berýän bolsa — öz portlaryňyzy giriziň."
-        ),
-    },
-    "step_choose_ports_pasarguard": {
-        "ru": (
-            "{header}\n\n"
-            "🔌 PasarGuard по умолчанию использует порт <code>62050</code>. Если ваш "
-            "провайдер (например, trial-аккаунт UpCloud) разрешает только определённый "
-            "список портов — укажите свой."
-        ),
-        "en": (
-            "{header}\n\n"
-            "🔌 PasarGuard uses port <code>62050</code> by default. If your provider (e.g. "
-            "an UpCloud trial account) only allows a fixed list of ports — set your own."
-        ),
-        "tk": (
-            "{header}\n\n"
-            "🔌 PasarGuard ýerine ýetirmede <code>62050</code> portuny ulanýar. Eger siziň "
-            "provaýderiňiz (mysal üçin UpCloud trial hasaby) diňe belli portlara rugsat "
-            "berýän bolsa — öz portuňyzy giriziň."
-        ),
-    },
-    "step_service_port_marzban": {
-        "ru": "🔢 Введите основной порт (SERVICE_PORT), например <code>8443</code>:",
-        "en": "🔢 Enter the main port (SERVICE_PORT), e.g. <code>8443</code>:",
-        "tk": "🔢 Esasy porty giriziň (SERVICE_PORT), mysal üçin <code>8443</code>:",
-    },
-    "step_service_port_pasarguard": {
-        "ru": "🔢 Введите порт ноды, например <code>8443</code>:",
-        "en": "🔢 Enter the node's port, e.g. <code>8443</code>:",
-        "tk": "🔢 Node portuny giriziň, mysal üçin <code>8443</code>:",
-    },
-    "step_xray_port": {
-        "ru": "🔢 Теперь порт Xray API (XRAY_API_PORT), например <code>8880</code>:",
-        "en": "🔢 Now the Xray API port (XRAY_API_PORT), e.g. <code>8880</code>:",
-        "tk": "🔢 Indi Xray API portuny giriziň (XRAY_API_PORT), mysal üçin <code>8880</code>:",
-    },
-    "invalid_port": {
-        "ru": "Порт должен быть числом от 1 до 65535. Попробуйте ещё раз:",
-        "en": "The port must be a number between 1 and 65535. Try again:",
-        "tk": "Port 1-den 65535-e çenli san bolmaly. Gaýtadan synanyň:",
-    },
-    "ports_default_label": {
-        "ru": "62050 / 62051 (по умолчанию)",
-        "en": "62050 / 62051 (default)",
-        "tk": "62050 / 62051 (ýerine ýetiriji)",
-    },
-    "ports_default_label_pasarguard": {
-        "ru": "62050 (по умолчанию)",
-        "en": "62050 (default)",
-        "tk": "62050 (ýerine ýetiriji)",
-    },
-    "result_ports_marzban": {
-        "ru": "🔌 Порты: <code>{service_port}</code> / <code>{xray_api_port}</code>",
-        "en": "🔌 Ports: <code>{service_port}</code> / <code>{xray_api_port}</code>",
-        "tk": "🔌 Portlar: <code>{service_port}</code> / <code>{xray_api_port}</code>",
     },
     "auth_method_password": {"ru": "🔒 Пароль", "en": "🔒 Password", "tk": "🔒 Parol"},
     "auth_method_key": {"ru": "🔑 SSH-ключ", "en": "🔑 SSH key", "tk": "🔑 SSH açar"},
