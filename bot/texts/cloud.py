@@ -620,6 +620,14 @@ def azure_create_choose_size_text(lang: str, page: int = 0, total_pages: int = 1
     return t(lang, "azure_create_choose_size") + _page_suffix(lang, page, total_pages)
 
 
+def azure_create_size_capacity_error_text(
+    lang: str, failed_size: str, page: int = 0, total_pages: int = 1
+) -> str:
+    return t(lang, "azure_create_size_capacity_error", icon=e("error", "❌"), size=failed_size) + _page_suffix(
+        lang, page, total_pages
+    )
+
+
 def azure_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
     return t(lang, "azure_create_choose_image") + _page_suffix(lang, page, total_pages)
 

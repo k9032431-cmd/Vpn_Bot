@@ -2473,6 +2473,23 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🔷 <b>New VM — step 2/6</b>\n\nChoose a size:",
         "tk": "🔷 <b>Täze VM — 2/6 ädim</b>\n\nÖlçegi saýlaň:",
     },
+    "azure_create_size_capacity_error": {
+        "ru": (
+            "{icon} Размер <b>{size}</b> только что оказался недоступен в этом регионе "
+            "прямо сейчас (нехватка мощностей у Azure в дата-центре) — такое Azure не "
+            "показывает заранее, только при самом создании. Выберите другой размер:"
+        ),
+        "en": (
+            "{icon} <b>{size}</b> just turned out to be unavailable in this region right "
+            "now (an Azure datacenter capacity shortage) — Azure doesn't report this "
+            "ahead of time, only when actually deploying. Choose another size:"
+        ),
+        "tk": (
+            "{icon} <b>{size}</b> ölçegi häzir bu sebitde elýeterli däl (Azure-yň "
+            "maglumat merkezinde kuwwat ýetmezçiligi) — Azure muny öňünden görkezmeýär, "
+            "diňe döredilende belli bolýar. Başga ölçegi saýlaň:"
+        ),
+    },
     "azure_create_choose_image": {
         "ru": "🔷 <b>Новая VM — шаг 3/6</b>\n\nВыберите операционную систему:",
         "en": "🔷 <b>New VM — step 3/6</b>\n\nChoose an OS image:",

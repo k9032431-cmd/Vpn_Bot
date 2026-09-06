@@ -332,10 +332,15 @@ async def azure_list_locations(creds: AzureCredentials) -> list[LocationInfo]:
 async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> list[VmSizeInfo]:
     """Lists the curated sizes that are actually usable in ``location`` right
     now. Uses the Resource SKUs API (not the plain vmSizes list) because
-    only this one reports per-location/per-subscription restrictions —
-    including live capacity shortages ("Following SKUs have failed for
-    Capacity Restrictions...") — that the plain vmSizes list stays silent
-    about until you actually try to deploy and it fails."""
+    only this one reports per-location/per-subscription offer restrictions
+    that the plain vmSizes list stays silent about.
+
+    This still can't catch everything: live datacenter capacity shortages
+    ("Following SKUs have failed for Capacity Restrictions...") are
+    transient and Azure does not expose them through any list API ahead of
+    time — they only surface when you actually try to deploy. See
+    ``azure_capacity_restricted_skus`` for how the create flow recovers
+    from that case instead of pretending it can be predicted here."""
     path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/skus"
     _, payload = await _request(
         "GET", path, creds, params={"api-version": API_VERSION_SKUS, "$filter": f"location eq '{location}'"}
@@ -367,6 +372,27 @@ async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> 
 
 def azure_list_images() -> list[ImageInfo]:
     return list(CURATED_IMAGES)
+
+
+_CAPACITY_RESTRICTION_RE = re.compile(r"Capacity Restrictions:\s*([^']+)'")
+
+
+def azure_capacity_restricted_skus(error_detail: str) -> list[str]:
+    """Best-effort parse of Azure's own deploy-time error, e.g.:
+    "The requested VM size for resource 'Following SKUs have failed for
+    Capacity Restrictions: Standard_B2s' is currently not available in
+    location 'AustriaEast'. Please try another size...".
+
+    This only ever fires *after* a create attempt, because live capacity
+    shortages aren't visible through ``azure_list_available_sizes`` (Azure
+    doesn't report them ahead of time) — the caller uses this to drop just
+    the failed size(s) from the picker and let the user retry with a
+    different one instead of the whole create wizard dying with a raw
+    error."""
+    match = _CAPACITY_RESTRICTION_RE.search(error_detail)
+    if not match:
+        return []
+    return [name.strip() for name in match.group(1).split(",") if name.strip()]
 
 
 # The Azure Retail Prices API is public and needs no auth/subscription at

@@ -58,6 +58,7 @@ from bot.services.azure_api import (
     AzureCredentials,
     ImageInfo,
     azure_add_port_rule,
+    azure_capacity_restricted_skus,
     azure_create_vm,
     azure_delete_port_rule,
     azure_delete_vm,
@@ -2028,8 +2029,23 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
             progress=progress,
         )
     except AzureAPIError as exc:
+        reason = str(exc)
+        failed_skus = azure_capacity_restricted_skus(reason) if reason.startswith("detail:") else []
+        remaining_sizes = [s for s in data["sizes"] if s["name"] not in failed_skus]
+        if failed_skus and remaining_sizes:
+            await state.update_data(sizes=remaining_sizes)
+            await state.set_state(AzureVMCreateStates.choosing_size)
+            failed_size = failed_skus[0]
+            await _render_create_page(
+                callback,
+                lang,
+                lambda l, p, tp, _size=failed_size: texts.azure_create_size_capacity_error_text(l, _size, p, tp),
+                _azure_size_options(remaining_sizes),
+                0, "azcreate:sizepage", "azcreate:cancel",
+            )
+            return
         await state.clear()
-        await status_message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
         return
 
     await state.clear()
