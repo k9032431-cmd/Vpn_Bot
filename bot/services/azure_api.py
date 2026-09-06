@@ -25,6 +25,7 @@ API_VERSION_SUBS = "2022-12-01"
 API_VERSION_RG = "2022-09-01"
 API_VERSION_NETWORK = "2023-09-01"
 API_VERSION_COMPUTE = "2023-09-01"
+API_VERSION_SKUS = "2021-07-01"
 
 POLL_INTERVAL = 3
 POLL_TIMEOUT = 240
@@ -300,21 +301,38 @@ async def azure_list_locations(creds: AzureCredentials) -> list[LocationInfo]:
 
 
 async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> list[VmSizeInfo]:
-    path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/locations/{location}/vmSizes"
-    _, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_COMPUTE})
+    """Lists the curated sizes that are actually usable in ``location`` right
+    now. Uses the Resource SKUs API (not the plain vmSizes list) because
+    only this one reports per-location/per-subscription restrictions —
+    including live capacity shortages ("Following SKUs have failed for
+    Capacity Restrictions...") — that the plain vmSizes list stays silent
+    about until you actually try to deploy and it fails."""
+    path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/skus"
+    _, payload = await _request(
+        "GET", path, creds, params={"api-version": API_VERSION_SKUS, "$filter": f"location eq '{location}'"}
+    )
     entries = (payload or {}).get("value", [])
-    by_name = {item.get("name"): item for item in entries if isinstance(item, dict)}
+    by_name: dict[str, dict] = {}
+    for item in entries:
+        if not isinstance(item, dict) or item.get("resourceType") != "virtualMachines":
+            continue
+        name = item.get("name")
+        if name not in CURATED_SIZES:
+            continue
+        restrictions = item.get("restrictions") or []
+        if any(r.get("type") == "Location" and location in (r.get("values") or []) for r in restrictions):
+            continue  # unavailable for this subscription/location right now
+        by_name[name] = item
+
     result = []
     for name in CURATED_SIZES:
         item = by_name.get(name)
-        if item:
-            result.append(
-                VmSizeInfo(
-                    name=name,
-                    cores=int(item.get("numberOfCores", 0) or 0),
-                    memory_mb=int(item.get("memoryInMB", 0) or 0),
-                )
-            )
+        if not item:
+            continue
+        caps = {c.get("name"): c.get("value") for c in item.get("capabilities", []) if isinstance(c, dict)}
+        cores = int(caps.get("vCPUs", 0) or 0)
+        memory_gb = float(caps.get("MemoryGB", 0) or 0)
+        result.append(VmSizeInfo(name=name, cores=cores, memory_mb=int(memory_gb * 1024)))
     return result
 
 
