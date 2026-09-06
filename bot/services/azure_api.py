@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import secrets
 import string
 from dataclasses import dataclass, field
@@ -15,11 +16,19 @@ AZURE_LOGIN_BASE = "https://login.microsoftonline.com"
 AZURE_MANAGEMENT_BASE = "https://management.azure.com"
 AZURE_SCOPE = "https://management.azure.com/.default"
 
-# Every VM this bot creates lives in one fixed resource group per Azure
-# account, with one shared VNet/subnet per (account, location) — this keeps
-# delete simple (VM + its own NIC/public IP/NSG go away; the RG/VNet are
-# reused by the next VM) without needing a resource-group picker in the UI.
-RESOURCE_GROUP_NAME = "arsicloudbot-rg"
+# Every VM this bot creates lives in one resource group per (account,
+# location) — Azure resource groups are pinned to a single region forever
+# once created, so a single fixed name can't be reused across regions (it
+# would fail with "Invalid resource group location ... already exists in
+# location ..." the moment you pick a second region). One shared VNet/subnet
+# per resource group keeps delete simple (VM + its own NIC/public IP/NSG go
+# away; the RG/VNet are reused by the next VM in that region) without
+# needing a resource-group picker in the UI.
+RESOURCE_GROUP_PREFIX = "arsicloudbot-rg"
+
+
+def _resource_group_name(location: str) -> str:
+    return f"{RESOURCE_GROUP_PREFIX}-{location}"
 
 API_VERSION_SUBS = "2022-12-01"
 API_VERSION_RG = "2022-09-01"
@@ -261,8 +270,8 @@ async def _poll_deleted(
 # --- Account ---
 
 
-def _rg_path(creds: AzureCredentials) -> str:
-    return f"/subscriptions/{creds.subscription_id}/resourceGroups/{RESOURCE_GROUP_NAME}"
+def _rg_path(creds: AzureCredentials, rg_name: str) -> str:
+    return f"/subscriptions/{creds.subscription_id}/resourceGroups/{rg_name}"
 
 
 async def azure_login(creds: AzureCredentials) -> AccountInfo:
@@ -343,9 +352,9 @@ def azure_list_images() -> list[ImageInfo]:
 # --- Networking building blocks (idempotent "ensure"/"create" helpers) ---
 
 
-async def azure_ensure_resource_group(creds: AzureCredentials, location: str) -> None:
+async def azure_ensure_resource_group(creds: AzureCredentials, rg_name: str, location: str) -> None:
     await _request(
-        "PUT", _rg_path(creds), creds,
+        "PUT", _rg_path(creds, rg_name), creds,
         json_body={"location": location}, params={"api-version": API_VERSION_RG},
     )
 
@@ -354,14 +363,14 @@ def _vnet_name(location: str) -> str:
     return f"arsicloud-vnet-{location}"
 
 
-def _vnet_path(creds: AzureCredentials, location: str) -> str:
-    return f"{_rg_path(creds)}/providers/Microsoft.Network/virtualNetworks/{_vnet_name(location)}"
+def _vnet_path(creds: AzureCredentials, rg_name: str, location: str) -> str:
+    return f"{_rg_path(creds, rg_name)}/providers/Microsoft.Network/virtualNetworks/{_vnet_name(location)}"
 
 
-async def azure_ensure_network(creds: AzureCredentials, location: str) -> str:
-    """Creates the shared VNet+subnet for this (account, location) if it
-    doesn't already exist, returning the subnet's resource id."""
-    path = _vnet_path(creds, location)
+async def azure_ensure_network(creds: AzureCredentials, rg_name: str, location: str) -> str:
+    """Creates the shared VNet+subnet for this resource group if it doesn't
+    already exist, returning the subnet's resource id."""
+    path = _vnet_path(creds, rg_name, location)
     status, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_NETWORK})
     if status == 200:
         subnets = (payload or {}).get("properties", {}).get("subnets", [])
@@ -384,12 +393,14 @@ def _pip_name(vm_name: str) -> str:
     return f"{vm_name}-pip"
 
 
-def _pip_path(creds: AzureCredentials, vm_name: str) -> str:
-    return f"{_rg_path(creds)}/providers/Microsoft.Network/publicIPAddresses/{_pip_name(vm_name)}"
+def _pip_path(creds: AzureCredentials, rg_name: str, vm_name: str) -> str:
+    return f"{_rg_path(creds, rg_name)}/providers/Microsoft.Network/publicIPAddresses/{_pip_name(vm_name)}"
 
 
-async def azure_create_public_ip(creds: AzureCredentials, vm_name: str, location: str) -> tuple[str, str | None]:
-    path = _pip_path(creds, vm_name)
+async def azure_create_public_ip(
+    creds: AzureCredentials, rg_name: str, vm_name: str, location: str
+) -> tuple[str, str | None]:
+    path = _pip_path(creds, rg_name, vm_name)
     body = {
         "location": location,
         "sku": {"name": "Standard"},
@@ -406,12 +417,12 @@ def _nsg_name(vm_name: str) -> str:
     return f"{vm_name}-nsg"
 
 
-def _nsg_path(creds: AzureCredentials, vm_name: str) -> str:
-    return f"{_rg_path(creds)}/providers/Microsoft.Network/networkSecurityGroups/{_nsg_name(vm_name)}"
+def _nsg_path(creds: AzureCredentials, rg_name: str, vm_name: str) -> str:
+    return f"{_rg_path(creds, rg_name)}/providers/Microsoft.Network/networkSecurityGroups/{_nsg_name(vm_name)}"
 
 
-async def azure_create_nsg(creds: AzureCredentials, vm_name: str, location: str) -> str:
-    path = _nsg_path(creds, vm_name)
+async def azure_create_nsg(creds: AzureCredentials, rg_name: str, vm_name: str, location: str) -> str:
+    path = _nsg_path(creds, rg_name, vm_name)
     body = {
         "location": location,
         "properties": {
@@ -444,14 +455,14 @@ def _nic_name(vm_name: str) -> str:
     return f"{vm_name}-nic"
 
 
-def _nic_path(creds: AzureCredentials, vm_name: str) -> str:
-    return f"{_rg_path(creds)}/providers/Microsoft.Network/networkInterfaces/{_nic_name(vm_name)}"
+def _nic_path(creds: AzureCredentials, rg_name: str, vm_name: str) -> str:
+    return f"{_rg_path(creds, rg_name)}/providers/Microsoft.Network/networkInterfaces/{_nic_name(vm_name)}"
 
 
 async def azure_create_nic(
-    creds: AzureCredentials, vm_name: str, location: str, subnet_id: str, pip_id: str, nsg_id: str
+    creds: AzureCredentials, rg_name: str, vm_name: str, location: str, subnet_id: str, pip_id: str, nsg_id: str
 ) -> str:
-    path = _nic_path(creds, vm_name)
+    path = _nic_path(creds, rg_name, vm_name)
     body = {
         "location": location,
         "properties": {
@@ -476,8 +487,8 @@ async def azure_create_nic(
 # --- Virtual machines ---
 
 
-def _vm_path(creds: AzureCredentials, vm_name: str) -> str:
-    return f"{_rg_path(creds)}/providers/Microsoft.Compute/virtualMachines/{vm_name}"
+def _vm_path(creds: AzureCredentials, rg_name: str, vm_name: str) -> str:
+    return f"{_rg_path(creds, rg_name)}/providers/Microsoft.Compute/virtualMachines/{vm_name}"
 
 
 async def azure_create_vm(
@@ -495,20 +506,22 @@ async def azure_create_vm(
         if progress:
             await progress(step)
 
+    rg_name = _resource_group_name(location)
+
     await tick("resource_group")
-    await azure_ensure_resource_group(creds, location)
+    await azure_ensure_resource_group(creds, rg_name, location)
 
     await tick("network")
-    subnet_id = await azure_ensure_network(creds, location)
+    subnet_id = await azure_ensure_network(creds, rg_name, location)
 
     await tick("public_ip")
-    pip_id, pip_address = await azure_create_public_ip(creds, vm_name, location)
+    pip_id, pip_address = await azure_create_public_ip(creds, rg_name, vm_name, location)
 
     await tick("nsg")
-    nsg_id = await azure_create_nsg(creds, vm_name, location)
+    nsg_id = await azure_create_nsg(creds, rg_name, vm_name, location)
 
     await tick("nic")
-    nic_id = await azure_create_nic(creds, vm_name, location, subnet_id, pip_id, nsg_id)
+    nic_id = await azure_create_nic(creds, rg_name, vm_name, location, subnet_id, pip_id, nsg_id)
 
     await tick("vm")
     os_profile: dict = {"computerName": vm_name, "adminUsername": ADMIN_USERNAME}
@@ -541,7 +554,7 @@ async def azure_create_vm(
             "networkProfile": {"networkInterfaces": [{"id": nic_id}]},
         },
     }
-    path = _vm_path(creds, vm_name)
+    path = _vm_path(creds, rg_name, vm_name)
     await _request("PUT", path, creds, json_body=body, params={"api-version": API_VERSION_COMPUTE})
     await _poll_provisioning_state(path, creds, params={"api-version": API_VERSION_COMPUTE})
 
@@ -564,24 +577,42 @@ def _power_state_from_instance_view(instance_view: dict) -> str:
     return "unknown"
 
 
+_RG_ID_RE = re.compile(r"/resourceGroups/([^/]+)/", re.IGNORECASE)
+
+
+async def _find_vm_resource_group(creds: AzureCredentials, vm_name: str) -> str:
+    """VMs can live in any of this account's per-location resource groups
+    (one per region a VM was ever created in), so operating on a VM by name
+    alone means finding which one first — via the subscription-wide VM
+    list, restricted to resource groups this bot itself created."""
+    path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/virtualMachines"
+    _, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_COMPUTE})
+    for item in (payload or {}).get("value", []):
+        if item.get("name") != vm_name:
+            continue
+        match = _RG_ID_RE.search(item.get("id", ""))
+        if match and match.group(1).lower().startswith(f"{RESOURCE_GROUP_PREFIX}-"):
+            return match.group(1)
+    raise AzureAPIError("not_found")
+
+
 async def azure_list_vms(creds: AzureCredentials) -> list[VMInfo]:
-    path = f"{_rg_path(creds)}/providers/Microsoft.Compute/virtualMachines"
-    status, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_COMPUTE})
-    if status == 404:
-        return []
-    entries = (payload or {}).get("value", [])
+    path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/virtualMachines"
+    _, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_COMPUTE})
     result = []
-    for item in entries:
-        name = item.get("name", "")
+    for item in (payload or {}).get("value", []):
+        match = _RG_ID_RE.search(item.get("id", ""))
+        if not match or not match.group(1).lower().startswith(f"{RESOURCE_GROUP_PREFIX}-"):
+            continue  # not one of this bot's resource groups — leave it alone
         try:
-            result.append(await azure_get_vm(creds, name))
+            result.append(await _get_vm_detail(creds, match.group(1), item.get("name", "")))
         except AzureAPIError:
             continue
     return result
 
 
-async def azure_get_vm(creds: AzureCredentials, vm_name: str) -> VMInfo:
-    path = _vm_path(creds, vm_name)
+async def _get_vm_detail(creds: AzureCredentials, rg_name: str, vm_name: str) -> VMInfo:
+    path = _vm_path(creds, rg_name, vm_name)
     status, payload = await _request(
         "GET", path, creds, params={"api-version": API_VERSION_COMPUTE, "$expand": "instanceView"}
     )
@@ -593,7 +624,7 @@ async def azure_get_vm(creds: AzureCredentials, vm_name: str) -> VMInfo:
 
     public_ip = None
     pip_status, pip_payload = await _request(
-        "GET", _pip_path(creds, vm_name), creds, params={"api-version": API_VERSION_NETWORK}
+        "GET", _pip_path(creds, rg_name, vm_name), creds, params={"api-version": API_VERSION_NETWORK}
     )
     if pip_status == 200:
         public_ip = (pip_payload or {}).get("properties", {}).get("ipAddress")
@@ -608,10 +639,15 @@ async def azure_get_vm(creds: AzureCredentials, vm_name: str) -> VMInfo:
     )
 
 
-async def _poll_power_state(creds: AzureCredentials, vm_name: str, target: str) -> None:
+async def azure_get_vm(creds: AzureCredentials, vm_name: str) -> VMInfo:
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    return await _get_vm_detail(creds, rg_name, vm_name)
+
+
+async def _poll_power_state(creds: AzureCredentials, rg_name: str, vm_name: str, target: str) -> None:
     elapsed = 0
     while True:
-        info = await azure_get_vm(creds, vm_name)
+        info = await _get_vm_detail(creds, rg_name, vm_name)
         if info.power_state == target:
             return
         if elapsed >= POLL_TIMEOUT:
@@ -621,9 +657,10 @@ async def _poll_power_state(creds: AzureCredentials, vm_name: str, target: str) 
 
 
 async def _do_power_action(creds: AzureCredentials, vm_name: str, action: str, target_state: str) -> None:
-    path = f"{_vm_path(creds, vm_name)}/{action}"
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    path = f"{_vm_path(creds, rg_name, vm_name)}/{action}"
     await _request("POST", path, creds, params={"api-version": API_VERSION_COMPUTE})
-    await _poll_power_state(creds, vm_name, target_state)
+    await _poll_power_state(creds, rg_name, vm_name, target_state)
 
 
 async def azure_start_vm(creds: AzureCredentials, vm_name: str) -> None:
@@ -642,15 +679,16 @@ async def azure_restart_vm(creds: AzureCredentials, vm_name: str) -> None:
 
 
 async def azure_delete_vm(creds: AzureCredentials, vm_name: str) -> None:
-    await _request("DELETE", _vm_path(creds, vm_name), creds, params={"api-version": API_VERSION_COMPUTE})
-    await _poll_deleted(_vm_path(creds, vm_name), creds, params={"api-version": API_VERSION_COMPUTE})
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    await _request("DELETE", _vm_path(creds, rg_name, vm_name), creds, params={"api-version": API_VERSION_COMPUTE})
+    await _poll_deleted(_vm_path(creds, rg_name, vm_name), creds, params={"api-version": API_VERSION_COMPUTE})
 
     # Best-effort cleanup of the VM's own NIC/public IP/NSG — the shared
     # VNet/resource group stay, since other VMs may still use them.
     for path, api_version in (
-        (_nic_path(creds, vm_name), API_VERSION_NETWORK),
-        (_pip_path(creds, vm_name), API_VERSION_NETWORK),
-        (_nsg_path(creds, vm_name), API_VERSION_NETWORK),
+        (_nic_path(creds, rg_name, vm_name), API_VERSION_NETWORK),
+        (_pip_path(creds, rg_name, vm_name), API_VERSION_NETWORK),
+        (_nsg_path(creds, rg_name, vm_name), API_VERSION_NETWORK),
     ):
         try:
             await _request("DELETE", path, creds, params={"api-version": api_version})
