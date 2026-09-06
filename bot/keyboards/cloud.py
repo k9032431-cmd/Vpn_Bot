@@ -5,6 +5,7 @@ from bot.texts.cloud import (
     ACTIVE_PROVIDERS,
     PROVIDERS,
     account_list_label,
+    azure_port_rule_label,
     azure_vm_list_label,
     backup_list_label,
     ip_list_label,
@@ -407,9 +408,62 @@ def azure_vm_detail_keyboard(lang: str, account_id: str, vm) -> InlineKeyboardMa
     else:
         builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"azvm:stop:{account_id}:{vm.name}")
     builder.button(text=t(lang, "btn_cloud_server_restart"), callback_data=f"azvm:restart:{account_id}:{vm.name}")
+    builder.button(text=t(lang, "btn_azure_vm_ports"), callback_data=f"azports:list:{account_id}:{vm.name}")
+    builder.button(text=t(lang, "btn_azure_vm_reimage"), callback_data=f"azvm:reimageask:{account_id}:{vm.name}")
     builder.button(text=t(lang, "btn_cloud_server_delete"), callback_data=f"azvm:delask:{account_id}:{vm.name}")
     builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"azvm:list:{account_id}")
-    builder.adjust(2, 1, 1)
+    builder.adjust(2, 2, 1, 1)
+    return builder.as_markup()
+
+
+def azure_vm_reimage_confirm_keyboard(lang: str, account_id: str, vm_name: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_azure_vm_reimage"), callback_data=f"azvm:reimage:{account_id}:{vm_name}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"azvm:view:{account_id}:{vm_name}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Azure: ports / firewall ---
+
+
+def azure_ports_list_keyboard(lang: str, account_id: str, vm_name: str, rules: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, rule in enumerate(rules):
+        builder.button(text=azure_port_rule_label(rule), callback_data=f"azports:delask:{account_id}:{vm_name}:{i}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_azure_port_add"), callback_data=f"azports:add:{account_id}:{vm_name}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_azure_ports_back"), callback_data=f"azvm:view:{account_id}:{vm_name}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def azure_port_cancel_keyboard(lang: str, account_id: str, vm_name: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def azure_port_protocol_keyboard(lang: str, account_id: str, vm_name: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_azure_proto_tcp"), callback_data="azports:proto:tcp")
+    builder.button(text=t(lang, "btn_azure_proto_udp"), callback_data="azports:proto:udp")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}")
+    builder.adjust(2, 1)
+    return builder.as_markup()
+
+
+def azure_port_delete_confirm_keyboard(lang: str, account_id: str, vm_name: str, index: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"azports:del:{account_id}:{vm_name}:{index}"
+    )
+    builder.button(text=t(lang, "btn_azure_ports_back"), callback_data=f"azports:list:{account_id}:{vm_name}")
+    builder.adjust(1, 1)
     return builder.as_markup()
 
 
@@ -432,6 +486,15 @@ def azure_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="azcreate:auth:password")
     builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="azcreate:auth:key")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def azure_password_mode_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_azure_pw_generate"), callback_data="azcreate:pwmode:generate")
+    builder.button(text=t(lang, "btn_azure_pw_custom"), callback_data="azcreate:pwmode:custom")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
     builder.adjust(1, 1, 1)
     return builder.as_markup()

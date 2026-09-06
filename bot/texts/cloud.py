@@ -500,6 +500,49 @@ _AZURE_POWER_EMOJI = {
     "stopping": "🚧",
 }
 
+# Azure region names (e.g. "westeurope") don't carry a country code the way
+# UpCloud zone ids do — this curated map covers the regions users actually
+# pick from; anything missing just falls back to a globe, same graceful
+# degradation as _flag_emoji itself.
+_AZURE_REGION_COUNTRY = {
+    "eastus": "US", "eastus2": "US", "centralus": "US", "northcentralus": "US",
+    "southcentralus": "US", "westcentralus": "US", "westus": "US", "westus2": "US", "westus3": "US",
+    "canadacentral": "CA", "canadaeast": "CA",
+    "brazilsouth": "BR", "brazilsoutheast": "BR",
+    "northeurope": "IE", "westeurope": "NL",
+    "uksouth": "GB", "ukwest": "GB",
+    "francecentral": "FR", "francesouth": "FR",
+    "germanywestcentral": "DE", "germanynorth": "DE",
+    "norwayeast": "NO", "norwaywest": "NO",
+    "switzerlandnorth": "CH", "switzerlandwest": "CH",
+    "swedencentral": "SE", "swedensouth": "SE",
+    "polandcentral": "PL",
+    "italynorth": "IT",
+    "spaincentral": "ES",
+    "austriaeast": "AT",
+    "belgiumcentral": "BE",
+    "eastasia": "HK", "southeastasia": "SG",
+    "japaneast": "JP", "japanwest": "JP",
+    "koreacentral": "KR", "koreasouth": "KR",
+    "southindia": "IN", "centralindia": "IN", "westindia": "IN", "jioindiawest": "IN", "jioindiacentral": "IN",
+    "australiaeast": "AU", "australiasoutheast": "AU", "australiacentral": "AU", "australiacentral2": "AU",
+    "uaenorth": "AE", "uaecentral": "AE",
+    "southafricanorth": "ZA", "southafricawest": "ZA",
+    "qatarcentral": "QA",
+    "israelcentral": "IL",
+    "mexicocentral": "MX",
+    "chilecentral": "CL",
+    "newzealandnorth": "NZ",
+    "indonesiacentral": "ID",
+    "malaysiawest": "MY",
+}
+
+
+def azure_location_display(location_name: str, display_name: str) -> str:
+    country = _AZURE_REGION_COUNTRY.get(location_name)
+    flag = _flag_emoji(country) if country else "🌍"
+    return f"{flag} {display_name}"
+
 
 def azure_step_tenant_text(lang: str) -> str:
     return t(lang, "azure_step_tenant")
@@ -550,7 +593,7 @@ def azure_vm_detail_text(lang: str, vm) -> str:
         "azure_vm_detail",
         name=html.escape(vm.name),
         state=f"{_AZURE_POWER_EMOJI.get(vm.power_state, '⚪️')} {vm.power_state}",
-        location=html.escape(vm.location),
+        location=azure_location_display(vm.location, vm.location),
         size=vm.vm_size,
         ip=vm.public_ip or no_ip,
         username=html.escape(vm.admin_username),
@@ -589,6 +632,26 @@ def azure_create_invalid_hostname_text(lang: str) -> str:
     return t(lang, "azure_create_invalid_hostname")
 
 
+def azure_create_waiting_username_text(lang: str) -> str:
+    return t(lang, "azure_create_waiting_username")
+
+
+def azure_create_invalid_username_text(lang: str) -> str:
+    return t(lang, "azure_create_invalid_username")
+
+
+def azure_create_choose_password_mode_text(lang: str) -> str:
+    return t(lang, "azure_create_choose_password_mode")
+
+
+def azure_create_waiting_custom_password_text(lang: str) -> str:
+    return t(lang, "azure_create_waiting_custom_password")
+
+
+def azure_create_invalid_custom_password_text(lang: str) -> str:
+    return t(lang, "azure_create_invalid_custom_password")
+
+
 def azure_create_choose_auth_method_text(lang: str) -> str:
     return t(lang, "cloud_create_choose_auth_method")
 
@@ -602,7 +665,7 @@ def azure_create_invalid_ssh_key_text(lang: str) -> str:
 
 
 def azure_create_confirm_text(
-    lang: str, hostname: str, location: str, size: str, image_title: str, auth_method: str
+    lang: str, hostname: str, location: str, size: str, image_title: str, username: str, auth_method: str
 ) -> str:
     auth_label = t(lang, "cloud_auth_method_key" if auth_method == "key" else "cloud_auth_method_password")
     return t(
@@ -612,6 +675,7 @@ def azure_create_confirm_text(
         location=location,
         size=size,
         image=html.escape(image_title),
+        username=html.escape(username),
         auth_method=auth_label,
     )
 
@@ -629,6 +693,50 @@ _AZURE_PROGRESS_KEYS = {
 def azure_progress_text(lang: str, step: str) -> str:
     key = _AZURE_PROGRESS_KEYS.get(step, "azure_progress_vm")
     return t(lang, key)
+
+
+def azure_vm_reimage_confirm_text(lang: str, vm) -> str:
+    return t(lang, "azure_vm_reimage_confirm", icon=e("warning", "⚠️"), name=html.escape(vm.name))
+
+
+def azure_vm_reimage_ok_text(lang: str) -> str:
+    return t(lang, "azure_vm_reimage_ok", icon=e("success", "✅"))
+
+
+# --- Azure: port / firewall management ---
+
+
+def azure_ports_header_text(lang: str, vm, has_rules: bool) -> str:
+    body_key = "azure_ports_hint" if has_rules else "azure_ports_empty"
+    return t(lang, "azure_ports_header", name=html.escape(vm.name), body=t(lang, body_key))
+
+
+def azure_port_rule_label(rule) -> str:
+    return f"🔌 {rule.protocol} {rule.port}"
+
+
+def azure_step_port_number_text(lang: str) -> str:
+    return t(lang, "azure_step_port_number")
+
+
+def azure_invalid_port_number_text(lang: str) -> str:
+    return t(lang, "azure_invalid_port_number")
+
+
+def azure_choose_protocol_text(lang: str, port: str) -> str:
+    return t(lang, "azure_choose_protocol", port=port)
+
+
+def azure_port_added_text(lang: str, rule) -> str:
+    return t(lang, "azure_port_added", icon=e("success", "✅"), protocol=rule.protocol, port=rule.port)
+
+
+def azure_port_delete_confirm_text(lang: str, rule) -> str:
+    return t(lang, "azure_port_delete_confirm", icon=e("warning", "⚠️"), protocol=rule.protocol, port=rule.port)
+
+
+def azure_port_deleted_text(lang: str) -> str:
+    return t(lang, "azure_port_deleted", icon=e("success", "✅"))
 
 
 def azure_create_success_text(lang: str, vm, ssh_key_used: bool = False) -> str:

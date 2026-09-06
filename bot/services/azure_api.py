@@ -147,6 +147,26 @@ def generate_azure_password(length: int = 16) -> str:
     return "".join(chars)
 
 
+# Azure rejects these as a Linux VM admin username outright — not
+# exhaustive, but covers the reserved names people actually try.
+_RESERVED_USERNAMES = {
+    "administrator", "admin", "user", "user1", "test", "user2", "test1",
+    "user3", "admin1", "1", "123", "a", "actuser", "adm", "admin2", "aspnet",
+    "backup", "console", "david", "guest", "john", "owner", "root", "server",
+    "sql", "support", "sys", "test2", "test3", "user4", "user5",
+}
+
+_USERNAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9._-]{0,63}$")
+
+
+def is_valid_azure_username(username: str) -> bool:
+    if username.lower() in _RESERVED_USERNAMES:
+        return False
+    if username.endswith("."):
+        return False
+    return bool(_USERNAME_RE.match(username))
+
+
 def _connector() -> aiohttp.TCPConnector:
     return aiohttp.TCPConnector(ssl=True)
 
@@ -349,6 +369,44 @@ def azure_list_images() -> list[ImageInfo]:
     return list(CURATED_IMAGES)
 
 
+# The Azure Retail Prices API is public and needs no auth/subscription at
+# all — a different host from the ARM management API used everywhere else,
+# so it's not threaded through AzureCredentials.
+AZURE_PRICES_BASE = "https://prices.azure.com"
+
+
+async def azure_get_hourly_price(size_name: str, location: str) -> float | None:
+    """Best-effort lookup of the Linux pay-as-you-go hourly price for a VM
+    size in a region, in USD. Returns None on any failure (unknown SKU,
+    network error, unexpected shape) — pricing is a nice-to-have, never
+    something that should block showing the size picker."""
+    filter_q = (
+        f"serviceName eq 'Virtual Machines' and armRegionName eq '{location}' "
+        f"and armSkuName eq '{size_name}' and priceType eq 'Consumption'"
+    )
+    url = f"{AZURE_PRICES_BASE.rstrip('/')}/api/retail/prices"
+    try:
+        async with aiohttp.ClientSession(connector=_connector(), timeout=REQUEST_TIMEOUT) as session:
+            async with session.get(url, params={"$filter": filter_q}) as resp:
+                if resp.status != 200:
+                    return None
+                payload = await resp.json(content_type=None)
+    except (aiohttp.ClientError, TimeoutError, json.JSONDecodeError, aiohttp.ContentTypeError):
+        return None
+
+    items = (payload or {}).get("Items", [])
+    linux_prices = [
+        item.get("retailPrice")
+        for item in items
+        if isinstance(item, dict)
+        and "windows" not in str(item.get("productName", "")).lower()
+        and "spot" not in str(item.get("meterName", "")).lower()
+        and "low priority" not in str(item.get("meterName", "")).lower()
+        and isinstance(item.get("retailPrice"), (int, float))
+    ]
+    return min(linux_prices) if linux_prices else None
+
+
 # --- Networking building blocks (idempotent "ensure"/"create" helpers) ---
 
 
@@ -451,6 +509,67 @@ async def azure_create_nsg(creds: AzureCredentials, rg_name: str, vm_name: str, 
     return final["id"]
 
 
+@dataclass
+class PortRuleInfo:
+    name: str
+    protocol: str  # "Tcp" | "Udp" | "*"
+    port: str  # a single port or a range like "8000-8010"
+    priority: int
+
+
+async def azure_list_port_rules(creds: AzureCredentials, vm_name: str) -> list[PortRuleInfo]:
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    path = f"{_nsg_path(creds, rg_name, vm_name)}/securityRules"
+    _, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_NETWORK})
+    rules = []
+    for item in (payload or {}).get("value", []):
+        props = item.get("properties", {})
+        if props.get("direction") != "Inbound" or props.get("access") != "Allow":
+            continue
+        rules.append(
+            PortRuleInfo(
+                name=item.get("name", ""),
+                protocol=props.get("protocol", "Tcp"),
+                port=props.get("destinationPortRange", "*"),
+                priority=int(props.get("priority", 0) or 0),
+            )
+        )
+    rules.sort(key=lambda r: r.priority)
+    return rules
+
+
+async def azure_add_port_rule(creds: AzureCredentials, vm_name: str, port: str, protocol: str = "Tcp") -> PortRuleInfo:
+    """Adds one inbound-allow NSG rule, same as adding a rule by hand in the
+    Azure Portal's Networking blade. Picks the next free priority above
+    whatever rules already exist (1000/1010 are the bot's own default SSH/
+    HTTPS rules)."""
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    existing = await azure_list_port_rules(creds, vm_name)
+    priority = max((r.priority for r in existing), default=990) + 10
+    if priority > 4096:
+        raise AzureAPIError("detail:Достигнут предел числа правил фаервола (максимальный приоритет 4096)")
+
+    rule_name = f"Allow-{protocol}-{port}"
+    path = f"{_nsg_path(creds, rg_name, vm_name)}/securityRules/{rule_name}"
+    body = {
+        "properties": {
+            "priority": priority, "direction": "Inbound", "access": "Allow", "protocol": protocol,
+            "sourcePortRange": "*", "destinationPortRange": port,
+            "sourceAddressPrefix": "*", "destinationAddressPrefix": "*",
+        }
+    }
+    await _request("PUT", path, creds, json_body=body, params={"api-version": API_VERSION_NETWORK})
+    await _poll_provisioning_state(path, creds, params={"api-version": API_VERSION_NETWORK})
+    return PortRuleInfo(name=rule_name, protocol=protocol, port=port, priority=priority)
+
+
+async def azure_delete_port_rule(creds: AzureCredentials, vm_name: str, rule_name: str) -> None:
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    path = f"{_nsg_path(creds, rg_name, vm_name)}/securityRules/{rule_name}"
+    await _request("DELETE", path, creds, params={"api-version": API_VERSION_NETWORK})
+    await _poll_deleted(path, creds, params={"api-version": API_VERSION_NETWORK})
+
+
 def _nic_name(vm_name: str) -> str:
     return f"{vm_name}-nic"
 
@@ -498,6 +617,7 @@ async def azure_create_vm(
     vm_size: str,
     image: ImageInfo,
     vm_name: str,
+    admin_username: str = ADMIN_USERNAME,
     admin_password: str | None = None,
     ssh_public_key: str | None = None,
     progress: ProgressCallback | None = None,
@@ -524,13 +644,13 @@ async def azure_create_vm(
     nic_id = await azure_create_nic(creds, rg_name, vm_name, location, subnet_id, pip_id, nsg_id)
 
     await tick("vm")
-    os_profile: dict = {"computerName": vm_name, "adminUsername": ADMIN_USERNAME}
+    os_profile: dict = {"computerName": vm_name, "adminUsername": admin_username}
     if ssh_public_key:
         os_profile["linuxConfiguration"] = {
             "disablePasswordAuthentication": True,
             "ssh": {
                 "publicKeys": [
-                    {"path": f"/home/{ADMIN_USERNAME}/.ssh/authorized_keys", "keyData": ssh_public_key}
+                    {"path": f"/home/{admin_username}/.ssh/authorized_keys", "keyData": ssh_public_key}
                 ]
             },
         }
@@ -564,7 +684,7 @@ async def azure_create_vm(
         vm_size=vm_size,
         power_state="running",
         public_ip=pip_address,
-        admin_username=ADMIN_USERNAME,
+        admin_username=admin_username,
         admin_password=None if ssh_public_key else admin_password,
     )
 
@@ -676,6 +796,16 @@ async def azure_stop_vm(creds: AzureCredentials, vm_name: str) -> None:
 
 async def azure_restart_vm(creds: AzureCredentials, vm_name: str) -> None:
     await _do_power_action(creds, vm_name, "restart", "running")
+
+
+async def azure_reimage_vm(creds: AzureCredentials, vm_name: str) -> None:
+    """Reinstalls the OS from the same image the VM was created with,
+    wiping the OS disk — same as the "Reimage" action in the Azure Portal.
+    Keeps the VM's name, network config, size and IP untouched."""
+    rg_name = await _find_vm_resource_group(creds, vm_name)
+    path = f"{_vm_path(creds, rg_name, vm_name)}/reimage"
+    await _request("POST", path, creds, params={"api-version": API_VERSION_COMPUTE})
+    await _poll_power_state(creds, rg_name, vm_name, "running")
 
 
 async def azure_delete_vm(creds: AzureCredentials, vm_name: str) -> None:

@@ -2464,29 +2464,80 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>{name}</b> wirtual maşynyny pozmalymy? Bu yzyna gaýtaryp bolmaýar — diski we ulgamy hem pozular.",
     },
     "azure_create_choose_location": {
-        "ru": "🔷 <b>Новая VM — шаг 1/5</b>\n\nВыберите регион (location):",
-        "en": "🔷 <b>New VM — step 1/5</b>\n\nChoose a region (location):",
-        "tk": "🔷 <b>Täze VM — 1/5 ädim</b>\n\nSebiti (location) saýlaň:",
+        "ru": "🔷 <b>Новая VM — шаг 1/6</b>\n\nВыберите регион (location):",
+        "en": "🔷 <b>New VM — step 1/6</b>\n\nChoose a region (location):",
+        "tk": "🔷 <b>Täze VM — 1/6 ädim</b>\n\nSebiti (location) saýlaň:",
     },
     "azure_create_choose_size": {
-        "ru": "🔷 <b>Новая VM — шаг 2/5</b>\n\nВыберите размер (size):",
-        "en": "🔷 <b>New VM — step 2/5</b>\n\nChoose a size:",
-        "tk": "🔷 <b>Täze VM — 2/5 ädim</b>\n\nÖlçegi saýlaň:",
+        "ru": "🔷 <b>Новая VM — шаг 2/6</b>\n\nВыберите размер (size):",
+        "en": "🔷 <b>New VM — step 2/6</b>\n\nChoose a size:",
+        "tk": "🔷 <b>Täze VM — 2/6 ädim</b>\n\nÖlçegi saýlaň:",
     },
     "azure_create_choose_image": {
-        "ru": "🔷 <b>Новая VM — шаг 3/5</b>\n\nВыберите операционную систему:",
-        "en": "🔷 <b>New VM — step 3/5</b>\n\nChoose an OS image:",
-        "tk": "🔷 <b>Täze VM — 3/5 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+        "ru": "🔷 <b>Новая VM — шаг 3/6</b>\n\nВыберите операционную систему:",
+        "en": "🔷 <b>New VM — step 3/6</b>\n\nChoose an OS image:",
+        "tk": "🔷 <b>Täze VM — 3/6 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
     },
     "azure_create_waiting_hostname": {
-        "ru": "✏️ <b>Новая VM — шаг 4/5</b>\n\nВведите имя виртуальной машины (латиница, цифры, дефисы):",
-        "en": "✏️ <b>New VM — step 4/5</b>\n\nEnter the virtual machine's name (letters, digits, hyphens):",
-        "tk": "✏️ <b>Täze VM — 4/5 ädim</b>\n\nWirtual maşynyň adyny giriziň (latyn harplary, sanlar, defisler):",
+        "ru": "✏️ <b>Новая VM — шаг 4/6</b>\n\nВведите имя виртуальной машины (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New VM — step 4/6</b>\n\nEnter the virtual machine's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze VM — 4/6 ädim</b>\n\nWirtual maşynyň adyny giriziň (latyn harplary, sanlar, defisler):",
     },
     "azure_create_invalid_hostname": {
         "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 64 символов). Попробуйте ещё раз:",
         "en": "Invalid name. Use only Latin letters, digits and hyphens (up to 64 characters). Try again:",
         "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (64 alamatdan köp däl). Gaýtadan synanyň:",
+    },
+    "azure_create_waiting_username": {
+        "ru": (
+            "👤 <b>Новая VM — шаг 5/6</b>\n\n"
+            "Введите логин администратора (латиница, цифры, «.», «_», «-», не может быть "
+            "«root»/«admin»/«administrator» и т.п. — их запрещает сама Azure):"
+        ),
+        "en": (
+            "👤 <b>New VM — step 5/6</b>\n\n"
+            "Enter the admin username (letters, digits, '.', '_', '-' — can't be "
+            "'root'/'admin'/'administrator' etc., Azure itself rejects those):"
+        ),
+        "tk": (
+            "👤 <b>Täze VM — 5/6 ädim</b>\n\n"
+            "Administrator ulanyjy adyny giriziň (latyn harplary, sanlar, «.», «_», «-» — "
+            "«root»/«admin»/«administrator» we ş.m. bolup bilmez, Azure-yň özi ret edýär):"
+        ),
+    },
+    "azure_create_invalid_username": {
+        "ru": "Такой логин Azure не примет (зарезервированное имя, недопустимые символы или длина). Попробуйте другой:",
+        "en": "Azure won't accept that username (reserved name, invalid characters, or length). Try another:",
+        "tk": "Azure bu ulanyjy adyny kabul etmez (gorag ady, nädogry alamatlar ýa-da uzynlyk). Başgasyny synanyň:",
+    },
+    "azure_create_choose_password_mode": {
+        "ru": "🔒 Сгенерировать пароль автоматически, или ввести свой?",
+        "en": "🔒 Generate a password automatically, or type your own?",
+        "tk": "🔒 Paroly awtomatik döretmelimi, ýa-da özüňiz giriziň?",
+    },
+    "btn_azure_pw_generate": {"ru": "🎲 Сгенерировать", "en": "🎲 Generate", "tk": "🎲 Döret"},
+    "btn_azure_pw_custom": {"ru": "✏️ Свой пароль", "en": "✏️ My own password", "tk": "✏️ Öz parolym"},
+    "azure_create_waiting_custom_password": {
+        "ru": (
+            "🔒 Введите пароль (12–72 символа, минимум 3 из 4: строчные, ЗАГЛАВНЫЕ, цифры, "
+            "спецсимволы — так требует сама Azure).\n\n"
+            "⚠️ <i>Сообщение с паролем бот удалит сразу после получения.</i>"
+        ),
+        "en": (
+            "🔒 Enter a password (12-72 chars, at least 3 of 4: lowercase, UPPERCASE, digits, "
+            "special characters — Azure's own requirement).\n\n"
+            "⚠️ <i>The bot deletes the message with the password right after receiving it.</i>"
+        ),
+        "tk": (
+            "🔒 Parol giriziň (12-72 alamat, 4-den 3-si: kiçi harplar, ULY harplar, sanlar, "
+            "ýörite alamatlar — bu Azure-yň öz talaby).\n\n"
+            "⚠️ <i>Bot parol bilen habary alnandan derrew soň pozar.</i>"
+        ),
+    },
+    "azure_create_invalid_custom_password": {
+        "ru": "Пароль должен быть от 12 до 72 символов. Попробуйте ещё раз:",
+        "en": "The password must be 12 to 72 characters. Try again:",
+        "tk": "Parol 12-den 72 alamata çenli bolmaly. Gaýtadan synanyň:",
     },
     "azure_create_confirm": {
         "ru": (
@@ -2495,6 +2546,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📍 Регион: {location}\n"
             "⚙️ Размер: {size}\n"
             "💿 ОС: {image}\n"
+            "👤 Логин: <code>{username}</code>\n"
             "🔐 Вход: {auth_method}\n\n"
             "💰 Это создаст платный ресурс в Azure. Создать?"
         ),
@@ -2504,6 +2556,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📍 Region: {location}\n"
             "⚙️ Size: {size}\n"
             "💿 OS: {image}\n"
+            "👤 Username: <code>{username}</code>\n"
             "🔐 Login via: {auth_method}\n\n"
             "💰 This will create a billable resource in Azure. Create it?"
         ),
@@ -2513,6 +2566,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📍 Sebit: {location}\n"
             "⚙️ Ölçegi: {size}\n"
             "💿 OS: {image}\n"
+            "👤 Ulanyjy ady: <code>{username}</code>\n"
             "🔐 Giriş: {auth_method}\n\n"
             "💰 Bu Azure-da tölegli resurs dörediler. Döredilsinmi?"
         ),
@@ -2572,6 +2626,79 @@ _STRINGS: dict[str, dict[str, str]] = {
             "👤 <b>Ulanyjy ady:</b> <code>{username}</code>\n"
             "{password_line}"
         ),
+    },
+    "btn_azure_vm_ports": {"ru": "🔌 Порты", "en": "🔌 Ports", "tk": "🔌 Portlar"},
+    "btn_azure_vm_reimage": {"ru": "💿 Переустановить ОС", "en": "💿 Reinstall OS", "tk": "💿 OS-i gaýtadan gurnamak"},
+    "azure_vm_reimage_confirm": {
+        "ru": (
+            "{icon} Переустановить ОС на <b>{name}</b>? Диск будет полностью очищен и "
+            "заново развёрнут из исходного образа — все данные на нём пропадут. "
+            "IP, сеть и размер VM не изменятся."
+        ),
+        "en": (
+            "{icon} Reinstall the OS on <b>{name}</b>? The disk will be fully wiped and "
+            "redeployed from the original image — all data on it will be lost. "
+            "The VM's IP, network and size stay the same."
+        ),
+        "tk": (
+            "{icon} <b>{name}</b> serweriniň OS-ini gaýtadan gurnamalymy? Disk doly arassalanar "
+            "we asyl şekilden täzeden ýaýlar — ondaky ähli maglumatlar ýitýär. "
+            "VM-iň IP, ulgam we ölçegi üýtgemez."
+        ),
+    },
+    "azure_vm_reimage_ok": {
+        "ru": "{icon} ОС переустановлена.",
+        "en": "{icon} OS reinstalled.",
+        "tk": "{icon} OS gaýtadan gurnaldy.",
+    },
+    "azure_ports_header": {
+        "ru": "🔌 <b>Порты — {name}</b>\n\n{body}",
+        "en": "🔌 <b>Ports — {name}</b>\n\n{body}",
+        "tk": "🔌 <b>Portlar — {name}</b>\n\n{body}",
+    },
+    "azure_ports_hint": {
+        "ru": "Список открытых входящих портов. Нажмите на правило, чтобы удалить его.",
+        "en": "The list of open inbound ports. Tap a rule to remove it.",
+        "tk": "Açyk gelýän portlaryň sanawy. Aýyrmak üçin düzgüne basyň.",
+    },
+    "azure_ports_empty": {
+        "ru": "Открытых правил нет.",
+        "en": "No rules yet.",
+        "tk": "Häzirlikçe düzgün ýok.",
+    },
+    "btn_azure_port_add": {"ru": "➕ Добавить порт", "en": "➕ Add port", "tk": "➕ Port goş"},
+    "btn_azure_ports_back": {"ru": "◀️ К серверу", "en": "◀️ Back to server", "tk": "◀️ Servere gaýt"},
+    "azure_step_port_number": {
+        "ru": "🔢 Введите номер порта (1–65535), который нужно открыть:",
+        "en": "🔢 Enter the port number (1-65535) to open:",
+        "tk": "🔢 Açmaly port belgisini giriziň (1-65535):",
+    },
+    "azure_invalid_port_number": {
+        "ru": "Порт должен быть числом от 1 до 65535. Попробуйте ещё раз:",
+        "en": "The port must be a number between 1 and 65535. Try again:",
+        "tk": "Port 1-den 65535-e çenli san bolmaly. Gaýtadan synanyň:",
+    },
+    "azure_choose_protocol": {
+        "ru": "Порт <code>{port}</code> — какой протокол открыть?",
+        "en": "Port <code>{port}</code> — which protocol should be opened?",
+        "tk": "<code>{port}</code> porty — haýsy protokol açylsyn?",
+    },
+    "btn_azure_proto_tcp": {"ru": "TCP", "en": "TCP", "tk": "TCP"},
+    "btn_azure_proto_udp": {"ru": "UDP", "en": "UDP", "tk": "UDP"},
+    "azure_port_added": {
+        "ru": "{icon} Правило добавлено: {protocol} {port}.",
+        "en": "{icon} Rule added: {protocol} {port}.",
+        "tk": "{icon} Düzgün goşuldy: {protocol} {port}.",
+    },
+    "azure_port_delete_confirm": {
+        "ru": "{icon} Удалить правило {protocol} {port}?",
+        "en": "{icon} Delete the {protocol} {port} rule?",
+        "tk": "{icon} {protocol} {port} düzgünini pozmalymy?",
+    },
+    "azure_port_deleted": {
+        "ru": "{icon} Правило удалено.",
+        "en": "{icon} Rule deleted.",
+        "tk": "{icon} Düzgün pozuldy.",
     },
 }
 

@@ -14,8 +14,14 @@ from bot.keyboards.cloud import (
     azure_create_auth_method_keyboard,
     azure_create_cancel_keyboard,
     azure_create_confirm_keyboard,
+    azure_password_mode_keyboard,
+    azure_port_cancel_keyboard,
+    azure_port_delete_confirm_keyboard,
+    azure_port_protocol_keyboard,
+    azure_ports_list_keyboard,
     azure_vm_delete_confirm_keyboard,
     azure_vm_detail_keyboard,
+    azure_vm_reimage_confirm_keyboard,
     azure_vms_list_keyboard,
     back_to_server_keyboard,
     backup_create_confirm_keyboard,
@@ -51,19 +57,25 @@ from bot.services.azure_api import (
     AzureAPIError,
     AzureCredentials,
     ImageInfo,
+    azure_add_port_rule,
     azure_create_vm,
+    azure_delete_port_rule,
     azure_delete_vm,
     azure_get_account,
+    azure_get_hourly_price,
     azure_get_vm,
     azure_list_available_sizes,
     azure_list_images,
     azure_list_locations,
+    azure_list_port_rules,
     azure_list_vms,
     azure_login,
+    azure_reimage_vm,
     azure_restart_vm,
     azure_start_vm,
     azure_stop_vm,
     generate_azure_password,
+    is_valid_azure_username,
 )
 from bot.services.cloud_store import cloud_store
 from bot.services.upcloud_api import (
@@ -93,6 +105,7 @@ from bot.services.upcloud_api import (
     upcloud_stop_server,
 )
 from bot.states.cloud_setup import (
+    AzurePortStates,
     AzureSetupStates,
     AzureVMCreateStates,
     CloudDiskStates,
@@ -1707,7 +1720,10 @@ async def cb_azure_vm_delete(callback: CallbackQuery, lang: str) -> None:
 
 
 def _azure_location_options(locations: list[dict]) -> list[tuple[str, str]]:
-    return [(loc["display_name"], f"azcreate:loc:{i}") for i, loc in enumerate(locations)]
+    return [
+        (texts.azure_location_display(loc["name"], loc["display_name"]), f"azcreate:loc:{i}")
+        for i, loc in enumerate(locations)
+    ]
 
 
 def _azure_format_memory(memory_mb: int) -> str:
@@ -1717,10 +1733,14 @@ def _azure_format_memory(memory_mb: int) -> str:
 
 
 def _azure_size_options(sizes: list[dict]) -> list[tuple[str, str]]:
-    return [
-        (f"{s['name']} ({s['cores']} CPU / {_azure_format_memory(s['memory_mb'])})", f"azcreate:size:{i}")
-        for i, s in enumerate(sizes)
-    ]
+    options = []
+    for i, s in enumerate(sizes):
+        label = f"{s['name']} ({s['cores']} CPU / {_azure_format_memory(s['memory_mb'])})"
+        price = s.get("price")
+        if price is not None:
+            label += f" — ~${price:.4f}/hr"
+        options.append((label, f"azcreate:size:{i}"))
+    return options
 
 
 def _azure_image_options(images: list[dict]) -> list[tuple[str, str]]:
@@ -1792,7 +1812,10 @@ async def cb_azure_create_pick_location(callback: CallbackQuery, state: FSMConte
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
-    size_dicts = [{"name": s.name, "cores": s.cores, "memory_mb": s.memory_mb} for s in sizes]
+    size_dicts = []
+    for s in sizes:
+        price = await azure_get_hourly_price(s.name, location["name"])
+        size_dicts.append({"name": s.name, "cores": s.cores, "memory_mb": s.memory_mb, "price": price})
     await state.update_data(location=location["name"], location_display=location["display_name"], sizes=size_dicts)
     await state.set_state(AzureVMCreateStates.choosing_size)
     await _render_create_page(
@@ -1863,6 +1886,20 @@ async def process_azure_hostname(message: Message, state: FSMContext, lang: str)
         return
 
     await state.update_data(hostname=hostname)
+    await state.set_state(AzureVMCreateStates.waiting_username)
+    await message.answer(
+        texts.azure_create_waiting_username_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
+    )
+
+
+@router.message(AzureVMCreateStates.waiting_username)
+async def process_azure_username(message: Message, state: FSMContext, lang: str) -> None:
+    username = message.text.strip() if message.text else ""
+    if not is_valid_azure_username(username):
+        await message.answer(texts.azure_create_invalid_username_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
+        return
+
+    await state.update_data(admin_username=username)
     await state.set_state(AzureVMCreateStates.choosing_auth_method)
     await message.answer(
         texts.azure_create_choose_auth_method_text(lang), reply_markup=azure_create_auth_method_keyboard(lang)
@@ -1872,8 +1909,45 @@ async def process_azure_hostname(message: Message, state: FSMContext, lang: str)
 @router.callback_query(F.data == "azcreate:auth:password", AzureVMCreateStates.choosing_auth_method)
 async def cb_azure_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(ssh_public_key=None)
+    await state.set_state(AzureVMCreateStates.choosing_password_mode)
+    await callback.message.edit_text(
+        texts.azure_create_choose_password_mode_text(lang), reply_markup=azure_password_mode_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "azcreate:pwmode:generate", AzureVMCreateStates.choosing_password_mode)
+async def cb_azure_create_password_generate(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.update_data(custom_password=None)
     await _show_azure_create_confirmation(callback.message, state, lang)
     await callback.answer()
+
+
+@router.callback_query(F.data == "azcreate:pwmode:custom", AzureVMCreateStates.choosing_password_mode)
+async def cb_azure_create_password_custom(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.set_state(AzureVMCreateStates.waiting_custom_password)
+    await callback.message.edit_text(
+        texts.azure_create_waiting_custom_password_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.message(AzureVMCreateStates.waiting_custom_password)
+async def process_azure_custom_password(message: Message, state: FSMContext, lang: str) -> None:
+    password = message.text or ""
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    if not (12 <= len(password) <= 72):
+        await message.answer(
+            texts.azure_create_invalid_custom_password_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
+        )
+        return
+
+    await state.update_data(custom_password=password)
+    await _show_azure_create_confirmation(message, state, lang)
 
 
 @router.callback_query(F.data == "azcreate:auth:key", AzureVMCreateStates.choosing_auth_method)
@@ -1903,7 +1977,8 @@ async def _show_azure_create_confirmation(target_message: Message, state: FSMCon
     auth_method = "key" if data.get("ssh_public_key") else "password"
     await target_message.answer(
         texts.azure_create_confirm_text(
-            lang, data["hostname"], data["location_display"], data["vm_size"], image["title"], auth_method
+            lang, data["hostname"], data["location_display"], data["vm_size"], image["title"],
+            data["admin_username"], auth_method,
         ),
         reply_markup=azure_create_confirm_keyboard(lang),
     )
@@ -1935,7 +2010,10 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
         offer=image_dict["offer"], sku=image_dict["sku"], version=image_dict["version"],
     )
     ssh_public_key = data.get("ssh_public_key")
-    admin_password = None if ssh_public_key else generate_azure_password()
+    if ssh_public_key:
+        admin_password = None
+    else:
+        admin_password = data.get("custom_password") or generate_azure_password()
 
     try:
         vm = await azure_create_vm(
@@ -1944,6 +2022,7 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
             vm_size=data["vm_size"],
             image=image,
             vm_name=data["hostname"],
+            admin_username=data["admin_username"],
             admin_password=admin_password,
             ssh_public_key=ssh_public_key,
             progress=progress,
@@ -1958,3 +2037,196 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
         texts.azure_create_success_text(lang, vm, ssh_key_used=bool(ssh_public_key)),
         reply_markup=azure_vm_detail_keyboard(lang, data["account_id"], vm),
     )
+
+
+# --- Azure: reimage (reinstall OS) ---
+
+
+@router.callback_query(F.data.startswith("azvm:reimageask:"))
+async def cb_azure_vm_reimage_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, vm_name = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        vm = await azure_get_vm(_azure_creds(account), vm_name)
+    except AzureAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.azure_vm_reimage_confirm_text(lang, vm),
+        reply_markup=azure_vm_reimage_confirm_keyboard(lang, account_id, vm_name),
+    )
+
+
+@router.callback_query(F.data.startswith("azvm:reimage:"))
+async def cb_azure_vm_reimage(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, vm_name = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer(texts.azure_vm_reimage_ok_text(lang))
+    creds = _azure_creds(account)
+    try:
+        await azure_reimage_vm(creds, vm_name)
+        vm = await azure_get_vm(creds, vm_name)
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.azure_vm_detail_text(lang, vm), reply_markup=azure_vm_detail_keyboard(lang, account_id, vm)
+    )
+
+
+# --- Azure: ports / firewall management ---
+
+
+async def _show_azure_ports(callback: CallbackQuery, lang: str, account: dict, account_id: str, vm_name: str) -> None:
+    try:
+        vm = await azure_get_vm(_azure_creds(account), vm_name)
+        rules = await azure_list_port_rules(_azure_creds(account), vm_name)
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.azure_ports_header_text(lang, vm, bool(rules)),
+        reply_markup=azure_ports_list_keyboard(lang, account_id, vm_name, rules),
+    )
+
+
+@router.callback_query(F.data.startswith("azports:list:"))
+async def cb_azure_ports_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, vm_name = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_azure_ports(callback, lang, account, account_id, vm_name)
+
+
+@router.callback_query(F.data.startswith("azports:add:"))
+async def cb_azure_port_add_ask(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, vm_name = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await state.clear()
+    await state.update_data(account_id=account_id, vm_name=vm_name)
+    await state.set_state(AzurePortStates.waiting_port)
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.azure_step_port_number_text(lang), reply_markup=azure_port_cancel_keyboard(lang, account_id, vm_name)
+    )
+
+
+@router.callback_query(F.data.startswith("azports:cancel:"), AzurePortStates)
+async def cb_azure_port_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, vm_name = callback.data.split(":", 3)
+    await state.clear()
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_azure_ports(callback, lang, account, account_id, vm_name)
+
+
+@router.message(AzurePortStates.waiting_port)
+async def process_azure_port_number(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    raw = message.text.strip() if message.text else ""
+    if not raw.isdigit() or not (1 <= int(raw) <= 65535):
+        await message.answer(
+            texts.azure_invalid_port_number_text(lang),
+            reply_markup=azure_port_cancel_keyboard(lang, data["account_id"], data["vm_name"]),
+        )
+        return
+    await state.update_data(port=raw)
+    await state.set_state(AzurePortStates.choosing_protocol)
+    await message.answer(
+        texts.azure_choose_protocol_text(lang, raw),
+        reply_markup=azure_port_protocol_keyboard(lang, data["account_id"], data["vm_name"]),
+    )
+
+
+@router.callback_query(F.data.startswith("azports:proto:"), AzurePortStates.choosing_protocol)
+async def cb_azure_port_protocol(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    protocol_raw = callback.data.split(":", 2)[2]
+    protocol = "Tcp" if protocol_raw == "tcp" else "Udp"
+    data = await state.get_data()
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        rule = await azure_add_port_rule(_azure_creds(account), data["vm_name"], data["port"], protocol)
+    except AzureAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await state.clear()
+    await callback.message.edit_text(texts.azure_port_added_text(lang, rule), reply_markup=None)
+    await _show_azure_ports(callback, lang, account, data["account_id"], data["vm_name"])
+
+
+async def _resolve_port_rule(callback: CallbackQuery, lang: str, account: dict, vm_name: str, index: int):
+    try:
+        rules = await azure_list_port_rules(_azure_creds(account), vm_name)
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        raise _ResolveFailed from exc
+    if index >= len(rules):
+        return None
+    return rules[index]
+
+
+@router.callback_query(F.data.startswith("azports:delask:"))
+async def cb_azure_port_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, vm_name, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        rule = await _resolve_port_rule(callback, lang, account, vm_name, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if rule is None:
+        await _show_azure_ports(callback, lang, account, account_id, vm_name)
+        return
+    await callback.message.edit_text(
+        texts.azure_port_delete_confirm_text(lang, rule),
+        reply_markup=azure_port_delete_confirm_keyboard(lang, account_id, vm_name, index),
+    )
+
+
+@router.callback_query(F.data.startswith("azports:del:"))
+async def cb_azure_port_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, vm_name, index_raw = callback.data.split(":", 4)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        rule = await _resolve_port_rule(callback, lang, account, vm_name, index)
+    except _ResolveFailed:
+        await callback.answer()
+        return
+    await callback.answer()
+    if rule is None:
+        await _show_azure_ports(callback, lang, account, account_id, vm_name)
+        return
+    try:
+        await azure_delete_port_rule(_azure_creds(account), vm_name, rule.name)
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.azure_port_deleted_text(lang), reply_markup=None)
+    await _show_azure_ports(callback, lang, account, account_id, vm_name)

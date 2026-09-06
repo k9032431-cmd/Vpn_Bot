@@ -42,6 +42,14 @@ class AzureVMCreateStates(StatesGroup):
     choosing_size = State()
     choosing_image = State()
     waiting_hostname = State()
+    waiting_username = State()
     choosing_auth_method = State()
+    choosing_password_mode = State()
+    waiting_custom_password = State()
     waiting_ssh_key = State()
     confirming = State()
+
+
+class AzurePortStates(StatesGroup):
+    waiting_port = State()
+    choosing_protocol = State()
