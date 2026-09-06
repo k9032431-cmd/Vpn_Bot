@@ -1749,7 +1749,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "btn_cloud_provider_upcloud": {"ru": "☁️ UpCloud", "en": "☁️ UpCloud", "tk": "☁️ UpCloud"},
     "btn_cloud_provider_aws": {"ru": "🟧 AWS (скоро)", "en": "🟧 AWS (soon)", "tk": "🟧 AWS (ýakynda)"},
-    "btn_cloud_provider_azure": {"ru": "🔷 Azure (скоро)", "en": "🔷 Azure (soon)", "tk": "🔷 Azure (ýakynda)"},
+    "btn_cloud_provider_azure": {"ru": "🔷 Azure", "en": "🔷 Azure", "tk": "🔷 Azure"},
     "btn_cloud_provider_linode": {"ru": "🟩 Linode (скоро)", "en": "🟩 Linode (soon)", "tk": "🟩 Linode (ýakynda)"},
     "btn_cloud_provider_kamatera": {
         "ru": "🟪 Kamatera (скоро)",
@@ -2353,6 +2353,226 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <code>{address}</code> IP-ni <b>{title}</b> serwerinden aýyrmalymy?",
     },
     "cloud_ip_removed": {"ru": "{icon} IP удалён.", "en": "{icon} IP removed.", "tk": "{icon} IP aýryldy."},
+    "cloud_err_timeout": {
+        "ru": "Провайдер слишком долго не отвечал на этот запрос (таймаут). Попробуйте ещё раз чуть позже.",
+        "en": "The provider took too long to respond to this request (timeout). Try again in a bit.",
+        "tk": "Provaýder bu soraga gaty uzak wagt jogap bermedi (wagt gutardy). Birazdan täzeden synanyň.",
+    },
+    "cloud_err_not_found": {
+        "ru": "Не найдено — возможно, ресурс уже удалён.",
+        "en": "Not found — it may have already been deleted.",
+        "tk": "Tapylmady — ol eýýäm pozulan bolmagy mümkin.",
+    },
+    # --- Azure account connect ---
+    "azure_step_tenant": {
+        "ru": (
+            "🔷 <b>Подключение Azure — шаг 1/4</b>\n\n"
+            "Введите <b>Tenant ID</b> (Directory ID) вашего Azure AD / Entra ID."
+        ),
+        "en": (
+            "🔷 <b>Connect Azure — step 1/4</b>\n\n"
+            "Enter your <b>Tenant ID</b> (Directory ID) from Azure AD / Entra ID."
+        ),
+        "tk": (
+            "🔷 <b>Azure birikdirmek — 1/4 ädim</b>\n\n"
+            "Azure AD / Entra ID-den <b>Tenant ID</b> (Directory ID) giriziň."
+        ),
+    },
+    "azure_step_client_id": {
+        "ru": "🔷 <b>Шаг 2/4</b>\n\nТеперь <b>Client ID</b> (Application ID) вашего App Registration:",
+        "en": "🔷 <b>Step 2/4</b>\n\nNow the <b>Client ID</b> (Application ID) of your App Registration:",
+        "tk": "🔷 <b>2/4 ädim</b>\n\nIndi App Registration-yňyzyň <b>Client ID</b> (Application ID)-sini giriziň:",
+    },
+    "azure_step_client_secret": {
+        "ru": (
+            "🔷 <b>Шаг 3/4</b>\n\nТеперь <b>Client Secret</b> (значение секрета, не его Secret ID).\n\n"
+            "⚠️ <i>Сообщение с секретом бот удалит сразу после получения.</i>"
+        ),
+        "en": (
+            "🔷 <b>Step 3/4</b>\n\nNow the <b>Client Secret</b> (the secret's value, not its Secret ID).\n\n"
+            "⚠️ <i>The bot deletes the message with the secret right after receiving it.</i>"
+        ),
+        "tk": (
+            "🔷 <b>3/4 ädim</b>\n\nIndi <b>Client Secret</b> (syryň gymmaty, onuň ID-si däl) giriziň.\n\n"
+            "⚠️ <i>Bot syr bilen habary alnandan derrew soň pozar.</i>"
+        ),
+    },
+    "azure_step_subscription": {
+        "ru": "🔷 <b>Шаг 4/4</b>\n\nИ последнее — <b>Subscription ID</b>:",
+        "en": "🔷 <b>Step 4/4</b>\n\nAnd finally — the <b>Subscription ID</b>:",
+        "tk": "🔷 <b>4/4 ädim</b>\n\nWe iň soňunda — <b>Subscription ID</b>:",
+    },
+    "azure_empty_field": {
+        "ru": "Значение не может быть пустым. Попробуйте ещё раз:",
+        "en": "This can't be empty. Try again:",
+        "tk": "Bu boş bolup bilmez. Gaýtadan synanyň:",
+    },
+    "azure_account_dashboard": {
+        "ru": (
+            "🔷 <b>Azure</b>\n\n"
+            "🆔 Subscription: <code>{subscription_id}</code>\n"
+            "📛 Название: {display_name}\n"
+            "📶 Статус: {state}"
+        ),
+        "en": (
+            "🔷 <b>Azure</b>\n\n"
+            "🆔 Subscription: <code>{subscription_id}</code>\n"
+            "📛 Name: {display_name}\n"
+            "📶 State: {state}"
+        ),
+        "tk": (
+            "🔷 <b>Azure</b>\n\n"
+            "🆔 Subscription: <code>{subscription_id}</code>\n"
+            "📛 Ady: {display_name}\n"
+            "📶 Ýagdaýy: {state}"
+        ),
+    },
+    "azure_vms_header": {
+        "ru": "🔷 <b>VM аккаунта</b> <code>{subscription_id}</code>\n\n{body}",
+        "en": "🔷 <b>VMs for</b> <code>{subscription_id}</code>\n\n{body}",
+        "tk": "🔷 <code>{subscription_id}</code> <b>hasabynyň VM-leri</b>\n\n{body}",
+    },
+    "azure_vm_detail": {
+        "ru": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Статус: {state}\n"
+            "📍 Локация: {location}\n"
+            "⚙️ Размер: {size}\n"
+            "🌐 IP: <code>{ip}</code>\n"
+            "👤 Логин: <code>{username}</code>"
+        ),
+        "en": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 State: {state}\n"
+            "📍 Location: {location}\n"
+            "⚙️ Size: {size}\n"
+            "🌐 IP: <code>{ip}</code>\n"
+            "👤 Username: <code>{username}</code>"
+        ),
+        "tk": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Ýagdaýy: {state}\n"
+            "📍 Ýerleşişi: {location}\n"
+            "⚙️ Ölçegi: {size}\n"
+            "🌐 IP: <code>{ip}</code>\n"
+            "👤 Ulanyjy ady: <code>{username}</code>"
+        ),
+    },
+    "azure_vm_delete_confirm": {
+        "ru": "{icon} Удалить виртуальную машину <b>{name}</b>? Это необратимо — диск и сеть тоже будут удалены.",
+        "en": "{icon} Delete virtual machine <b>{name}</b>? This is irreversible — its disk and network will be removed too.",
+        "tk": "{icon} <b>{name}</b> wirtual maşynyny pozmalymy? Bu yzyna gaýtaryp bolmaýar — diski we ulgamy hem pozular.",
+    },
+    "azure_create_choose_location": {
+        "ru": "🔷 <b>Новая VM — шаг 1/5</b>\n\nВыберите регион (location):",
+        "en": "🔷 <b>New VM — step 1/5</b>\n\nChoose a region (location):",
+        "tk": "🔷 <b>Täze VM — 1/5 ädim</b>\n\nSebiti (location) saýlaň:",
+    },
+    "azure_create_choose_size": {
+        "ru": "🔷 <b>Новая VM — шаг 2/5</b>\n\nВыберите размер (size):",
+        "en": "🔷 <b>New VM — step 2/5</b>\n\nChoose a size:",
+        "tk": "🔷 <b>Täze VM — 2/5 ädim</b>\n\nÖlçegi saýlaň:",
+    },
+    "azure_create_choose_image": {
+        "ru": "🔷 <b>Новая VM — шаг 3/5</b>\n\nВыберите операционную систему:",
+        "en": "🔷 <b>New VM — step 3/5</b>\n\nChoose an OS image:",
+        "tk": "🔷 <b>Täze VM — 3/5 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+    },
+    "azure_create_waiting_hostname": {
+        "ru": "✏️ <b>Новая VM — шаг 4/5</b>\n\nВведите имя виртуальной машины (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New VM — step 4/5</b>\n\nEnter the virtual machine's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze VM — 4/5 ädim</b>\n\nWirtual maşynyň adyny giriziň (latyn harplary, sanlar, defisler):",
+    },
+    "azure_create_invalid_hostname": {
+        "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 64 символов). Попробуйте ещё раз:",
+        "en": "Invalid name. Use only Latin letters, digits and hyphens (up to 64 characters). Try again:",
+        "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (64 alamatdan köp däl). Gaýtadan synanyň:",
+    },
+    "azure_create_confirm": {
+        "ru": (
+            "✅ <b>Проверьте параметры VM</b>\n\n"
+            "🖥 Имя: <code>{hostname}</code>\n"
+            "📍 Регион: {location}\n"
+            "⚙️ Размер: {size}\n"
+            "💿 ОС: {image}\n"
+            "🔐 Вход: {auth_method}\n\n"
+            "💰 Это создаст платный ресурс в Azure. Создать?"
+        ),
+        "en": (
+            "✅ <b>Review VM parameters</b>\n\n"
+            "🖥 Name: <code>{hostname}</code>\n"
+            "📍 Region: {location}\n"
+            "⚙️ Size: {size}\n"
+            "💿 OS: {image}\n"
+            "🔐 Login via: {auth_method}\n\n"
+            "💰 This will create a billable resource in Azure. Create it?"
+        ),
+        "tk": (
+            "✅ <b>VM parametrlerini barlaň</b>\n\n"
+            "🖥 Ady: <code>{hostname}</code>\n"
+            "📍 Sebit: {location}\n"
+            "⚙️ Ölçegi: {size}\n"
+            "💿 OS: {image}\n"
+            "🔐 Giriş: {auth_method}\n\n"
+            "💰 Bu Azure-da tölegli resurs dörediler. Döredilsinmi?"
+        ),
+    },
+    "azure_progress_resource_group": {
+        "ru": "🔷 Создаю группу ресурсов...",
+        "en": "🔷 Creating the resource group...",
+        "tk": "🔷 Resurs topary döredilýär...",
+    },
+    "azure_progress_network": {
+        "ru": "🔷 Настраиваю сеть (VNet/подсеть)...",
+        "en": "🔷 Setting up the network (VNet/subnet)...",
+        "tk": "🔷 Ulgam sazlanýar (VNet/subnet)...",
+    },
+    "azure_progress_public_ip": {
+        "ru": "🔷 Выделяю публичный IP...",
+        "en": "🔷 Allocating a public IP...",
+        "tk": "🔷 Açyk IP bölünip berilýär...",
+    },
+    "azure_progress_nsg": {
+        "ru": "🔷 Настраиваю фаервол (NSG)...",
+        "en": "🔷 Setting up the firewall (NSG)...",
+        "tk": "🔷 Firewall sazlanýar (NSG)...",
+    },
+    "azure_progress_nic": {
+        "ru": "🔷 Создаю сетевой интерфейс...",
+        "en": "🔷 Creating the network interface...",
+        "tk": "🔷 Ulgam interfeýsi döredilýär...",
+    },
+    "azure_progress_vm": {
+        "ru": "🔷 Создаю виртуальную машину, это может занять пару минут...",
+        "en": "🔷 Creating the virtual machine, this can take a couple of minutes...",
+        "tk": "🔷 Wirtual maşyn döredilýär, birnäçe minut wagt alyp biler...",
+    },
+    "azure_create_success": {
+        "ru": (
+            "{icon} <b>VM создана!</b>\n\n"
+            "🖥 <b>Имя:</b> {name}\n"
+            "📍 <b>Локация:</b> {location}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>\n"
+            "👤 <b>Логин:</b> <code>{username}</code>\n"
+            "{password_line}"
+        ),
+        "en": (
+            "{icon} <b>VM created!</b>\n\n"
+            "🖥 <b>Name:</b> {name}\n"
+            "📍 <b>Location:</b> {location}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>\n"
+            "👤 <b>Username:</b> <code>{username}</code>\n"
+            "{password_line}"
+        ),
+        "tk": (
+            "{icon} <b>VM döredildi!</b>\n\n"
+            "🖥 <b>Ady:</b> {name}\n"
+            "📍 <b>Ýerleşişi:</b> {location}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>\n"
+            "👤 <b>Ulanyjy ady:</b> <code>{username}</code>\n"
+            "{password_line}"
+        ),
+    },
 }
 
 

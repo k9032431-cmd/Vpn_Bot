@@ -7,7 +7,7 @@ from .premium_emoji import e
 from .translations import t
 
 PROVIDERS = ("upcloud", "aws", "azure", "linode", "kamatera")
-ACTIVE_PROVIDERS = ("upcloud",)
+ACTIVE_PROVIDERS = ("upcloud", "azure")
 
 _STATE_EMOJI = {
     "started": "🟢",
@@ -20,6 +20,8 @@ _CLOUD_ERR_KEYS = {
     "wrong_credentials": "cloud_err_wrong_credentials",
     "connect_failed": "cloud_err_connect_failed",
     "bad_response": "cloud_err_bad_response",
+    "timeout": "cloud_err_timeout",
+    "not_found": "cloud_err_not_found",
 }
 
 
@@ -99,8 +101,16 @@ def account_list_text(lang: str, provider: str, accounts: list[dict]) -> str:
     )
 
 
+def account_display_name(account: dict) -> str:
+    """UpCloud accounts are identified by username; Azure accounts have no
+    single "login" — the subscription id is the closest equivalent."""
+    if account["provider"] == "azure":
+        return account.get("subscription_id", "")
+    return account.get("username", "")
+
+
 def account_list_label(account: dict) -> str:
-    return f"☁️ {account['username']}"
+    return f"☁️ {account_display_name(account)}"
 
 
 def step_username_text(lang: str, provider: str) -> str:
@@ -162,7 +172,7 @@ def account_dashboard_text(lang: str, account: dict, credits: float) -> str:
         lang,
         "cloud_account_dashboard",
         provider=provider_title(account["provider"]),
-        username=html.escape(account["username"]),
+        username=html.escape(account_display_name(account)),
         credits=f"{credits:.2f}",
         currency="EUR",
     )
@@ -173,7 +183,7 @@ def account_remove_confirm_text(lang: str, account: dict) -> str:
         lang,
         "cloud_account_remove_confirm",
         icon=e("warning", "⚠️"),
-        username=html.escape(account["username"]),
+        username=html.escape(account_display_name(account)),
     )
 
 
@@ -183,7 +193,9 @@ def account_removed_text(lang: str) -> str:
 
 def servers_header_text(lang: str, account: dict, has_servers: bool) -> str:
     body_key = "cloud_servers_hint" if has_servers else "cloud_servers_empty"
-    return t(lang, "cloud_servers_header", username=html.escape(account["username"]), body=t(lang, body_key))
+    return t(
+        lang, "cloud_servers_header", username=html.escape(account_display_name(account)), body=t(lang, body_key)
+    )
 
 
 def server_list_label(server) -> str:
@@ -474,6 +486,167 @@ def ip_remove_confirm_text(lang: str, server, address: str) -> str:
         icon=e("warning", "⚠️"),
         address=address,
         title=html.escape(server.title or server.hostname),
+    )
+
+
+# --- Azure ---
+
+
+_AZURE_POWER_EMOJI = {
+    "running": "🟢",
+    "deallocated": "🔴",
+    "stopped": "🔴",
+    "starting": "🚧",
+    "stopping": "🚧",
+}
+
+
+def azure_step_tenant_text(lang: str) -> str:
+    return t(lang, "azure_step_tenant")
+
+
+def azure_step_client_id_text(lang: str) -> str:
+    return t(lang, "azure_step_client_id")
+
+
+def azure_step_client_secret_text(lang: str) -> str:
+    return t(lang, "azure_step_client_secret")
+
+
+def azure_step_subscription_text(lang: str) -> str:
+    return t(lang, "azure_step_subscription")
+
+
+def azure_empty_field_text(lang: str) -> str:
+    return t(lang, "azure_empty_field")
+
+
+def azure_account_dashboard_text(lang: str, account: dict, info) -> str:
+    return t(
+        lang,
+        "azure_account_dashboard",
+        subscription_id=html.escape(account.get("subscription_id", "")),
+        display_name=html.escape(info.display_name) or "—",
+        state=html.escape(info.state),
+    )
+
+
+def azure_vms_header_text(lang: str, account: dict, has_vms: bool) -> str:
+    body_key = "cloud_servers_hint" if has_vms else "cloud_servers_empty"
+    return t(
+        lang, "azure_vms_header", subscription_id=html.escape(account.get("subscription_id", "")), body=t(lang, body_key)
+    )
+
+
+def azure_vm_list_label(vm) -> str:
+    icon = _AZURE_POWER_EMOJI.get(vm.power_state, "⚪️")
+    return f"{icon} {vm.name}"
+
+
+def azure_vm_detail_text(lang: str, vm) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
+    return t(
+        lang,
+        "azure_vm_detail",
+        name=html.escape(vm.name),
+        state=f"{_AZURE_POWER_EMOJI.get(vm.power_state, '⚪️')} {vm.power_state}",
+        location=html.escape(vm.location),
+        size=vm.vm_size,
+        ip=vm.public_ip or no_ip,
+        username=html.escape(vm.admin_username),
+    )
+
+
+def azure_vm_action_ok_text(lang: str) -> str:
+    return t(lang, "cloud_server_action_ok", icon=e("success", "✅"))
+
+
+def azure_vm_delete_confirm_text(lang: str, vm) -> str:
+    return t(lang, "azure_vm_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(vm.name))
+
+
+def azure_vm_deleted_text(lang: str) -> str:
+    return t(lang, "cloud_server_deleted", icon=e("success", "✅"))
+
+
+def azure_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "azure_create_choose_location") + _page_suffix(lang, page, total_pages)
+
+
+def azure_create_choose_size_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "azure_create_choose_size") + _page_suffix(lang, page, total_pages)
+
+
+def azure_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "azure_create_choose_image") + _page_suffix(lang, page, total_pages)
+
+
+def azure_create_waiting_hostname_text(lang: str) -> str:
+    return t(lang, "azure_create_waiting_hostname")
+
+
+def azure_create_invalid_hostname_text(lang: str) -> str:
+    return t(lang, "azure_create_invalid_hostname")
+
+
+def azure_create_choose_auth_method_text(lang: str) -> str:
+    return t(lang, "cloud_create_choose_auth_method")
+
+
+def azure_create_waiting_ssh_key_text(lang: str) -> str:
+    return t(lang, "cloud_create_waiting_ssh_key")
+
+
+def azure_create_invalid_ssh_key_text(lang: str) -> str:
+    return t(lang, "cloud_create_invalid_ssh_key")
+
+
+def azure_create_confirm_text(
+    lang: str, hostname: str, location: str, size: str, image_title: str, auth_method: str
+) -> str:
+    auth_label = t(lang, "cloud_auth_method_key" if auth_method == "key" else "cloud_auth_method_password")
+    return t(
+        lang,
+        "azure_create_confirm",
+        hostname=html.escape(hostname),
+        location=location,
+        size=size,
+        image=html.escape(image_title),
+        auth_method=auth_label,
+    )
+
+
+_AZURE_PROGRESS_KEYS = {
+    "resource_group": "azure_progress_resource_group",
+    "network": "azure_progress_network",
+    "public_ip": "azure_progress_public_ip",
+    "nsg": "azure_progress_nsg",
+    "nic": "azure_progress_nic",
+    "vm": "azure_progress_vm",
+}
+
+
+def azure_progress_text(lang: str, step: str) -> str:
+    key = _AZURE_PROGRESS_KEYS.get(step, "azure_progress_vm")
+    return t(lang, key)
+
+
+def azure_create_success_text(lang: str, vm, ssh_key_used: bool = False) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
+    password_line = ""
+    if ssh_key_used:
+        password_line = t(lang, "cloud_create_ssh_key_line")
+    elif vm.admin_password:
+        password_line = t(lang, "cloud_create_password_line", password=html.escape(vm.admin_password))
+    return t(
+        lang,
+        "azure_create_success",
+        icon=e("success", "✅"),
+        name=html.escape(vm.name),
+        location=html.escape(vm.location),
+        ip=vm.public_ip or no_ip,
+        username=html.escape(vm.admin_username),
+        password_line=password_line,
     )
 
 

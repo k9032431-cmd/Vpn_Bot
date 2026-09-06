@@ -5,6 +5,7 @@ from bot.texts.cloud import (
     ACTIVE_PROVIDERS,
     PROVIDERS,
     account_list_label,
+    azure_vm_list_label,
     backup_list_label,
     ip_list_label,
     server_list_label,
@@ -378,5 +379,67 @@ def ip_remove_confirm_keyboard(lang: str, account_id: str, server_uuid: str, ind
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_ip_remove_confirm"), callback_data=f"cip:rmc:{tail}")
     builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{account_id}:{server_uuid}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Azure ---
+
+
+def azure_vms_list_keyboard(lang: str, account_id: str, vms: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for vm in vms:
+        builder.button(text=azure_vm_list_label(vm), callback_data=f"azvm:view:{account_id}:{vm.name}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_server_add"), callback_data=f"azvm:add:{account_id}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def azure_vm_detail_keyboard(lang: str, account_id: str, vm) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if vm.power_state == "deallocated":
+        builder.button(text=t(lang, "btn_cloud_server_start"), callback_data=f"azvm:start:{account_id}:{vm.name}")
+    else:
+        builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"azvm:stop:{account_id}:{vm.name}")
+    builder.button(text=t(lang, "btn_cloud_server_restart"), callback_data=f"azvm:restart:{account_id}:{vm.name}")
+    builder.button(text=t(lang, "btn_cloud_server_delete"), callback_data=f"azvm:delask:{account_id}:{vm.name}")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"azvm:list:{account_id}")
+    builder.adjust(2, 1, 1)
+    return builder.as_markup()
+
+
+def azure_vm_delete_confirm_keyboard(lang: str, account_id: str, vm_name: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"azvm:del:{account_id}:{vm_name}")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"azvm:list:{account_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def azure_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def azure_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="azcreate:auth:password")
+    builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="azcreate:auth:key")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def azure_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="azcreate:confirm")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
     builder.adjust(1, 1)
     return builder.as_markup()

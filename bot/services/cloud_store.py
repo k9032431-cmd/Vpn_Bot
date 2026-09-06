@@ -10,13 +10,15 @@ from bot.config import config
 
 class CloudStore:
     """Tiny JSON-backed store for the cloud-provider accounts each user has
-    connected (provider, login, password). A user can connect several
-    accounts — including several with the same provider — each identified
-    by a short random id used in callback_data.
+    connected. A user can connect several accounts — including several with
+    the same provider — each identified by a short random id used in
+    callback_data.
 
-    Mirrors bot.services.panel_store.PanelStore: the stored password lets
-    the bot re-authenticate on demand, since the provider APIs used here
-    (UpCloud's HTTP Basic Auth) don't hand out a long-lived token to cache.
+    Credentials are stored as a flat dict of provider-specific fields
+    (UpCloud: username/password; Azure: tenant_id/client_id/client_secret/
+    subscription_id) since each provider's auth shape is different — the
+    bot re-authenticates on demand from these on every action, since none
+    of the provider APIs used here hand out a long-lived token worth caching.
     """
 
     def __init__(self, path: Path) -> None:
@@ -52,7 +54,7 @@ class CloudStore:
                 return account
         return None
 
-    async def add(self, user_id: int, provider: str, username: str, password: str) -> str:
+    async def add(self, user_id: int, provider: str, **credentials: str) -> str:
         data = await self._load()
         async with self._lock:
             accounts = data.setdefault(str(user_id), [])
@@ -60,14 +62,7 @@ class CloudStore:
             account_id = secrets.token_hex(4)
             while account_id in existing_ids:
                 account_id = secrets.token_hex(4)
-            accounts.append(
-                {
-                    "id": account_id,
-                    "provider": provider,
-                    "username": username,
-                    "password": password,
-                }
-            )
+            accounts.append({"id": account_id, "provider": provider, **credentials})
             await self._write(data)
         return account_id
 
