@@ -12,6 +12,8 @@ class CloudServerCreateStates(StatesGroup):
     choosing_plan = State()
     choosing_template = State()
     waiting_hostname = State()
+    choosing_auth_method = State()
+    waiting_ssh_key = State()
     confirming = State()
 
 

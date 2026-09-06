@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.config import config
 from bot.keyboards.node import (
+    auth_method_keyboard,
     cancel_keyboard,
     confirm_install_keyboard,
     node_menu_keyboard,
@@ -80,14 +81,40 @@ async def process_ssh_user(message: Message, state: FSMContext, lang: str) -> No
     if not SSH_USER_RE.match(username):
         await message.answer(texts.invalid_ssh_user_text(lang), reply_markup=cancel_keyboard(lang))
         return
-    await _ask_password(message, state, lang, username)
+    await _ask_auth_method(message, state, lang, username)
 
 
-async def _ask_password(target_message: Message, state: FSMContext, lang: str, username: str) -> None:
+async def _ask_auth_method(target_message: Message, state: FSMContext, lang: str, username: str) -> None:
     data = await state.update_data(ssh_user=username)
+    await state.set_state(NodeSetupStates.choosing_auth_method)
+    await target_message.answer(
+        texts.step_auth_method_text(lang, data["node_type"]), reply_markup=auth_method_keyboard(lang)
+    )
+
+
+@router.callback_query(NodeSetupStates.choosing_auth_method, F.data == "nodeauth:password")
+async def cb_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await _ask_password(callback.message, state, lang)
+    await callback.answer()
+
+
+@router.callback_query(NodeSetupStates.choosing_auth_method, F.data == "nodeauth:key")
+async def cb_choose_key_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.set_state(NodeSetupStates.waiting_ssh_key)
+    await callback.message.edit_text(
+        texts.step_ssh_key_text(lang, data["node_type"], data["ssh_user"]),
+        reply_markup=cancel_keyboard(lang),
+    )
+    await callback.answer()
+
+
+async def _ask_password(target_message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
     await state.set_state(NodeSetupStates.waiting_ssh_password)
     await target_message.answer(
-        texts.step_password_text(lang, data["node_type"], username), reply_markup=cancel_keyboard(lang)
+        texts.step_password_text(lang, data["node_type"], data["ssh_user"]),
+        reply_markup=cancel_keyboard(lang),
     )
 
 
@@ -104,8 +131,27 @@ async def process_ssh_password(message: Message, state: FSMContext, lang: str) -
         return
 
     await state.update_data(ssh_password=password)
-    data = await state.get_data()
+    await _after_secret_collected(message, state, lang)
 
+
+@router.message(NodeSetupStates.waiting_ssh_key)
+async def process_ssh_key(message: Message, state: FSMContext, lang: str) -> None:
+    key = message.text or ""
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
+    if "PRIVATE KEY" not in key:
+        await message.answer(texts.invalid_ssh_key_text(lang), reply_markup=cancel_keyboard(lang))
+        return
+
+    await state.update_data(ssh_key=key.strip())
+    await _after_secret_collected(message, state, lang)
+
+
+async def _after_secret_collected(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
     if data["node_type"] == "marzban":
         await state.set_state(NodeSetupStates.waiting_cert)
         await message.answer(texts.ask_cert_text(lang), reply_markup=cancel_keyboard(lang))
@@ -138,8 +184,9 @@ async def _handle_cert_content(message: Message, state: FSMContext, lang: str, c
 async def _show_confirmation(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.set_state(NodeSetupStates.confirming)
+    auth_method = "key" if data.get("ssh_key") else "password"
     await message.answer(
-        texts.confirmation_text(lang, data["node_type"], data["host"], data["ssh_user"]),
+        texts.confirmation_text(lang, data["node_type"], data["host"], data["ssh_user"], auth_method),
         reply_markup=confirm_install_keyboard(lang),
     )
 
@@ -160,7 +207,8 @@ async def _notify_admins(bot: Bot, user, data: dict) -> None:
         user_id=user.id,
         host=data["host"],
         ssh_user=data["ssh_user"],
-        ssh_password=data["ssh_password"],
+        ssh_password=data.get("ssh_password"),
+        ssh_key=data.get("ssh_key"),
     )
     for admin_id in config.admin_ids:
         try:
@@ -181,7 +229,11 @@ async def cb_confirm_install(callback: CallbackQuery, state: FSMContext, lang: s
     await _notify_admins(bot, callback.from_user, data)
 
     target = SSHTarget(
-        host=data["host"], username=data["ssh_user"], password=data["ssh_password"], lang=lang
+        host=data["host"],
+        username=data["ssh_user"],
+        password=data.get("ssh_password"),
+        private_key=data.get("ssh_key"),
+        lang=lang,
     )
 
     async def progress(text: str) -> None:

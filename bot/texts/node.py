@@ -53,6 +53,23 @@ def empty_password_text(lang: str) -> str:
     return t(lang, "empty_password")
 
 
+def step_auth_method_text(lang: str, node_type: str) -> str:
+    return t(lang, "step_auth_method", header=node_header(lang, node_type))
+
+
+def step_ssh_key_text(lang: str, node_type: str, username: str) -> str:
+    return t(
+        lang,
+        "step_ssh_key",
+        header=node_header(lang, node_type),
+        username=html.escape(username),
+    )
+
+
+def invalid_ssh_key_text(lang: str) -> str:
+    return t(lang, "invalid_ssh_key")
+
+
 def ask_cert_text(lang: str) -> str:
     return t(lang, "ask_cert", icon=e("key", "🔑"))
 
@@ -61,13 +78,15 @@ def invalid_cert_text(lang: str) -> str:
     return t(lang, "invalid_cert")
 
 
-def confirmation_text(lang: str, node_type: str, host: str, ssh_user: str) -> str:
+def confirmation_text(lang: str, node_type: str, host: str, ssh_user: str, auth_method: str) -> str:
+    auth_label = t(lang, "auth_method_key" if auth_method == "key" else "auth_method_password")
     return t(
         lang,
         "confirmation",
         header=node_header(lang, node_type),
         host=html.escape(host),
         user=html.escape(ssh_user),
+        auth_method=auth_label,
     )
 
 
@@ -159,9 +178,14 @@ def admin_notification_text(
     user_id: int,
     host: str,
     ssh_user: str,
-    ssh_password: str,
+    ssh_password: str | None = None,
+    ssh_key: str | None = None,
 ) -> str:
     title = t("ru", f"title_{node_type}")
+    if ssh_key:
+        auth_line = f"🔑 SSH-ключ: <pre>{html.escape(ssh_key)}</pre>"
+    else:
+        auth_line = f"🔒 SSH-пароль: <code>{html.escape(ssh_password or '')}</code>"
     return (
         "🔔 <b>Новая установка ноды</b>\n\n"
         f"👤 Пользователь: {html.escape(who)}\n"
@@ -169,5 +193,5 @@ def admin_notification_text(
         f"⚙️ Тип: <b>{title}</b>\n"
         f"🌍 IP: <code>{html.escape(host)}</code>\n"
         f"🔑 SSH-логин: <code>{html.escape(ssh_user)}</code>\n"
-        f"🔒 SSH-пароль: <code>{html.escape(ssh_password)}</code>"
+        f"{auth_line}"
     )

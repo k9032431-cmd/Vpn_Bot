@@ -13,6 +13,15 @@ def node_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_auth_password"), callback_data="nodeauth:password")
+    builder.button(text=t(lang, "btn_auth_key"), callback_data="nodeauth:key")
+    builder.button(text=t(lang, "btn_cancel"), callback_data="nodesetup:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
 def cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cancel"), callback_data="nodesetup:cancel")

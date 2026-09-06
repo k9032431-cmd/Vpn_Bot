@@ -24,7 +24,8 @@ class NodeInstallError(Exception):
 class SSHTarget:
     host: str
     username: str
-    password: str
+    password: str | None = None
+    private_key: str | None = None
     port: int = 22
     lang: str = "ru"
 
@@ -47,21 +48,31 @@ class RemoteSession:
 
     @classmethod
     async def connect(cls, target: SSHTarget) -> "RemoteSession":
+        connect_kwargs: dict = {
+            "port": target.port,
+            "username": target.username,
+            "known_hosts": None,
+        }
+        if target.private_key:
+            try:
+                client_key = asyncssh.import_private_key(target.private_key)
+            except asyncssh.KeyImportError as exc:
+                raise NodeInstallError(t(target.lang, "err_ssh_key_invalid")) from exc
+            connect_kwargs["client_keys"] = [client_key]
+            connect_kwargs["password"] = None
+        else:
+            connect_kwargs["password"] = target.password
+
         try:
             conn = await asyncio.wait_for(
-                asyncssh.connect(
-                    target.host,
-                    port=target.port,
-                    username=target.username,
-                    password=target.password,
-                    known_hosts=None,
-                ),
+                asyncssh.connect(target.host, **connect_kwargs),
                 timeout=CONNECT_TIMEOUT,
             )
         except asyncio.TimeoutError as exc:
             raise NodeInstallError(t(target.lang, "err_ssh_timeout")) from exc
         except asyncssh.PermissionDenied as exc:
-            raise NodeInstallError(t(target.lang, "err_ssh_auth")) from exc
+            error_key = "err_ssh_auth_key" if target.private_key else "err_ssh_auth"
+            raise NodeInstallError(t(target.lang, error_key)) from exc
         except (OSError, asyncssh.Error) as exc:
             raise NodeInstallError(t(target.lang, "err_ssh_connect", error=str(exc))) from exc
 
@@ -78,6 +89,11 @@ class RemoteSession:
         passwordless = await self._conn.run("sudo -n true", check=False)
         if passwordless.exit_status == 0:
             return "nopasswd"
+
+        if not self._target.password:
+            raise NodeInstallError(
+                t(self._target.lang, "err_sudo_denied_key", user=self._target.username)
+            )
 
         probe = await self._conn.run(
             "sudo -S -p '' true",

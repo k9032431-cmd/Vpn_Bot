@@ -159,6 +159,15 @@ def create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="ccreate:auth:password")
+    builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="ccreate:auth:key")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
 def create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="ccreate:confirm")

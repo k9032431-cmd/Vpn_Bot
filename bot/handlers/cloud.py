@@ -19,6 +19,7 @@ from bot.keyboards.cloud import (
     backups_list_keyboard,
     cloud_cancel_keyboard,
     cloud_error_keyboard,
+    create_auth_method_keyboard,
     create_cancel_keyboard,
     create_confirm_keyboard,
     ip_add_confirm_keyboard,
@@ -79,6 +80,11 @@ from bot.texts.cloud import ACTIVE_PROVIDERS, PROVIDERS
 router = Router(name="cloud")
 
 HOSTNAME_RE = re.compile(r"^[a-zA-Z0-9]([a-zA-Z0-9\-.]{0,251}[a-zA-Z0-9])?$")
+SSH_PUBLIC_KEY_PREFIXES = ("ssh-rsa ", "ssh-ed25519 ", "ssh-dss ", "ecdsa-sha2-")
+
+
+def _is_valid_ssh_public_key(value: str) -> bool:
+    return value.startswith(SSH_PUBLIC_KEY_PREFIXES)
 
 
 async def _login(provider: str, username: str, password: str):
@@ -573,10 +579,46 @@ async def process_hostname(message: Message, state: FSMContext, lang: str) -> No
         await message.answer(texts.create_invalid_hostname_text(lang), reply_markup=create_cancel_keyboard(lang))
         return
 
-    data = await state.update_data(hostname=hostname)
-    await state.set_state(CloudServerCreateStates.confirming)
+    await state.update_data(hostname=hostname)
+    await state.set_state(CloudServerCreateStates.choosing_auth_method)
     await message.answer(
-        texts.create_confirm_text(lang, hostname, data["zone"], data["plan"], data["template_title"]),
+        texts.create_choose_auth_method_text(lang), reply_markup=create_auth_method_keyboard(lang)
+    )
+
+
+@router.callback_query(F.data == "ccreate:auth:password", CloudServerCreateStates.choosing_auth_method)
+async def cb_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.update_data(ssh_public_key=None)
+    await _show_create_confirmation(callback.message, state, lang)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "ccreate:auth:key", CloudServerCreateStates.choosing_auth_method)
+async def cb_create_choose_key_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.set_state(CloudServerCreateStates.waiting_ssh_key)
+    await callback.message.edit_text(
+        texts.create_waiting_ssh_key_text(lang), reply_markup=create_cancel_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.message(CloudServerCreateStates.waiting_ssh_key)
+async def process_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
+    public_key = message.text.strip() if message.text else ""
+    if not _is_valid_ssh_public_key(public_key):
+        await message.answer(texts.create_invalid_ssh_key_text(lang), reply_markup=create_cancel_keyboard(lang))
+        return
+
+    await state.update_data(ssh_public_key=public_key)
+    await _show_create_confirmation(message, state, lang)
+
+
+async def _show_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.set_state(CloudServerCreateStates.confirming)
+    auth_method = "key" if data.get("ssh_public_key") else "password"
+    await target_message.answer(
+        texts.create_confirm_text(lang, data["hostname"], data["zone"], data["plan"], data["template_title"], auth_method),
         reply_markup=create_confirm_keyboard(lang),
     )
 
@@ -593,6 +635,7 @@ async def cb_create_confirm(callback: CallbackQuery, state: FSMContext, lang: st
     await callback.answer()
     await callback.message.edit_text(texts.creating_text(lang))
 
+    ssh_public_key = data.get("ssh_public_key")
     try:
         server = await upcloud_create_server(
             account["username"],
@@ -602,6 +645,7 @@ async def cb_create_confirm(callback: CallbackQuery, state: FSMContext, lang: st
             title=data["hostname"],
             plan=data["plan"],
             template_uuid=data["template_uuid"],
+            ssh_public_key=ssh_public_key,
         )
     except UpCloudAPIError as exc:
         await state.clear()
@@ -610,7 +654,7 @@ async def cb_create_confirm(callback: CallbackQuery, state: FSMContext, lang: st
 
     await state.clear()
     await callback.message.edit_text(
-        texts.create_success_text(lang, server),
+        texts.create_success_text(lang, server, ssh_key_used=bool(ssh_public_key)),
         reply_markup=server_detail_keyboard(lang, data["account_id"], server),
     )
 

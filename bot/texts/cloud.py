@@ -251,7 +251,20 @@ def create_invalid_hostname_text(lang: str) -> str:
     return t(lang, "cloud_create_invalid_hostname")
 
 
-def create_confirm_text(lang: str, hostname: str, zone: str, plan: str, template: str) -> str:
+def create_choose_auth_method_text(lang: str) -> str:
+    return t(lang, "cloud_create_choose_auth_method")
+
+
+def create_waiting_ssh_key_text(lang: str) -> str:
+    return t(lang, "cloud_create_waiting_ssh_key")
+
+
+def create_invalid_ssh_key_text(lang: str) -> str:
+    return t(lang, "cloud_create_invalid_ssh_key")
+
+
+def create_confirm_text(lang: str, hostname: str, zone: str, plan: str, template: str, auth_method: str) -> str:
+    auth_label = t(lang, "cloud_auth_method_key" if auth_method == "key" else "cloud_auth_method_password")
     return t(
         lang,
         "cloud_create_confirm",
@@ -259,6 +272,7 @@ def create_confirm_text(lang: str, hostname: str, zone: str, plan: str, template
         zone=zone,
         plan=plan,
         template=html.escape(template),
+        auth_method=auth_label,
     )
 
 
@@ -266,10 +280,12 @@ def creating_text(lang: str) -> str:
     return t(lang, "cloud_creating")
 
 
-def create_success_text(lang: str, server) -> str:
+def create_success_text(lang: str, server, ssh_key_used: bool = False) -> str:
     no_ip = t(lang, "cloud_server_no_ip")
     password_line = ""
-    if server.password:
+    if ssh_key_used:
+        password_line = t(lang, "cloud_create_ssh_key_line")
+    elif server.password:
         password_line = t(lang, "cloud_create_password_line", password=html.escape(server.password))
     return t(
         lang,

@@ -416,22 +416,108 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{header}\n\n"
             "📋 <b>Проверьте данные:</b>\n"
             "🌍 Сервер: <code>{host}</code>\n"
-            "👤 Пользователь: <code>{user}</code>\n\n"
+            "👤 Пользователь: <code>{user}</code>\n"
+            "🔐 Вход: {auth_method}\n\n"
             "🚀 Всё готово — начинаем установку?"
         ),
         "en": (
             "{header}\n\n"
             "📋 <b>Please confirm:</b>\n"
             "🌍 Server: <code>{host}</code>\n"
-            "👤 User: <code>{user}</code>\n\n"
+            "👤 User: <code>{user}</code>\n"
+            "🔐 Login via: {auth_method}\n\n"
             "🚀 Ready — start the installation?"
         ),
         "tk": (
             "{header}\n\n"
             "📋 <b>Maglumatlary barlaň:</b>\n"
             "🌍 Server: <code>{host}</code>\n"
-            "👤 Ulanyjy: <code>{user}</code>\n\n"
+            "👤 Ulanyjy: <code>{user}</code>\n"
+            "🔐 Giriş: {auth_method}\n\n"
             "🚀 Taýyn — ornaşdyrmaga başlaýarysmy?"
+        ),
+    },
+    "auth_method_password": {"ru": "🔒 Пароль", "en": "🔒 Password", "tk": "🔒 Parol"},
+    "auth_method_key": {"ru": "🔑 SSH-ключ", "en": "🔑 SSH key", "tk": "🔑 SSH açar"},
+    "step_auth_method": {
+        "ru": "{header}\n\n🔐 Как подключиться к серверу?",
+        "en": "{header}\n\n🔐 How should the bot connect to the server?",
+        "tk": "{header}\n\n🔐 Bot servere nädip birikmeli?",
+    },
+    "btn_auth_password": {"ru": "🔒 По паролю", "en": "🔒 By password", "tk": "🔒 Parol boýunça"},
+    "btn_auth_key": {"ru": "🔑 По SSH-ключу", "en": "🔑 By SSH key", "tk": "🔑 SSH açar boýunça"},
+    "step_ssh_key": {
+        "ru": (
+            "{header}\n\n"
+            "🔑 Отправьте <b>приватный SSH-ключ</b> пользователя <code>{username}</code> "
+            "(начинается с <code>-----BEGIN ... PRIVATE KEY-----</code>).\n\n"
+            "⚠️ Ключ должен быть <b>без пароля (passphrase)</b>. Сообщение с ключом бот "
+            "удалит сразу после получения."
+        ),
+        "en": (
+            "{header}\n\n"
+            "🔑 Send the <b>private SSH key</b> for user <code>{username}</code> "
+            "(starts with <code>-----BEGIN ... PRIVATE KEY-----</code>).\n\n"
+            "⚠️ The key must have <b>no passphrase</b>. The bot deletes the message "
+            "with the key right after receiving it."
+        ),
+        "tk": (
+            "{header}\n\n"
+            "🔑 <code>{username}</code> ulanyjysynyň <b>hususy SSH açaryny</b> iberiň "
+            "(<code>-----BEGIN ... PRIVATE KEY-----</code> bilen başlaýar).\n\n"
+            "⚠️ Açar <b>parolsyz (passphrase-siz)</b> bolmaly. Bot açar bilen habary "
+            "alnandan derrew soň pozar."
+        ),
+    },
+    "invalid_ssh_key": {
+        "ru": (
+            "Это не похоже на приватный SSH-ключ в формате PEM (должен начинаться с "
+            "<code>-----BEGIN ... PRIVATE KEY-----</code>). Попробуйте ещё раз:"
+        ),
+        "en": (
+            "This doesn't look like a PEM-format private SSH key (must start with "
+            "<code>-----BEGIN ... PRIVATE KEY-----</code>). Try again:"
+        ),
+        "tk": (
+            "Bu PEM formatly hususy SSH açara meňzänok (<code>-----BEGIN ... PRIVATE "
+            "KEY-----</code> bilen başlamaly). Gaýtadan synanyň:"
+        ),
+    },
+    "err_ssh_key_invalid": {
+        "ru": "Не удалось разобрать SSH-ключ. Проверьте, что это корректный приватный ключ в формате PEM без пароля.",
+        "en": "Couldn't parse the SSH key. Make sure it's a valid PEM-format private key with no passphrase.",
+        "tk": "SSH açaryny okap bolmady. Onuň parolsyz, dogry PEM formatly hususy açar bolandygyny barlaň.",
+    },
+    "err_ssh_auth_key": {
+        "ru": (
+            "SSH-ключ не подошёл. Проверьте, что соответствующий публичный ключ добавлен "
+            "в ~/.ssh/authorized_keys этого пользователя на сервере."
+        ),
+        "en": (
+            "The SSH key was rejected. Make sure the matching public key is in this "
+            "user's ~/.ssh/authorized_keys on the server."
+        ),
+        "tk": (
+            "SSH açary kabul edilmedi. Degişli açyk açaryň serwerde şol ulanyjynyň "
+            "~/.ssh/authorized_keys faýlynda bardygyny barlaň."
+        ),
+    },
+    "err_sudo_denied_key": {
+        "ru": (
+            "Пользователь '{user}' не root, и на сервере не настроен sudo без пароля. "
+            "При входе по SSH-ключу бот не может ввести пароль для sudo — настройте "
+            "passwordless sudo для этого пользователя, или подключитесь под root, или "
+            "используйте вход по паролю вместо ключа."
+        ),
+        "en": (
+            "User '{user}' isn't root, and passwordless sudo isn't set up on this server. "
+            "With key-based login the bot has no password to enter for sudo — set up "
+            "passwordless sudo for this user, connect as root, or use password login instead."
+        ),
+        "tk": (
+            "'{user}' ulanyjysy root däl, we serwerde parolsyz sudo sazlanmadyk. SSH açary "
+            "bilen girlende bot sudo üçin parol girizip bilmeýär — bu ulanyjy üçin parolsyz "
+            "sudo sazlaň, root hökmünde birikiň ýa-da açaryň deregine parol bilen giriň."
         ),
     },
     "installing_started": {
@@ -1942,7 +2028,8 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🌐 Hostname: <code>{hostname}</code>\n"
             "📍 Зона: {zone}\n"
             "⚙️ План: {plan}\n"
-            "💿 ОС: {template}\n\n"
+            "💿 ОС: {template}\n"
+            "🔐 Вход: {auth_method}\n\n"
             "💰 Это создаст платный ресурс на стороне провайдера. Создать?"
         ),
         "en": (
@@ -1950,7 +2037,8 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🌐 Hostname: <code>{hostname}</code>\n"
             "📍 Zone: {zone}\n"
             "⚙️ Plan: {plan}\n"
-            "💿 OS: {template}\n\n"
+            "💿 OS: {template}\n"
+            "🔐 Login via: {auth_method}\n\n"
             "💰 This will create a billable resource with the provider. Create it?"
         ),
         "tk": (
@@ -1958,11 +2046,47 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🌐 Hostname: <code>{hostname}</code>\n"
             "📍 Zolak: {zone}\n"
             "⚙️ Meýilnama: {plan}\n"
-            "💿 OS: {template}\n\n"
+            "💿 OS: {template}\n"
+            "🔐 Giriş: {auth_method}\n\n"
             "💰 Bu provaýderde tölegli resurs dörediler. Döredilsinmi?"
         ),
     },
     "btn_cloud_create_confirm": {"ru": "✅ Создать", "en": "✅ Create", "tk": "✅ Döret"},
+    "cloud_create_choose_auth_method": {
+        "ru": "🔐 <b>Новый сервер — шаг 5/5</b>\n\nКак вы будете заходить на сервер?",
+        "en": "🔐 <b>New server — step 5/5</b>\n\nHow will you log into the server?",
+        "tk": "🔐 <b>Täze serwer — 5/5 ädim</b>\n\nServere nädip girersiňiz?",
+    },
+    "btn_cloud_auth_password": {"ru": "🔒 Пароль (сгенерировать)", "en": "🔒 Password (auto-generate)", "tk": "🔒 Parol (awtomatik döret)"},
+    "btn_cloud_auth_key": {"ru": "🔑 SSH-ключ", "en": "🔑 SSH key", "tk": "🔑 SSH açar"},
+    "cloud_auth_method_password": {"ru": "🔒 пароль", "en": "🔒 password", "tk": "🔒 parol"},
+    "cloud_auth_method_key": {"ru": "🔑 SSH-ключ", "en": "🔑 SSH key", "tk": "🔑 SSH açar"},
+    "cloud_create_waiting_ssh_key": {
+        "ru": (
+            "🔑 Отправьте ваш <b>публичный SSH-ключ</b> (начинается с <code>ssh-rsa</code>, "
+            "<code>ssh-ed25519</code> и т.д.) — он будет добавлен для пользователя <code>root</code> "
+            "на новом сервере."
+        ),
+        "en": (
+            "🔑 Send your <b>public SSH key</b> (starts with <code>ssh-rsa</code>, "
+            "<code>ssh-ed25519</code>, etc.) — it will be added for the <code>root</code> user "
+            "on the new server."
+        ),
+        "tk": (
+            "🔑 <b>Açyk SSH açaryňyzy</b> iberiň (<code>ssh-rsa</code>, <code>ssh-ed25519</code> "
+            "we ş.m. bilen başlaýar) — ol täze serwerde <code>root</code> ulanyjysy üçin goşular."
+        ),
+    },
+    "cloud_create_invalid_ssh_key": {
+        "ru": "Это не похоже на публичный SSH-ключ (должен начинаться с <code>ssh-rsa</code>, <code>ssh-ed25519</code> и т.д.). Попробуйте ещё раз:",
+        "en": "This doesn't look like a public SSH key (must start with <code>ssh-rsa</code>, <code>ssh-ed25519</code>, etc.). Try again:",
+        "tk": "Bu açyk SSH açara meňzänok (<code>ssh-rsa</code>, <code>ssh-ed25519</code> we ş.m. bilen başlamaly). Gaýtadan synanyň:",
+    },
+    "cloud_create_ssh_key_line": {
+        "ru": "<i>Вход настроен по вашему SSH-ключу — пароль не создавался.</i>",
+        "en": "<i>Login is set up with your SSH key — no password was generated.</i>",
+        "tk": "<i>Giriş SSH açaryňyz arkaly sazlandy — parol döredilmedi.</i>",
+    },
     "cloud_creating": {
         "ru": "🚀 Создаю сервер, это может занять до минуты...",
         "en": "🚀 Creating the server, this can take up to a minute...",
