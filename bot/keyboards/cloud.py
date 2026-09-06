@@ -7,6 +7,7 @@ from bot.texts.cloud import (
     account_list_label,
     azure_port_rule_label,
     azure_vm_list_label,
+    azure_zone_label,
     backup_list_label,
     ip_list_label,
     server_list_label,
@@ -497,6 +498,16 @@ def azure_password_mode_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder.button(text=t(lang, "btn_azure_pw_custom"), callback_data="azcreate:pwmode:custom")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
     builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def azure_zone_keyboard(lang: str, zones: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=azure_zone_label(lang, None), callback_data="azcreate:zone:none")
+    for zone in zones:
+        builder.button(text=azure_zone_label(lang, zone), callback_data=f"azcreate:zone:{zone}")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
+    builder.adjust(1)
     return builder.as_markup()
 
 

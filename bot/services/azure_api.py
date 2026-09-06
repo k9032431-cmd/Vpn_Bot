@@ -35,6 +35,7 @@ API_VERSION_RG = "2022-09-01"
 API_VERSION_NETWORK = "2023-09-01"
 API_VERSION_COMPUTE = "2023-09-01"
 API_VERSION_SKUS = "2021-07-01"
+API_VERSION_USAGES = "2024-07-01"
 
 POLL_INTERVAL = 3
 POLL_TIMEOUT = 240
@@ -85,6 +86,7 @@ class VmSizeInfo:
     name: str
     cores: int
     memory_mb: int
+    zones: list[str] = field(default_factory=list)  # e.g. ["1", "2", "3"], empty = zone not supported here
 
 
 @dataclass
@@ -106,6 +108,7 @@ class VMInfo:
     public_ip: str | None = None
     admin_username: str = ADMIN_USERNAME
     admin_password: str | None = None  # only set right after creation
+    zone: str | None = None  # availability zone, e.g. "1" — None if not zone-pinned
 
 
 # A short, static catalog rather than crawling the full Marketplace API
@@ -128,6 +131,19 @@ CURATED_SIZES = [
     "Standard_D2s_v5",
     "Standard_D4s_v5",
 ]
+
+# Azure's real per-VM-family vCPU quota name for each curated size, used to
+# proactively rule out sizes that would breach the subscription's own quota
+# for that family — same real quota "standardBSFamily"/"standardDSv5Family"
+# etc. Azure itself enforces at deploy time.
+_SIZE_FAMILY_QUOTA = {
+    "Standard_B1s": "standardBSFamily",
+    "Standard_B1ms": "standardBSFamily",
+    "Standard_B2s": "standardBSFamily",
+    "Standard_B2ms": "standardBSFamily",
+    "Standard_D2s_v5": "standardDSv5Family",
+    "Standard_D4s_v5": "standardDSv5Family",
+}
 
 
 def generate_azure_password(length: int = 16) -> str:
@@ -329,11 +345,34 @@ async def azure_list_locations(creds: AzureCredentials) -> list[LocationInfo]:
     ]
 
 
+async def _azure_get_usages(creds: AzureCredentials, location: str) -> dict[str, tuple[int, int]]:
+    """Returns {quota name -> (currentValue, limit)} from Azure's own compute
+    Usages API for a region — e.g. "cores" is the "Total Regional vCPUs"
+    quota, "standardBSFamily" the B-series family quota. Unlike live
+    datacenter capacity, this quota IS known ahead of time (it's a fixed
+    subscription limit, not a transient shortage), so it can be checked
+    before ever offering a size in the picker."""
+    path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/locations/{location}/usages"
+    _, payload = await _request("GET", path, creds, params={"api-version": API_VERSION_USAGES})
+    result: dict[str, tuple[int, int]] = {}
+    for item in (payload or {}).get("value", []):
+        if not isinstance(item, dict):
+            continue
+        name = (item.get("name") or {}).get("value")
+        if not name:
+            continue
+        result[name] = (int(item.get("currentValue", 0) or 0), int(item.get("limit", 0) or 0))
+    return result
+
+
 async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> list[VmSizeInfo]:
     """Lists the curated sizes that are actually usable in ``location`` right
     now. Uses the Resource SKUs API (not the plain vmSizes list) because
     only this one reports per-location/per-subscription offer restrictions
-    that the plain vmSizes list stays silent about.
+    that the plain vmSizes list stays silent about, and also cross-checks
+    the subscription's own regional/family vCPU quota (Azure's Usages API)
+    so a size that would blow the "Total Regional Cores" or per-family
+    quota is never offered in the first place.
 
     This still can't catch everything: live datacenter capacity shortages
     ("Following SKUs have failed for Capacity Restrictions...") are
@@ -358,6 +397,9 @@ async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> 
             continue  # unavailable for this subscription/location right now
         by_name[name] = item
 
+    usages = await _azure_get_usages(creds, location)
+    total_current, total_limit = usages.get("cores", (0, None))
+
     result = []
     for name in CURATED_SIZES:
         item = by_name.get(name)
@@ -366,7 +408,28 @@ async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> 
         caps = {c.get("name"): c.get("value") for c in item.get("capabilities", []) if isinstance(c, dict)}
         cores = int(caps.get("vCPUs", 0) or 0)
         memory_gb = float(caps.get("MemoryGB", 0) or 0)
-        result.append(VmSizeInfo(name=name, cores=cores, memory_mb=int(memory_gb * 1024)))
+
+        if total_limit is not None and total_current + cores > total_limit:
+            continue  # would exceed the subscription's Total Regional vCPUs quota
+        family = _SIZE_FAMILY_QUOTA.get(name)
+        if family and family in usages:
+            fam_current, fam_limit = usages[family]
+            if fam_current + cores > fam_limit:
+                continue  # would exceed this size family's own vCPU quota
+
+        zones: list[str] = []
+        for loc_info in item.get("locationInfo") or []:
+            if isinstance(loc_info, dict) and loc_info.get("location") == location:
+                zones = list(loc_info.get("zones") or [])
+                break
+        blocked_zones: set[str] = set()
+        for r in item.get("restrictions") or []:
+            if r.get("type") == "Zone":
+                info = r.get("restrictionInfo") or {}
+                blocked_zones.update(info.get("zones") or r.get("values") or [])
+        zones = [z for z in zones if z not in blocked_zones]
+
+        result.append(VmSizeInfo(name=name, cores=cores, memory_mb=int(memory_gb * 1024), zones=zones))
     return result
 
 
@@ -646,6 +709,7 @@ async def azure_create_vm(
     admin_username: str = ADMIN_USERNAME,
     admin_password: str | None = None,
     ssh_public_key: str | None = None,
+    zone: str | None = None,
     progress: ProgressCallback | None = None,
 ) -> VMInfo:
     async def tick(step: str) -> None:
@@ -700,6 +764,8 @@ async def azure_create_vm(
             "networkProfile": {"networkInterfaces": [{"id": nic_id}]},
         },
     }
+    if zone:
+        body["zones"] = [zone]
     path = _vm_path(creds, rg_name, vm_name)
     await _request("PUT", path, creds, json_body=body, params={"api-version": API_VERSION_COMPUTE})
     await _poll_provisioning_state(path, creds, params={"api-version": API_VERSION_COMPUTE})
@@ -712,6 +778,7 @@ async def azure_create_vm(
         public_ip=pip_address,
         admin_username=admin_username,
         admin_password=None if ssh_public_key else admin_password,
+        zone=zone,
     )
 
 
@@ -775,6 +842,7 @@ async def _get_vm_detail(creds: AzureCredentials, rg_name: str, vm_name: str) ->
     if pip_status == 200:
         public_ip = (pip_payload or {}).get("properties", {}).get("ipAddress")
 
+    zones = payload.get("zones") or []
     return VMInfo(
         name=vm_name,
         location=payload.get("location", ""),
@@ -782,6 +850,7 @@ async def _get_vm_detail(creds: AzureCredentials, rg_name: str, vm_name: str) ->
         power_state=power_state,
         public_ip=public_ip,
         admin_username=props.get("osProfile", {}).get("adminUsername", ADMIN_USERNAME),
+        zone=zones[0] if zones else None,
     )
 
 

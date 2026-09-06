@@ -40,6 +40,7 @@ class AzureSetupStates(StatesGroup):
 class AzureVMCreateStates(StatesGroup):
     choosing_location = State()
     choosing_size = State()
+    choosing_zone = State()
     choosing_image = State()
     waiting_hostname = State()
     waiting_username = State()

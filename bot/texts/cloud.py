@@ -588,6 +588,7 @@ def azure_vm_list_label(vm) -> str:
 
 def azure_vm_detail_text(lang: str, vm) -> str:
     no_ip = t(lang, "cloud_server_no_ip")
+    zone_line = t(lang, "azure_create_confirm_zone_line", zone=vm.zone) if getattr(vm, "zone", None) else ""
     return t(
         lang,
         "azure_vm_detail",
@@ -595,6 +596,7 @@ def azure_vm_detail_text(lang: str, vm) -> str:
         state=f"{_AZURE_POWER_EMOJI.get(vm.power_state, '⚪️')} {vm.power_state}",
         location=azure_location_display(vm.location, vm.location),
         size=vm.vm_size,
+        zone_line=zone_line,
         ip=vm.public_ip or no_ip,
         username=html.escape(vm.admin_username),
     )
@@ -626,6 +628,16 @@ def azure_create_size_capacity_error_text(
     return t(lang, "azure_create_size_capacity_error", icon=e("error", "❌"), size=failed_size) + _page_suffix(
         lang, page, total_pages
     )
+
+
+def azure_create_choose_zone_text(lang: str) -> str:
+    return t(lang, "azure_create_choose_zone")
+
+
+def azure_zone_label(lang: str, zone: str | None) -> str:
+    if zone is None:
+        return t(lang, "azure_zone_none")
+    return t(lang, "azure_zone_n", zone=zone)
 
 
 def azure_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
@@ -673,15 +685,24 @@ def azure_create_invalid_ssh_key_text(lang: str) -> str:
 
 
 def azure_create_confirm_text(
-    lang: str, hostname: str, location: str, size: str, image_title: str, username: str, auth_method: str
+    lang: str,
+    hostname: str,
+    location: str,
+    size: str,
+    image_title: str,
+    username: str,
+    auth_method: str,
+    zone: str | None = None,
 ) -> str:
     auth_label = t(lang, "cloud_auth_method_key" if auth_method == "key" else "cloud_auth_method_password")
+    zone_line = t(lang, "azure_create_confirm_zone_line", zone=zone) if zone else ""
     return t(
         lang,
         "azure_create_confirm",
         hostname=html.escape(hostname),
         location=location,
         size=size,
+        zone_line=zone_line,
         image=html.escape(image_title),
         username=html.escape(username),
         auth_method=auth_label,

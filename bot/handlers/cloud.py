@@ -23,6 +23,7 @@ from bot.keyboards.cloud import (
     azure_vm_detail_keyboard,
     azure_vm_reimage_confirm_keyboard,
     azure_vms_list_keyboard,
+    azure_zone_keyboard,
     back_to_server_keyboard,
     backup_create_confirm_keyboard,
     backup_delete_confirm_keyboard,
@@ -1816,7 +1817,7 @@ async def cb_azure_create_pick_location(callback: CallbackQuery, state: FSMConte
     size_dicts = []
     for s in sizes:
         price = await azure_get_hourly_price(s.name, location["name"])
-        size_dicts.append({"name": s.name, "cores": s.cores, "memory_mb": s.memory_mb, "price": price})
+        size_dicts.append({"name": s.name, "cores": s.cores, "memory_mb": s.memory_mb, "price": price, "zones": s.zones})
     await state.update_data(location=location["name"], location_display=location["display_name"], sizes=size_dicts)
     await state.set_state(AzureVMCreateStates.choosing_size)
     await _render_create_page(
@@ -1836,23 +1837,51 @@ async def cb_azure_create_size_page(callback: CallbackQuery, state: FSMContext, 
     )
 
 
-@router.callback_query(F.data.startswith("azcreate:size:"), AzureVMCreateStates.choosing_size)
-async def cb_azure_create_pick_size(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    index = int(callback.data.split(":", 2)[2])
-    data = await state.get_data()
-    size = data["sizes"][index]
+async def _show_azure_image_step(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     images = azure_list_images()
     image_dicts = [
         {"key": img.key, "title": img.title, "publisher": img.publisher, "offer": img.offer, "sku": img.sku, "version": img.version}
         for img in images
     ]
-    await state.update_data(vm_size=size["name"], images=image_dicts)
+    await state.update_data(images=image_dicts)
     await state.set_state(AzureVMCreateStates.choosing_image)
-    await callback.answer()
     await _render_create_page(
         callback, lang, texts.azure_create_choose_image_text, _azure_image_options(image_dicts),
         0, "azcreate:imgpage", "azcreate:cancel",
     )
+
+
+@router.callback_query(F.data.startswith("azcreate:size:"), AzureVMCreateStates.choosing_size)
+async def cb_azure_create_pick_size(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    size = data["sizes"][index]
+    await state.update_data(vm_size=size["name"])
+    await callback.answer()
+
+    zones = size.get("zones") or []
+    if zones:
+        # Azure Availability Zones are per-region *and* per-size — the same
+        # location can support zones for one size but not another, exactly
+        # like the zone dropdown on the Azure Portal only appears when the
+        # chosen size actually supports it there.
+        await state.set_state(AzureVMCreateStates.choosing_zone)
+        await callback.message.edit_text(
+            texts.azure_create_choose_zone_text(lang), reply_markup=azure_zone_keyboard(lang, zones)
+        )
+        return
+
+    await state.update_data(zone=None)
+    await _show_azure_image_step(callback, state, lang)
+
+
+@router.callback_query(F.data.startswith("azcreate:zone:"), AzureVMCreateStates.choosing_zone)
+async def cb_azure_create_pick_zone(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    raw = callback.data.split(":", 2)[2]
+    zone = None if raw == "none" else raw
+    await state.update_data(zone=zone)
+    await callback.answer()
+    await _show_azure_image_step(callback, state, lang)
 
 
 @router.callback_query(F.data.startswith("azcreate:imgpage:"), AzureVMCreateStates.choosing_image)
@@ -1979,7 +2008,7 @@ async def _show_azure_create_confirmation(target_message: Message, state: FSMCon
     await target_message.answer(
         texts.azure_create_confirm_text(
             lang, data["hostname"], data["location_display"], data["vm_size"], image["title"],
-            data["admin_username"], auth_method,
+            data["admin_username"], auth_method, zone=data.get("zone"),
         ),
         reply_markup=azure_create_confirm_keyboard(lang),
     )
@@ -2026,6 +2055,7 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
             admin_username=data["admin_username"],
             admin_password=admin_password,
             ssh_public_key=ssh_public_key,
+            zone=data.get("zone"),
             progress=progress,
         )
     except AzureAPIError as exc:

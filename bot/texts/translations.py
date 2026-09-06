@@ -2438,6 +2438,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📶 Статус: {state}\n"
             "📍 Локация: {location}\n"
             "⚙️ Размер: {size}\n"
+            "{zone_line}"
             "🌐 IP: <code>{ip}</code>\n"
             "👤 Логин: <code>{username}</code>"
         ),
@@ -2446,6 +2447,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📶 State: {state}\n"
             "📍 Location: {location}\n"
             "⚙️ Size: {size}\n"
+            "{zone_line}"
             "🌐 IP: <code>{ip}</code>\n"
             "👤 Username: <code>{username}</code>"
         ),
@@ -2454,6 +2456,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📶 Ýagdaýy: {state}\n"
             "📍 Ýerleşişi: {location}\n"
             "⚙️ Ölçegi: {size}\n"
+            "{zone_line}"
             "🌐 IP: <code>{ip}</code>\n"
             "👤 Ulanyjy ady: <code>{username}</code>"
         ),
@@ -2464,14 +2467,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>{name}</b> wirtual maşynyny pozmalymy? Bu yzyna gaýtaryp bolmaýar — diski we ulgamy hem pozular.",
     },
     "azure_create_choose_location": {
-        "ru": "🔷 <b>Новая VM — шаг 1/6</b>\n\nВыберите регион (location):",
-        "en": "🔷 <b>New VM — step 1/6</b>\n\nChoose a region (location):",
-        "tk": "🔷 <b>Täze VM — 1/6 ädim</b>\n\nSebiti (location) saýlaň:",
+        "ru": "🔷 <b>Новая VM — шаг 1/7</b>\n\nВыберите регион (location):",
+        "en": "🔷 <b>New VM — step 1/7</b>\n\nChoose a region (location):",
+        "tk": "🔷 <b>Täze VM — 1/7 ädim</b>\n\nSebiti (location) saýlaň:",
     },
     "azure_create_choose_size": {
-        "ru": "🔷 <b>Новая VM — шаг 2/6</b>\n\nВыберите размер (size):",
-        "en": "🔷 <b>New VM — step 2/6</b>\n\nChoose a size:",
-        "tk": "🔷 <b>Täze VM — 2/6 ädim</b>\n\nÖlçegi saýlaň:",
+        "ru": "🔷 <b>Новая VM — шаг 2/7</b>\n\nВыберите размер (size):",
+        "en": "🔷 <b>New VM — step 2/7</b>\n\nChoose a size:",
+        "tk": "🔷 <b>Täze VM — 2/7 ädim</b>\n\nÖlçegi saýlaň:",
     },
     "azure_create_size_capacity_error": {
         "ru": (
@@ -2491,14 +2494,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "azure_create_choose_image": {
-        "ru": "🔷 <b>Новая VM — шаг 3/6</b>\n\nВыберите операционную систему:",
-        "en": "🔷 <b>New VM — step 3/6</b>\n\nChoose an OS image:",
-        "tk": "🔷 <b>Täze VM — 3/6 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+        "ru": "🔷 <b>Новая VM — шаг 4/7</b>\n\nВыберите операционную систему:",
+        "en": "🔷 <b>New VM — step 4/7</b>\n\nChoose an OS image:",
+        "tk": "🔷 <b>Täze VM — 4/7 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
     },
     "azure_create_waiting_hostname": {
-        "ru": "✏️ <b>Новая VM — шаг 4/6</b>\n\nВведите имя виртуальной машины (латиница, цифры, дефисы):",
-        "en": "✏️ <b>New VM — step 4/6</b>\n\nEnter the virtual machine's name (letters, digits, hyphens):",
-        "tk": "✏️ <b>Täze VM — 4/6 ädim</b>\n\nWirtual maşynyň adyny giriziň (latyn harplary, sanlar, defisler):",
+        "ru": "✏️ <b>Новая VM — шаг 5/7</b>\n\nВведите имя виртуальной машины (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New VM — step 5/7</b>\n\nEnter the virtual machine's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze VM — 5/7 ädim</b>\n\nWirtual maşynyň adyny giriziň (latyn harplary, sanlar, defisler):",
     },
     "azure_create_invalid_hostname": {
         "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 64 символов). Попробуйте ещё раз:",
@@ -2507,17 +2510,17 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "azure_create_waiting_username": {
         "ru": (
-            "👤 <b>Новая VM — шаг 5/6</b>\n\n"
+            "👤 <b>Новая VM — шаг 6/7</b>\n\n"
             "Введите логин администратора (латиница, цифры, «.», «_», «-», не может быть "
             "«root»/«admin»/«administrator» и т.п. — их запрещает сама Azure):"
         ),
         "en": (
-            "👤 <b>New VM — step 5/6</b>\n\n"
+            "👤 <b>New VM — step 6/7</b>\n\n"
             "Enter the admin username (letters, digits, '.', '_', '-' — can't be "
             "'root'/'admin'/'administrator' etc., Azure itself rejects those):"
         ),
         "tk": (
-            "👤 <b>Täze VM — 5/6 ädim</b>\n\n"
+            "👤 <b>Täze VM — 6/7 ädim</b>\n\n"
             "Administrator ulanyjy adyny giriziň (latyn harplary, sanlar, «.», «_», «-» — "
             "«root»/«admin»/«administrator» we ş.m. bolup bilmez, Azure-yň özi ret edýär):"
         ),
@@ -2562,6 +2565,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🖥 Имя: <code>{hostname}</code>\n"
             "📍 Регион: {location}\n"
             "⚙️ Размер: {size}\n"
+            "{zone_line}"
             "💿 ОС: {image}\n"
             "👤 Логин: <code>{username}</code>\n"
             "🔐 Вход: {auth_method}\n\n"
@@ -2572,6 +2576,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🖥 Name: <code>{hostname}</code>\n"
             "📍 Region: {location}\n"
             "⚙️ Size: {size}\n"
+            "{zone_line}"
             "💿 OS: {image}\n"
             "👤 Username: <code>{username}</code>\n"
             "🔐 Login via: {auth_method}\n\n"
@@ -2582,11 +2587,32 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🖥 Ady: <code>{hostname}</code>\n"
             "📍 Sebit: {location}\n"
             "⚙️ Ölçegi: {size}\n"
+            "{zone_line}"
             "💿 OS: {image}\n"
             "👤 Ulanyjy ady: <code>{username}</code>\n"
             "🔐 Giriş: {auth_method}\n\n"
             "💰 Bu Azure-da tölegli resurs dörediler. Döredilsinmi?"
         ),
+    },
+    "azure_create_confirm_zone_line": {
+        "ru": "🗺 Зона доступности: {zone}\n",
+        "en": "🗺 Availability zone: {zone}\n",
+        "tk": "🗺 Elýeterlilik zolagy: {zone}\n",
+    },
+    "azure_create_choose_zone": {
+        "ru": "🔷 <b>Новая VM — шаг 3/7</b>\n\nВыберите зону доступности (availability zone) для этого размера в этом регионе:",
+        "en": "🔷 <b>New VM — step 3/7</b>\n\nChoose an availability zone for this size in this region:",
+        "tk": "🔷 <b>Täze VM — 3/7 ädim</b>\n\nBu sebitde bu ölçeg üçin elýeterlilik zolagyny saýlaň:",
+    },
+    "azure_zone_none": {
+        "ru": "Без зоны (авто)",
+        "en": "No zone (auto)",
+        "tk": "Zolaksyz (awtomat)",
+    },
+    "azure_zone_n": {
+        "ru": "Зона {zone}",
+        "en": "Zone {zone}",
+        "tk": "{zone}-nji zolak",
     },
     "azure_progress_resource_group": {
         "ru": "🔷 Создаю группу ресурсов...",
