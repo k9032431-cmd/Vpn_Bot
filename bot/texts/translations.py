@@ -1998,9 +1998,22 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "cloud_create_password_line": {
-        "ru": "🔑 <b>Пароль:</b> <code>{password}</code>\n\n<i>Сохраните пароль — повторно он показан не будет.</i>",
-        "en": "🔑 <b>Password:</b> <code>{password}</code>\n\n<i>Save it — it won't be shown again.</i>",
-        "tk": "🔑 <b>Parol:</b> <code>{password}</code>\n\n<i>Paroly ýatda saklaň — indi görkezilmez.</i>",
+        "ru": (
+            "🔑 <b>Пароль:</b> <code>{password}</code>\n\n"
+            "<i>Сохраните пароль — повторно он показан не будет. Серверу нужно "
+            "40–60 секунд после создания, чтобы применить пароль — не пробуйте "
+            "подключиться сразу же.</i>"
+        ),
+        "en": (
+            "🔑 <b>Password:</b> <code>{password}</code>\n\n"
+            "<i>Save it — it won't be shown again. The server needs 40–60 seconds "
+            "after creation to apply the password — don't try connecting right away.</i>"
+        ),
+        "tk": (
+            "🔑 <b>Parol:</b> <code>{password}</code>\n\n"
+            "<i>Paroly ýatda saklaň — indi görkezilmez. Serwere paroly ulanmak üçin "
+            "döredilenden soň 40–60 sekunt gerek — derrew birikmäge synanyşmaň.</i>"
+        ),
     },
     # --- Cloud VPS: server detail extra buttons ---
     "btn_cloud_server_plan": {"ru": "⚙️ Изменить план", "en": "⚙️ Change plan", "tk": "⚙️ Meýilnamany üýtget"},

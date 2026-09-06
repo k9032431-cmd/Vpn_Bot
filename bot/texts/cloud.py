@@ -270,7 +270,7 @@ def create_success_text(lang: str, server) -> str:
     no_ip = t(lang, "cloud_server_no_ip")
     password_line = ""
     if server.password:
-        password_line = t(lang, "cloud_create_password_line", password=server.password)
+        password_line = t(lang, "cloud_create_password_line", password=html.escape(server.password))
     return t(
         lang,
         "cloud_create_success",
