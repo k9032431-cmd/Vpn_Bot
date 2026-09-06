@@ -249,7 +249,8 @@ async def upcloud_create_server(
     ``password_delivery: none`` + a generated root password returned in the
     response when no SSH key is given (fetched separately by the caller and
     shown once), matching UpCloud's own "create server" defaults."""
-    login_user: dict = {"create_password": "yes" if not ssh_public_key else "no"}
+    # UpCloud's own default login user for every standard Linux template.
+    login_user: dict = {"username": "root", "create_password": "yes" if not ssh_public_key else "no"}
     if ssh_public_key:
         login_user["ssh_keys"] = {"ssh_key": [ssh_public_key]}
 

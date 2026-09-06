@@ -1844,27 +1844,33 @@ _STRINGS: dict[str, dict[str, str]] = {
     "cloud_server_detail": {
         "ru": (
             "🖥 <b>{title}</b>\n\n"
-            "🌐 Hostname: <code>{hostname}</code>\n"
-            "🚦 Статус: {state}\n"
-            "📍 Зона: {zone}\n"
-            "⚙️ План: {plan} ({cores} CPU / {memory} MB RAM)\n"
-            "🌍 IP: {ips}"
+            "🚦 <b>Статус:</b> {state}\n"
+            "📍 <b>Локация:</b> {location}\n"
+            "⚙️ <b>План:</b> {plan}\n"
+            "🧠 <b>Ресурсы:</b> {cores} CPU / {memory} RAM\n"
+            "🏷 <b>Hostname:</b> <code>{hostname}</code>\n"
+            "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
+            "🌐 <b>IPv6:</b> <code>{ipv6}</code>"
         ),
         "en": (
             "🖥 <b>{title}</b>\n\n"
-            "🌐 Hostname: <code>{hostname}</code>\n"
-            "🚦 State: {state}\n"
-            "📍 Zone: {zone}\n"
-            "⚙️ Plan: {plan} ({cores} CPU / {memory} MB RAM)\n"
-            "🌍 IP: {ips}"
+            "🚦 <b>Status:</b> {state}\n"
+            "📍 <b>Location:</b> {location}\n"
+            "⚙️ <b>Plan:</b> {plan}\n"
+            "🧠 <b>Resources:</b> {cores} CPU / {memory} RAM\n"
+            "🏷 <b>Hostname:</b> <code>{hostname}</code>\n"
+            "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
+            "🌐 <b>IPv6:</b> <code>{ipv6}</code>"
         ),
         "tk": (
             "🖥 <b>{title}</b>\n\n"
-            "🌐 Hostname: <code>{hostname}</code>\n"
-            "🚦 Ýagdaýy: {state}\n"
-            "📍 Zolak: {zone}\n"
-            "⚙️ Meýilnama: {plan} ({cores} CPU / {memory} MB RAM)\n"
-            "🌍 IP: {ips}"
+            "🚦 <b>Ýagdaýy:</b> {state}\n"
+            "📍 <b>Ýerleşişi:</b> {location}\n"
+            "⚙️ <b>Meýilnama:</b> {plan}\n"
+            "🧠 <b>Serişdeler:</b> {cores} CPU / {memory} RAM\n"
+            "🏷 <b>Hostname:</b> <code>{hostname}</code>\n"
+            "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
+            "🌐 <b>IPv6:</b> <code>{ipv6}</code>"
         ),
     },
     "cloud_server_no_ip": {"ru": "—", "en": "—", "tk": "—"},
@@ -1965,27 +1971,36 @@ _STRINGS: dict[str, dict[str, str]] = {
     "cloud_create_success": {
         "ru": (
             "{icon} <b>Сервер создан!</b>\n\n"
-            "🖥 {title}\n"
-            "🌐 IP: {ips}\n"
+            "🖥 <b>Hostname:</b> {title}\n"
+            "📍 <b>Локация:</b> {location}\n"
+            "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
+            "🌐 <b>IPv6:</b> <code>{ipv6}</code>\n"
+            "👤 <b>Логин:</b> <code>root</code>\n"
             "{password_line}"
         ),
         "en": (
             "{icon} <b>Server created!</b>\n\n"
-            "🖥 {title}\n"
-            "🌐 IP: {ips}\n"
+            "🖥 <b>Hostname:</b> {title}\n"
+            "📍 <b>Location:</b> {location}\n"
+            "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
+            "🌐 <b>IPv6:</b> <code>{ipv6}</code>\n"
+            "👤 <b>Username:</b> <code>root</code>\n"
             "{password_line}"
         ),
         "tk": (
             "{icon} <b>Serwer döredildi!</b>\n\n"
-            "🖥 {title}\n"
-            "🌐 IP: {ips}\n"
+            "🖥 <b>Hostname:</b> {title}\n"
+            "📍 <b>Ýerleşişi:</b> {location}\n"
+            "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
+            "🌐 <b>IPv6:</b> <code>{ipv6}</code>\n"
+            "👤 <b>Ulanyjy ady:</b> <code>root</code>\n"
             "{password_line}"
         ),
     },
     "cloud_create_password_line": {
-        "ru": "🔑 Пароль root: <code>{password}</code> (сохраните, повторно показан не будет)",
-        "en": "🔑 Root password: <code>{password}</code> (save it, it won't be shown again)",
-        "tk": "🔑 Root paroly: <code>{password}</code> (ýatda saklaň, indi görkezilmez)",
+        "ru": "🔑 <b>Пароль:</b> <code>{password}</code>\n\n<i>Сохраните пароль — повторно он показан не будет.</i>",
+        "en": "🔑 <b>Password:</b> <code>{password}</code>\n\n<i>Save it — it won't be shown again.</i>",
+        "tk": "🔑 <b>Parol:</b> <code>{password}</code>\n\n<i>Paroly ýatda saklaň — indi görkezilmez.</i>",
     },
     # --- Cloud VPS: server detail extra buttons ---
     "btn_cloud_server_plan": {"ru": "⚙️ Изменить план", "en": "⚙️ Change plan", "tk": "⚙️ Meýilnamany üýtget"},

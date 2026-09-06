@@ -25,9 +25,58 @@ _CLOUD_ERR_KEYS = {
 
 _PROVIDER_TITLES = {"upcloud": "UpCloud", "aws": "AWS", "azure": "Azure", "linode": "Linode", "kamatera": "Kamatera"}
 
+# UpCloud zone ids follow "<country>-<city><n>" (e.g. "us-nyc1") — the city
+# names for the zones UpCloud actually operates are listed here for a nice
+# display; unlisted zones (new ones UpCloud adds later, or test fixtures)
+# just fall back to the raw zone id, so this never breaks anything.
+_ZONE_CITY_NAMES = {
+    "fi-hel1": "Helsinki",
+    "fi-hel2": "Helsinki",
+    "de-fra1": "Frankfurt",
+    "uk-lon1": "London",
+    "nl-ams1": "Amsterdam",
+    "es-mad1": "Madrid",
+    "pl-waw1": "Warsaw",
+    "se-sto1": "Stockholm",
+    "us-chi1": "Chicago",
+    "us-nyc1": "New York",
+    "us-sjo1": "San Jose",
+    "sg-sin1": "Singapore",
+    "au-syd1": "Sydney",
+}
+
 
 def provider_title(provider: str) -> str:
     return _PROVIDER_TITLES.get(provider, provider.capitalize())
+
+
+def _flag_emoji(country_code: str) -> str:
+    # A flag emoji is just two Unicode "regional indicator" letters — this
+    # works for any real ISO country code without a lookup table.
+    code = country_code.upper()
+    if len(code) != 2 or not code.isalpha():
+        return "🌍"
+    return "".join(chr(0x1F1E6 + ord(ch) - ord("A")) for ch in code)
+
+
+def zone_display(zone_id: str) -> str:
+    country_code = zone_id.split("-", 1)[0] if "-" in zone_id else ""
+    flag = _flag_emoji(country_code)
+    city = _ZONE_CITY_NAMES.get(zone_id, zone_id)
+    return f"{flag} {city}"
+
+
+def _format_memory(memory_mb: int) -> str:
+    if memory_mb and memory_mb % 1024 == 0:
+        return f"{memory_mb // 1024} GB"
+    return f"{memory_mb} MB"
+
+
+def _public_ip(server, family: str) -> str | None:
+    for ip in server.ip_addresses:
+        if ip.access == "public" and ip.family == family:
+            return ip.address
+    return None
 
 
 def provider_list_text(lang: str) -> str:
@@ -142,23 +191,20 @@ def server_list_label(server) -> str:
     return f"{icon} {server.title or server.hostname}"
 
 
-def _ip_list(server) -> str:
-    public = [ip.address for ip in server.ip_addresses if ip.access == "public"]
-    return ", ".join(public) if public else t("ru", "cloud_server_no_ip")
-
-
 def server_detail_text(lang: str, server) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
     return t(
         lang,
         "cloud_server_detail",
         title=html.escape(server.title or server.hostname),
-        hostname=html.escape(server.hostname),
         state=f"{_STATE_EMOJI.get(server.state, '⚪️')} {server.state}",
-        zone=server.zone,
+        location=zone_display(server.zone),
         plan=server.plan,
         cores=server.core_number,
-        memory=server.memory_amount,
-        ips=_ip_list(server) if server.ip_addresses else t(lang, "cloud_server_no_ip"),
+        memory=_format_memory(server.memory_amount),
+        hostname=html.escape(server.hostname),
+        ipv4=_public_ip(server, "IPv4") or no_ip,
+        ipv6=_public_ip(server, "IPv6") or no_ip,
     )
 
 
@@ -221,6 +267,7 @@ def creating_text(lang: str) -> str:
 
 
 def create_success_text(lang: str, server) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
     password_line = ""
     if server.password:
         password_line = t(lang, "cloud_create_password_line", password=server.password)
@@ -229,7 +276,9 @@ def create_success_text(lang: str, server) -> str:
         "cloud_create_success",
         icon=e("success", "✅"),
         title=html.escape(server.title or server.hostname),
-        ips=_ip_list(server) if server.ip_addresses else t(lang, "cloud_server_no_ip"),
+        location=zone_display(server.zone),
+        ipv4=_public_ip(server, "IPv4") or no_ip,
+        ipv6=_public_ip(server, "IPv6") or no_ip,
         password_line=password_line,
     )
 
