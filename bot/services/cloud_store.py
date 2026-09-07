@@ -73,5 +73,33 @@ class CloudStore:
             data[str(user_id)] = [a for a in accounts if a["id"] != account_id]
             await self._write(data)
 
+    async def set_vm_secret(self, user_id: int, account_id: str, resource_id: str, password: str) -> None:
+        """Remembers a VM/server's generated password against its account,
+        since neither Azure nor UpCloud hand it back after creation — the
+        only way to let a user who forgot it look it up later is to have
+        kept our own copy."""
+        data = await self._load()
+        async with self._lock:
+            for account in data.get(str(user_id), []):
+                if account["id"] == account_id:
+                    account.setdefault("vm_secrets", {})[resource_id] = password
+                    break
+            await self._write(data)
+
+    async def get_vm_secret(self, user_id: int, account_id: str, resource_id: str) -> str | None:
+        account = await self.get(user_id, account_id)
+        if not account:
+            return None
+        return (account.get("vm_secrets") or {}).get(resource_id)
+
+    async def remove_vm_secret(self, user_id: int, account_id: str, resource_id: str) -> None:
+        data = await self._load()
+        async with self._lock:
+            for account in data.get(str(user_id), []):
+                if account["id"] == account_id:
+                    (account.get("vm_secrets") or {}).pop(resource_id, None)
+                    break
+            await self._write(data)
+
 
 cloud_store = CloudStore(config.data_dir / "cloud_accounts.json")

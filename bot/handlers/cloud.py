@@ -185,8 +185,10 @@ async def _redisplay_server(callback: CallbackQuery, lang: str, account_id: str,
     except UpCloudAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, server.uuid)
     await callback.message.edit_text(
-        texts.server_detail_text(lang, server), reply_markup=server_detail_keyboard(lang, account_id, server)
+        texts.server_detail_text(lang, server, stored_password),
+        reply_markup=server_detail_keyboard(lang, account_id, server),
     )
 
 
@@ -497,8 +499,10 @@ async def cb_server_view(callback: CallbackQuery, state: FSMContext, lang: str) 
     except UpCloudAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, server.uuid)
     await callback.message.edit_text(
-        texts.server_detail_text(lang, server), reply_markup=server_detail_keyboard(lang, account_id, server)
+        texts.server_detail_text(lang, server, stored_password),
+        reply_markup=server_detail_keyboard(lang, account_id, server),
     )
 
 
@@ -514,8 +518,9 @@ async def _run_server_action(callback: CallbackQuery, lang: str, action, account
     except UpCloudAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, server.uuid)
     await callback.message.edit_text(
-        texts.server_detail_text(lang, server), reply_markup=server_detail_keyboard(lang, account_id, server)
+        texts.server_detail_text(lang, server, stored_password), reply_markup=server_detail_keyboard(lang, account_id, server)
     )
 
 
@@ -575,6 +580,7 @@ async def cb_server_delete(callback: CallbackQuery, lang: str) -> None:
     except UpCloudAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    await cloud_store.remove_vm_secret(callback.from_user.id, account_id, server_uuid)
     await callback.message.edit_text(texts.server_deleted_text(lang), reply_markup=None)
     await _show_servers(callback, lang, account)
 
@@ -822,6 +828,11 @@ async def cb_create_confirm(callback: CallbackQuery, state: FSMContext, lang: st
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
+    if server.password:
+        # UpCloud never hands the root password back after this point --
+        # keep our own copy so the user can look it up again if forgotten.
+        await cloud_store.set_vm_secret(callback.from_user.id, data["account_id"], server.uuid, server.password)
+
     await state.clear()
     await callback.message.edit_text(
         texts.create_success_text(lang, server, ssh_key_used=bool(ssh_public_key)),
@@ -925,8 +936,9 @@ async def cb_plan_confirm(callback: CallbackQuery, state: FSMContext, lang: str)
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
     await state.clear()
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, data["account_id"], server.uuid)
     await callback.message.edit_text(
-        f"{texts.plan_changed_text(lang)}\n\n{texts.server_detail_text(lang, server)}",
+        f"{texts.plan_changed_text(lang)}\n\n{texts.server_detail_text(lang, server, stored_password)}",
         reply_markup=server_detail_keyboard(lang, data["account_id"], server),
     )
 
@@ -1643,8 +1655,10 @@ async def cb_azure_vm_view(callback: CallbackQuery, state: FSMContext, lang: str
     except AzureAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, vm.name)
     await callback.message.edit_text(
-        texts.azure_vm_detail_text(lang, vm), reply_markup=azure_vm_detail_keyboard(lang, account_id, vm)
+        texts.azure_vm_detail_text(lang, vm, stored_password),
+        reply_markup=azure_vm_detail_keyboard(lang, account_id, vm),
     )
 
 
@@ -1660,8 +1674,10 @@ async def _run_azure_vm_action(callback: CallbackQuery, lang: str, action, accou
     except AzureAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, vm.name)
     await callback.message.edit_text(
-        texts.azure_vm_detail_text(lang, vm), reply_markup=azure_vm_detail_keyboard(lang, account_id, vm)
+        texts.azure_vm_detail_text(lang, vm, stored_password),
+        reply_markup=azure_vm_detail_keyboard(lang, account_id, vm),
     )
 
 
@@ -1714,6 +1730,7 @@ async def cb_azure_vm_delete(callback: CallbackQuery, lang: str) -> None:
     except AzureAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    await cloud_store.remove_vm_secret(callback.from_user.id, account_id, vm_name)
     await callback.message.edit_text(texts.azure_vm_deleted_text(lang), reply_markup=None)
     await _show_azure_vms(callback, lang, account, account_id)
 
@@ -2078,6 +2095,11 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
         await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
         return
 
+    if admin_password:
+        # Azure never hands the password back after this point -- keep our
+        # own copy so the user can look it up again if they forget it.
+        await cloud_store.set_vm_secret(callback.from_user.id, data["account_id"], vm.name, admin_password)
+
     await state.clear()
     await status_message.edit_text(
         texts.azure_create_success_text(lang, vm, ssh_key_used=bool(ssh_public_key)),
@@ -2121,8 +2143,10 @@ async def cb_azure_vm_reimage(callback: CallbackQuery, lang: str) -> None:
     except AzureAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, vm.name)
     await callback.message.edit_text(
-        texts.azure_vm_detail_text(lang, vm), reply_markup=azure_vm_detail_keyboard(lang, account_id, vm)
+        texts.azure_vm_detail_text(lang, vm, stored_password),
+        reply_markup=azure_vm_detail_keyboard(lang, account_id, vm),
     )
 
 

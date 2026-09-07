@@ -1937,6 +1937,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🏷 <b>Hostname:</b> <code>{hostname}</code>\n"
             "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
             "🌐 <b>IPv6:</b> <code>{ipv6}</code>"
+            "{password_line}"
         ),
         "en": (
             "🖥 <b>{title}</b>\n\n"
@@ -1947,6 +1948,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🏷 <b>Hostname:</b> <code>{hostname}</code>\n"
             "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
             "🌐 <b>IPv6:</b> <code>{ipv6}</code>"
+            "{password_line}"
         ),
         "tk": (
             "🖥 <b>{title}</b>\n\n"
@@ -1957,7 +1959,13 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🏷 <b>Hostname:</b> <code>{hostname}</code>\n"
             "🌐 <b>IPv4:</b> <code>{ipv4}</code>\n"
             "🌐 <b>IPv6:</b> <code>{ipv6}</code>"
+            "{password_line}"
         ),
+    },
+    "cloud_server_detail_password_line": {
+        "ru": "\n🔑 <b>Пароль root:</b> <code>{password}</code>",
+        "en": "\n🔑 <b>Root password:</b> <code>{password}</code>",
+        "tk": "\n🔑 <b>Root paroly:</b> <code>{password}</code>",
     },
     "cloud_server_no_ip": {"ru": "—", "en": "—", "tk": "—"},
     "btn_cloud_server_start": {"ru": "▶️ Включить", "en": "▶️ Start", "tk": "▶️ Işe girizmek"},
@@ -2441,6 +2449,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{zone_line}"
             "🌐 IP: <code>{ip}</code>\n"
             "👤 Логин: <code>{username}</code>"
+            "{password_line}"
         ),
         "en": (
             "🖥 <b>{name}</b>\n\n"
@@ -2450,6 +2459,7 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{zone_line}"
             "🌐 IP: <code>{ip}</code>\n"
             "👤 Username: <code>{username}</code>"
+            "{password_line}"
         ),
         "tk": (
             "🖥 <b>{name}</b>\n\n"
@@ -2459,7 +2469,13 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{zone_line}"
             "🌐 IP: <code>{ip}</code>\n"
             "👤 Ulanyjy ady: <code>{username}</code>"
+            "{password_line}"
         ),
+    },
+    "azure_vm_detail_password_line": {
+        "ru": "\n🔑 <b>Пароль:</b> <code>{password}</code>",
+        "en": "\n🔑 <b>Password:</b> <code>{password}</code>",
+        "tk": "\n🔑 <b>Parol:</b> <code>{password}</code>",
     },
     "azure_vm_delete_confirm": {
         "ru": "{icon} Удалить виртуальную машину <b>{name}</b>? Это необратимо — диск и сеть тоже будут удалены.",

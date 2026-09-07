@@ -203,8 +203,12 @@ def server_list_label(server) -> str:
     return f"{icon} {server.title or server.hostname}"
 
 
-def server_detail_text(lang: str, server) -> str:
+def server_detail_text(lang: str, server, stored_password: str | None = None) -> str:
     no_ip = t(lang, "cloud_server_no_ip")
+    password_line = (
+        t(lang, "cloud_server_detail_password_line", password=html.escape(stored_password))
+        if stored_password else ""
+    )
     return t(
         lang,
         "cloud_server_detail",
@@ -217,6 +221,7 @@ def server_detail_text(lang: str, server) -> str:
         hostname=html.escape(server.hostname),
         ipv4=_public_ip(server, "IPv4") or no_ip,
         ipv6=_public_ip(server, "IPv6") or no_ip,
+        password_line=password_line,
     )
 
 
@@ -505,14 +510,20 @@ _AZURE_POWER_EMOJI = {
 # pick from; anything missing just falls back to a globe, same graceful
 # degradation as _flag_emoji itself.
 _AZURE_REGION_COUNTRY = {
-    "eastus": "US", "eastus2": "US", "centralus": "US", "northcentralus": "US",
-    "southcentralus": "US", "westcentralus": "US", "westus": "US", "westus2": "US", "westus3": "US",
+    # United States (incl. canary/EUAP and Azure Government/DoD regions)
+    "eastus": "US", "eastus2": "US", "eastus3": "US", "eastus2euap": "US",
+    "centralus": "US", "centraluseuap": "US", "centralusstage": "US",
+    "northcentralus": "US", "southcentralus": "US", "southcentralusstg": "US",
+    "westcentralus": "US", "westus": "US", "westus2": "US", "westus3": "US", "westusstage": "US",
+    "usdodeast": "US", "usdodcentral": "US",
+    "usgovvirginia": "US", "usgovtexas": "US", "usgovarizona": "US", "usgoviowa": "US",
+    "brazilus": "US",
     "canadacentral": "CA", "canadaeast": "CA",
     "brazilsouth": "BR", "brazilsoutheast": "BR",
     "northeurope": "IE", "westeurope": "NL",
     "uksouth": "GB", "ukwest": "GB",
     "francecentral": "FR", "francesouth": "FR",
-    "germanywestcentral": "DE", "germanynorth": "DE",
+    "germanywestcentral": "DE", "germanynorth": "DE", "germanycentral": "DE", "germanynortheast": "DE",
     "norwayeast": "NO", "norwaywest": "NO",
     "switzerlandnorth": "CH", "switzerlandwest": "CH",
     "swedencentral": "SE", "swedensouth": "SE",
@@ -521,11 +532,14 @@ _AZURE_REGION_COUNTRY = {
     "spaincentral": "ES",
     "austriaeast": "AT",
     "belgiumcentral": "BE",
+    "denmarkeast": "DK",
+    "greececentral": "GR",
     "eastasia": "HK", "southeastasia": "SG",
     "japaneast": "JP", "japanwest": "JP",
     "koreacentral": "KR", "koreasouth": "KR",
     "southindia": "IN", "centralindia": "IN", "westindia": "IN", "jioindiawest": "IN", "jioindiacentral": "IN",
     "australiaeast": "AU", "australiasoutheast": "AU", "australiacentral": "AU", "australiacentral2": "AU",
+    "taiwannorth": "TW", "taiwannorthwest": "TW",
     "uaenorth": "AE", "uaecentral": "AE",
     "southafricanorth": "ZA", "southafricawest": "ZA",
     "qatarcentral": "QA",
@@ -534,7 +548,7 @@ _AZURE_REGION_COUNTRY = {
     "chilecentral": "CL",
     "newzealandnorth": "NZ",
     "indonesiacentral": "ID",
-    "malaysiawest": "MY",
+    "malaysiawest": "MY", "malaysiasouth": "MY",
 }
 
 
@@ -586,9 +600,13 @@ def azure_vm_list_label(vm) -> str:
     return f"{icon} {vm.name}"
 
 
-def azure_vm_detail_text(lang: str, vm) -> str:
+def azure_vm_detail_text(lang: str, vm, stored_password: str | None = None) -> str:
     no_ip = t(lang, "cloud_server_no_ip")
     zone_line = t(lang, "azure_create_confirm_zone_line", zone=vm.zone) if getattr(vm, "zone", None) else ""
+    password_line = (
+        t(lang, "azure_vm_detail_password_line", password=html.escape(stored_password))
+        if stored_password else ""
+    )
     return t(
         lang,
         "azure_vm_detail",
@@ -599,6 +617,7 @@ def azure_vm_detail_text(lang: str, vm) -> str:
         zone_line=zone_line,
         ip=vm.public_ip or no_ip,
         username=html.escape(vm.admin_username),
+        password_line=password_line,
     )
 
 
