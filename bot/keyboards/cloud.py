@@ -432,7 +432,7 @@ def azure_ports_list_keyboard(lang: str, account_id: str, vm_name: str, rules: l
     builder = InlineKeyboardBuilder()
     rows: list[int] = []
     for i, rule in enumerate(rules):
-        builder.button(text=azure_port_rule_label(rule), callback_data=f"azports:delask:{account_id}:{vm_name}:{i}")
+        builder.button(text=azure_port_rule_label(lang, rule), callback_data=f"azports:delask:{account_id}:{vm_name}:{i}")
         rows.append(1)
     builder.button(text=t(lang, "btn_azure_port_add"), callback_data=f"azports:add:{account_id}:{vm_name}")
     rows.append(1)
@@ -453,8 +453,9 @@ def azure_port_protocol_keyboard(lang: str, account_id: str, vm_name: str) -> In
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_azure_proto_tcp"), callback_data="azports:proto:tcp")
     builder.button(text=t(lang, "btn_azure_proto_udp"), callback_data="azports:proto:udp")
+    builder.button(text=t(lang, "btn_azure_proto_any"), callback_data="azports:proto:any")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}")
-    builder.adjust(2, 1)
+    builder.adjust(2, 1, 1)
     return builder.as_markup()
 
 

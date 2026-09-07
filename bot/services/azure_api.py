@@ -638,7 +638,11 @@ async def azure_add_port_rule(creds: AzureCredentials, vm_name: str, port: str, 
     if priority > 4096:
         raise AzureAPIError("detail:Достигнут предел числа правил фаервола (максимальный приоритет 4096)")
 
-    rule_name = f"Allow-{protocol}-{port}"
+    # Azure resource names don't allow "*" — use a readable stand-in so a
+    # "port: *" or "protocol: *" (Any) rule still gets a valid rule name.
+    port_label = "All" if port == "*" else port
+    protocol_label = "Any" if protocol == "*" else protocol
+    rule_name = f"Allow-{protocol_label}-{port_label}"
     path = f"{_nsg_path(creds, rg_name, vm_name)}/securityRules/{rule_name}"
     body = {
         "properties": {

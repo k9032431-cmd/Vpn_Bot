@@ -2183,7 +2183,10 @@ async def cb_azure_port_cancel(callback: CallbackQuery, state: FSMContext, lang:
 async def process_azure_port_number(message: Message, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     raw = message.text.strip() if message.text else ""
-    if not raw.isdigit() or not (1 <= int(raw) <= 65535):
+    # "*" means "all ports", exactly like typing * into the destination
+    # port range field in the Azure Portal's Add inbound rule dialog.
+    valid = raw == "*" or (raw.isdigit() and 1 <= int(raw) <= 65535)
+    if not valid:
         await message.answer(
             texts.azure_invalid_port_number_text(lang),
             reply_markup=azure_port_cancel_keyboard(lang, data["account_id"], data["vm_name"]),
@@ -2200,7 +2203,7 @@ async def process_azure_port_number(message: Message, state: FSMContext, lang: s
 @router.callback_query(F.data.startswith("azports:proto:"), AzurePortStates.choosing_protocol)
 async def cb_azure_port_protocol(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     protocol_raw = callback.data.split(":", 2)[2]
-    protocol = "Tcp" if protocol_raw == "tcp" else "Udp"
+    protocol = {"tcp": "Tcp", "udp": "Udp", "any": "*"}[protocol_raw]
     data = await state.get_data()
     account = await cloud_store.get(callback.from_user.id, data["account_id"])
     if not account:

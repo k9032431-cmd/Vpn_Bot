@@ -740,8 +740,16 @@ def azure_ports_header_text(lang: str, vm, has_rules: bool) -> str:
     return t(lang, "azure_ports_header", name=html.escape(vm.name), body=t(lang, body_key))
 
 
-def azure_port_rule_label(rule) -> str:
-    return f"🔌 {rule.protocol} {rule.port}"
+def _azure_port_display(lang: str, port: str) -> str:
+    return t(lang, "azure_port_all") if port == "*" else port
+
+
+def _azure_protocol_display(lang: str, protocol: str) -> str:
+    return t(lang, "azure_protocol_any") if protocol == "*" else protocol
+
+
+def azure_port_rule_label(lang: str, rule) -> str:
+    return f"🔌 {_azure_protocol_display(lang, rule.protocol)} {_azure_port_display(lang, rule.port)}"
 
 
 def azure_step_port_number_text(lang: str) -> str:
@@ -753,15 +761,21 @@ def azure_invalid_port_number_text(lang: str) -> str:
 
 
 def azure_choose_protocol_text(lang: str, port: str) -> str:
-    return t(lang, "azure_choose_protocol", port=port)
+    return t(lang, "azure_choose_protocol", port=_azure_port_display(lang, port))
 
 
 def azure_port_added_text(lang: str, rule) -> str:
-    return t(lang, "azure_port_added", icon=e("success", "✅"), protocol=rule.protocol, port=rule.port)
+    return t(
+        lang, "azure_port_added", icon=e("success", "✅"),
+        protocol=_azure_protocol_display(lang, rule.protocol), port=_azure_port_display(lang, rule.port),
+    )
 
 
 def azure_port_delete_confirm_text(lang: str, rule) -> str:
-    return t(lang, "azure_port_delete_confirm", icon=e("warning", "⚠️"), protocol=rule.protocol, port=rule.port)
+    return t(
+        lang, "azure_port_delete_confirm", icon=e("warning", "⚠️"),
+        protocol=_azure_protocol_display(lang, rule.protocol), port=_azure_port_display(lang, rule.port),
+    )
 
 
 def azure_port_deleted_text(lang: str) -> str:

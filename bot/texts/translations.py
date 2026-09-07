@@ -2712,9 +2712,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_azure_port_add": {"ru": "➕ Добавить порт", "en": "➕ Add port", "tk": "➕ Port goş"},
     "btn_azure_ports_back": {"ru": "◀️ К серверу", "en": "◀️ Back to server", "tk": "◀️ Servere gaýt"},
     "azure_step_port_number": {
-        "ru": "🔢 Введите номер порта (1–65535), который нужно открыть:",
-        "en": "🔢 Enter the port number (1-65535) to open:",
-        "tk": "🔢 Açmaly port belgisini giriziň (1-65535):",
+        "ru": "🔢 Введите номер порта (1–65535), который нужно открыть, или <code>*</code>, чтобы открыть все порты:",
+        "en": "🔢 Enter the port number (1-65535) to open, or <code>*</code> to open all ports:",
+        "tk": "🔢 Açmaly port belgisini giriziň (1-65535), ýa-da ähli portlary açmak üçin <code>*</code> ýazyň:",
     },
     "azure_invalid_port_number": {
         "ru": "Порт должен быть числом от 1 до 65535. Попробуйте ещё раз:",
@@ -2728,6 +2728,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "btn_azure_proto_tcp": {"ru": "TCP", "en": "TCP", "tk": "TCP"},
     "btn_azure_proto_udp": {"ru": "UDP", "en": "UDP", "tk": "UDP"},
+    "btn_azure_proto_any": {"ru": "Любой (Any)", "en": "Any", "tk": "Islendik (Any)"},
+    "azure_port_all": {"ru": "все порты", "en": "all ports", "tk": "ähli portlar"},
+    "azure_protocol_any": {"ru": "Любой", "en": "Any", "tk": "Islendik"},
     "azure_port_added": {
         "ru": "{icon} Правило добавлено: {protocol} {port}.",
         "en": "{icon} Rule added: {protocol} {port}.",
