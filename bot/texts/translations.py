@@ -198,23 +198,83 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🛠️ Eýýäm işlenilýär"
         ),
     },
-    "section_crypt": {
+    "crypt_choose_action": {
+        "ru": "{icon} <b>Crypt / Decrypt</b>\n\nЧто нужно сделать со ссылкой?",
+        "en": "{icon} <b>Crypt / Decrypt</b>\n\nWhat do you want to do with the link?",
+        "tk": "{icon} <b>Crypt / Decrypt</b>\n\nBaglanyşyk bilen näme etmeli?",
+    },
+    "btn_crypt_encrypt": {"ru": "🔒 Crypt (зашифровать)", "en": "🔒 Crypt (encrypt)", "tk": "🔒 Crypt (şifrle)"},
+    "btn_crypt_decrypt": {"ru": "🔓 Decrypt (расшифровать)", "en": "🔓 Decrypt (decrypt)", "tk": "🔓 Decrypt (deşifrle)"},
+    "crypt_decrypt_soon": {
         "ru": (
-            "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
-            "<i>Шифрование и дешифрование данных — уже в работе.</i>\n\n"
-            "🛠️ Скоро будет доступно"
+            "🛠️ <b>Decrypt пока недоступен</b>\n\n"
+            "У Happ нет официального способа расшифровать ссылку обратно — это сделано "
+            "специально, чтобы конфиги внутри подписки нельзя было посмотреть. Добавим, "
+            "если появится безопасный способ это сделать."
         ),
         "en": (
-            "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
-            "<i>Data encryption and decryption tools are already in the works.</i>\n\n"
-            "🛠️ Coming soon"
+            "🛠️ <b>Decrypt isn't available yet</b>\n\n"
+            "Happ has no official way to decrypt a link back — that's intentional, so the "
+            "configs inside a subscription can't be viewed. We'll add it if a safe way "
+            "to do that shows up."
         ),
         "tk": (
-            "{icon} <b>Crypt / Decrypt</b> 🗝️\n\n"
-            "<i>Maglumatlary şifrlemek we deşifrlemek eýýäm işlenilýär.</i>\n\n"
-            "🛠️ Ýakynda elýeterli bolar"
+            "🛠️ <b>Decrypt entek elýeterli däl</b>\n\n"
+            "Happ-yň baglanyşygy yzyna deşifrlemek üçin resmi usuly ýok — bu ýörite edilen, "
+            "abunalykdaky konfigurasiýalary görüp bolmaz ýaly. Howpsuz usul tapylsa goşarys."
         ),
     },
+    "crypt_choose_vpn": {
+        "ru": "📱 Для какого VPN-клиента нужна ссылка?",
+        "en": "📱 Which VPN client is this link for?",
+        "tk": "📱 Bu baglanyşyk haýsy VPN-müşderisi üçin?",
+    },
+    "btn_crypt_vpn_happ": {"ru": "Happ", "en": "Happ", "tk": "Happ"},
+    "crypt_cancelled": {
+        "ru": "Отменено.",
+        "en": "Cancelled.",
+        "tk": "Ýatyryldy.",
+    },
+    "crypt_waiting_url": {
+        "ru": (
+            "🔗 Отправьте вашу ссылку-подписку (начинается с <code>http://</code> или "
+            "<code>https://</code>), которую нужно зашифровать для Happ:"
+        ),
+        "en": (
+            "🔗 Send the subscription link (starting with <code>http://</code> or "
+            "<code>https://</code>) you want encrypted for Happ:"
+        ),
+        "tk": (
+            "🔗 <code>http://</code> ýa-da <code>https://</code> bilen başlaýan, Happ üçin "
+            "şifrlenmeli abuna baglanyşygyňyzy iberiň:"
+        ),
+    },
+    "crypt_invalid_url": {
+        "ru": "Это не похоже на ссылку. Отправьте адрес, начинающийся с http:// или https://:",
+        "en": "That doesn't look like a link. Send an address starting with http:// or https://:",
+        "tk": "Bu baglanyşyga meňzänok. http:// ýa-da https:// bilen başlaýan salgyny iberiň:",
+    },
+    "crypt_result": {
+        "ru": "{icon} Готово! Зашифрованная ссылка для Happ:\n\n<code>{link}</code>\n\nДобавьте её в Happ как обычную подписку.",
+        "en": "{icon} Done! Your encrypted link for Happ:\n\n<code>{link}</code>\n\nAdd it to Happ as a regular subscription.",
+        "tk": "{icon} Taýyn! Happ üçin şifrlenen baglanyşyk:\n\n<code>{link}</code>\n\nOny Happ-a adaty abuna hökmünde goşuň.",
+    },
+    "crypt_error": {
+        "ru": "{icon} Не получилось зашифровать ссылку — {reason}.",
+        "en": "{icon} Couldn't encrypt the link — {reason}.",
+        "tk": "{icon} Baglanyşyk şifrlenmedi — {reason}.",
+    },
+    "crypt_err_connect": {
+        "ru": "не удалось подключиться к сервису Happ, попробуйте позже",
+        "en": "couldn't reach Happ's service, try again later",
+        "tk": "Happ hyzmatyna birikip bolmady, soňrak synanyşyň",
+    },
+    "crypt_err_bad_response": {
+        "ru": "сервис Happ вернул некорректный ответ",
+        "en": "Happ's service returned an invalid response",
+        "tk": "Happ hyzmaty nädogry jogap gaýtardy",
+    },
+    "btn_crypt_again": {"ru": "🔐 Ещё одна ссылка", "en": "🔐 Another link", "tk": "🔐 Ýene bir baglanyşyk"},
     "section_info": {
         "ru": (
             "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"

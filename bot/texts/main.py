@@ -8,7 +8,6 @@ from .translations import t
 
 _SECTION_ICON = {
     "cloud_account": ("cloud_account", "👤"),
-    "crypt": ("crypt", "🔐"),
     "info": ("info", "ℹ️"),
 }
 
