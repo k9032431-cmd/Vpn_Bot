@@ -56,7 +56,12 @@ async def happ_encrypt_link(subscription_url: str) -> str:
             async with session.post(HAPP_ENCRYPT_URL, json={"url": subscription_url}) as resp:
                 raw = await resp.text()
                 if resp.status >= 400:
-                    raise HappAPIError("bad_response")
+                    # Carry the real response body through in the "detail:"
+                    # form the texts layer already knows how to render
+                    # verbatim (see azure_api.py/upcloud_api.py) — Happ's
+                    # exact error shape isn't documented, so surfacing the
+                    # raw body is far more useful than a generic message.
+                    raise HappAPIError(f"detail:HTTP {resp.status}: {raw[:300]}")
     except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError) as exc:
         raise HappAPIError("connect_failed") from exc
 
@@ -67,5 +72,5 @@ async def happ_encrypt_link(subscription_url: str) -> str:
 
     link = _extract_link(payload)
     if not link or not _looks_like_happ_link(link):
-        raise HappAPIError("bad_response")
+        raise HappAPIError(f"detail:unexpected response body: {raw[:300]}")
     return link

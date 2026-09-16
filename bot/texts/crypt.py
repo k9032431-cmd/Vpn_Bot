@@ -40,5 +40,8 @@ def result_text(lang: str, link: str) -> str:
 
 
 def error_text(lang: str, reason: str) -> str:
+    if reason.startswith("detail:"):
+        detail = html.escape(reason.split(":", 1)[1])
+        return t(lang, "crypt_error", icon=e("error", "❌"), reason=detail)
     key = _CRYPT_ERR_KEYS.get(reason, "crypt_err_bad_response")
     return t(lang, "crypt_error", icon=e("error", "❌"), reason=t(lang, key))
