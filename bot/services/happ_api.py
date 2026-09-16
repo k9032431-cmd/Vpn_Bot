@@ -22,9 +22,14 @@ def _extract_link(payload: object) -> str | None:
     response beyond "returns an encrypted link" — this checks every
     plausible key (and one level of nesting) so a server-side naming
     choice we didn't anticipate doesn't break the whole feature, and
-    falls back to treating a plain-text body as the link itself."""
+    falls back to treating a plain-text body as the link itself.
+
+    Confirmed live against the real API: the actual key is
+    "encrypted_link", e.g. {"encrypted_link": "happ://crypt5/..."}."""
     if isinstance(payload, dict):
-        for key in ("link", "url", "result", "data", "crypt_link", "encrypted", "crypt", "happ_link"):
+        for key in (
+            "encrypted_link", "link", "url", "result", "data", "crypt_link", "encrypted", "crypt", "happ_link",
+        ):
             value = payload.get(key)
             if isinstance(value, str) and value:
                 return value
