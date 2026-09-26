@@ -4,6 +4,7 @@ import re
 from types import SimpleNamespace
 
 from aiogram import F, Router
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
@@ -767,7 +768,7 @@ async def cb_create_zone_page(callback: CallbackQuery, state: FSMContext, lang: 
     await _render_create_page(callback, lang, texts.create_choose_zone_text, _zone_options(data["zones"]), page, "ccreate:zonepage")
 
 
-@router.callback_query(F.data == "ccreate:cancel", CloudServerCreateStates)
+@router.callback_query(F.data == "ccreate:cancel", StateFilter(CloudServerCreateStates))
 async def cb_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     account_id = data.get("account_id")
@@ -1009,7 +1010,7 @@ async def cb_plan_page(callback: CallbackQuery, state: FSMContext, lang: str) ->
     )
 
 
-@router.callback_query(F.data == "cplan:cancel", CloudPlanChangeStates)
+@router.callback_query(F.data == "cplan:cancel", StateFilter(CloudPlanChangeStates))
 async def cb_plan_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.clear()
@@ -1143,7 +1144,7 @@ async def cb_storage_add(callback: CallbackQuery, state: FSMContext, lang: str) 
     )
 
 
-@router.callback_query(F.data == "csto:cancel_attach", CloudDiskStates)
+@router.callback_query(F.data == "csto:cancel_attach", StateFilter(CloudDiskStates))
 async def cb_storage_add_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.clear()
@@ -1229,7 +1230,7 @@ async def cb_storage_resize_ask(callback: CallbackQuery, state: FSMContext, lang
     )
 
 
-@router.callback_query(F.data == "csto:cancel_resize", CloudDiskStates)
+@router.callback_query(F.data == "csto:cancel_resize", StateFilter(CloudDiskStates))
 async def cb_storage_resize_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.clear()
@@ -1911,7 +1912,7 @@ async def cb_azure_create_location_page(callback: CallbackQuery, state: FSMConte
     )
 
 
-@router.callback_query(F.data == "azcreate:cancel", AzureVMCreateStates)
+@router.callback_query(F.data == "azcreate:cancel", StateFilter(AzureVMCreateStates))
 async def cb_azure_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     account_id = data.get("account_id")
@@ -2303,7 +2304,7 @@ async def cb_azure_port_add_ask(callback: CallbackQuery, state: FSMContext, lang
     )
 
 
-@router.callback_query(F.data.startswith("azports:cancel:"), AzurePortStates)
+@router.callback_query(F.data.startswith("azports:cancel:"), StateFilter(AzurePortStates))
 async def cb_azure_port_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     _, _, account_id, vm_name = callback.data.split(":", 3)
     await state.clear()
@@ -2585,7 +2586,7 @@ async def cb_hetzner_create_location_page(callback: CallbackQuery, state: FSMCon
     )
 
 
-@router.callback_query(F.data == "hzcreate:cancel", HetznerVMCreateStates)
+@router.callback_query(F.data == "hzcreate:cancel", StateFilter(HetznerVMCreateStates))
 async def cb_hetzner_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     account_id = data.get("account_id")
@@ -2906,7 +2907,7 @@ async def cb_hetzner_plan_page(callback: CallbackQuery, state: FSMContext, lang:
     )
 
 
-@router.callback_query(F.data == "hzplan:cancel", HetznerPlanChangeStates)
+@router.callback_query(F.data == "hzplan:cancel", StateFilter(HetznerPlanChangeStates))
 async def cb_hetzner_plan_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.clear()
