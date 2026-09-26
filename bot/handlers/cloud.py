@@ -42,6 +42,7 @@ from bot.keyboards.cloud import (
     hetzner_address_delete_confirm_keyboard,
     hetzner_address_detail_keyboard,
     hetzner_addresses_list_keyboard,
+    hetzner_addresses_menu_keyboard,
     hetzner_create_auth_method_keyboard,
     hetzner_create_cancel_keyboard,
     hetzner_create_confirm_keyboard,
@@ -3110,29 +3111,42 @@ async def cb_hetzner_ip_remove(callback: CallbackQuery, lang: str) -> None:
 # --- Hetzner: standalone IP addresses (Primary + Floating, account-level) ---
 
 
-async def _show_hetzner_addresses(callback: CallbackQuery, lang: str, account: dict, account_id: str) -> None:
+async def _show_hetzner_address_list(callback: CallbackQuery, lang: str, account: dict, account_id: str, kind: str) -> None:
     creds = _hetzner_creds(account)
     try:
-        primary_ips = await hetzner_list_primary_ips(creds)
-        floating_ips = await hetzner_list_all_floating_ips(creds)
+        addresses = await hetzner_list_primary_ips(creds) if kind == "primary" else await hetzner_list_all_floating_ips(creds)
     except HetznerAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
     await callback.message.edit_text(
-        texts.hetzner_addresses_header_text(lang, bool(primary_ips or floating_ips)),
-        reply_markup=hetzner_addresses_list_keyboard(lang, account_id, primary_ips, floating_ips),
+        texts.hetzner_addresses_header_text(lang, kind, bool(addresses)),
+        reply_markup=hetzner_addresses_list_keyboard(lang, account_id, kind, addresses),
     )
 
 
-@router.callback_query(F.data.startswith("hzaddr:list:"))
-async def cb_hetzner_addresses_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+@router.callback_query(F.data.startswith("hzaddr:menu:"))
+async def cb_hetzner_addresses_menu(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
     account_id = callback.data.split(":", 2)[2]
     account = await _get_account(callback, lang, account_id)
     if not account:
         return
     await callback.answer()
-    await _show_hetzner_addresses(callback, lang, account, account_id)
+    await callback.message.edit_text(
+        texts.hetzner_addresses_menu_text(lang), reply_markup=hetzner_addresses_menu_keyboard(lang, account_id)
+    )
+
+
+@router.callback_query(F.data.startswith("hzaddr:list:"))
+async def cb_hetzner_addresses_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, kind_char = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    kind = "primary" if kind_char == "p" else "floating"
+    await _show_hetzner_address_list(callback, lang, account, account_id, kind)
 
 
 async def _get_hetzner_address(creds: HetznerCredentials, kind: str, address_id: int):
@@ -3165,11 +3179,11 @@ async def cb_hetzner_address_view(callback: CallbackQuery, state: FSMContext, la
     except HetznerAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    kind_full = "primary" if kind == "p" else "floating"
     if address is None:
-        await _show_hetzner_addresses(callback, lang, account, account_id)
+        await _show_hetzner_address_list(callback, lang, account, account_id, kind_full)
         return
     server_name = await _server_name_for(creds, address.server_id)
-    kind_full = "primary" if kind == "p" else "floating"
     await callback.message.edit_text(
         texts.hetzner_address_detail_text(lang, kind_full, address, server_name),
         reply_markup=hetzner_address_detail_keyboard(lang, account_id, kind_full, address),
@@ -3191,10 +3205,10 @@ async def cb_hetzner_address_delete_ask(callback: CallbackQuery, lang: str) -> N
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
     await callback.answer()
-    if address is None:
-        await _show_hetzner_addresses(callback, lang, account, account_id)
-        return
     kind_full = "primary" if kind == "p" else "floating"
+    if address is None:
+        await _show_hetzner_address_list(callback, lang, account, account_id, kind_full)
+        return
     await callback.message.edit_text(
         texts.hetzner_address_delete_confirm_text(lang, address),
         reply_markup=hetzner_address_delete_confirm_keyboard(lang, account_id, kind_full, address_id),
@@ -3219,7 +3233,7 @@ async def cb_hetzner_address_delete(callback: CallbackQuery, lang: str) -> None:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
     await callback.message.edit_text(texts.hetzner_address_deleted_text(lang), reply_markup=None)
-    await _show_hetzner_addresses(callback, lang, account, account_id)
+    await _show_hetzner_address_list(callback, lang, account, account_id, "primary" if kind == "p" else "floating")
 
 
 @router.callback_query(F.data.startswith("hzaddr:unassign:"))
@@ -3240,10 +3254,10 @@ async def cb_hetzner_address_unassign(callback: CallbackQuery, lang: str) -> Non
     except HetznerAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
-    if address is None:
-        await _show_hetzner_addresses(callback, lang, account, account_id)
-        return
     kind_full = "primary" if kind == "p" else "floating"
+    if address is None:
+        await _show_hetzner_address_list(callback, lang, account, account_id, kind_full)
+        return
     await callback.message.edit_text(
         texts.hetzner_address_detail_text(lang, kind_full, address, None),
         reply_markup=hetzner_address_detail_keyboard(lang, account_id, kind_full, address),
@@ -3320,11 +3334,11 @@ async def cb_hetzner_address_assign_pick(callback: CallbackQuery, state: FSMCont
     except HetznerAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    kind_full = "primary" if kind == "p" else "floating"
     if address is None:
-        await _show_hetzner_addresses(callback, lang, account, account_id)
+        await _show_hetzner_address_list(callback, lang, account, account_id, kind_full)
         return
     server_name = await _server_name_for(creds, address.server_id)
-    kind_full = "primary" if kind == "p" else "floating"
     await callback.message.edit_text(
         texts.hetzner_address_detail_text(lang, kind_full, address, server_name),
         reply_markup=hetzner_address_detail_keyboard(lang, account_id, kind_full, address),
@@ -3383,7 +3397,8 @@ async def cb_hetzner_address_create_cancel(callback: CallbackQuery, state: FSMCo
     if not account:
         await _show_provider_list(callback, lang)
         return
-    await _show_hetzner_addresses(callback, lang, account, account_id)
+    kind_full = "primary" if data.get("kind") == "p" else "floating"
+    await _show_hetzner_address_list(callback, lang, account, account_id, kind_full)
 
 
 @router.callback_query(F.data.startswith("hzaddrcreate:type:"), HetznerIPCreateStates.choosing_type)

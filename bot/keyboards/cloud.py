@@ -71,7 +71,7 @@ def account_dashboard_keyboard(lang: str, account_id: str, provider: str) -> Inl
     rows = [1]
     builder.button(text=t(lang, "btn_cloud_servers"), callback_data=f"cacc:servers:{account_id}")
     if provider == "hetzner":
-        builder.button(text=t(lang, "btn_cloud_addresses"), callback_data=f"hzaddr:list:{account_id}")
+        builder.button(text=t(lang, "btn_cloud_addresses"), callback_data=f"hzaddr:menu:{account_id}")
         rows.append(1)
     builder.button(text=t(lang, "btn_cloud_account_remove"), callback_data=f"cacc:rmask:{account_id}")
     builder.button(text=t(lang, "btn_cloud_account_list"), callback_data=f"cprov:{provider}")
@@ -654,35 +654,44 @@ def hetzner_plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
 # --- Hetzner: standalone IP addresses (Primary + Floating, account-level) ---
 
 
-def hetzner_addresses_list_keyboard(
-    lang: str, account_id: str, primary_ips: list, floating_ips: list
-) -> InlineKeyboardMarkup:
+def hetzner_addresses_menu_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_hetzner_address_category_primary"), callback_data=f"hzaddr:list:{account_id}:p")
+    builder.button(text=t(lang, "btn_hetzner_address_category_floating"), callback_data=f"hzaddr:list:{account_id}:f")
+    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def hetzner_addresses_list_keyboard(lang: str, account_id: str, kind: str, addresses: list) -> InlineKeyboardMarkup:
+    kind_char = "p" if kind == "primary" else "f"
     builder = InlineKeyboardBuilder()
     rows: list[int] = []
-    for ip in primary_ips:
-        builder.button(text=hetzner_address_list_label("primary", ip), callback_data=f"hzaddr:view:{account_id}:p:{ip.id}")
+    for address in addresses:
+        builder.button(
+            text=hetzner_address_list_label(kind, address), callback_data=f"hzaddr:view:{account_id}:{kind_char}:{address.id}"
+        )
         rows.append(1)
-    for ip in floating_ips:
-        builder.button(text=hetzner_address_list_label("floating", ip), callback_data=f"hzaddr:view:{account_id}:f:{ip.id}")
-        rows.append(1)
-    builder.button(text=t(lang, "btn_hetzner_address_buy_primary"), callback_data=f"hzaddr:buyp:{account_id}")
-    builder.button(text=t(lang, "btn_hetzner_address_buy_floating"), callback_data=f"hzaddr:buyf:{account_id}")
-    rows += [1, 1]
-    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}")
+    buy_key = "btn_hetzner_address_buy_primary" if kind == "primary" else "btn_hetzner_address_buy_floating"
+    buy_prefix = "hzaddr:buyp" if kind == "primary" else "hzaddr:buyf"
+    builder.button(text=t(lang, buy_key), callback_data=f"{buy_prefix}:{account_id}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
 
 
 def hetzner_address_detail_keyboard(lang: str, account_id: str, kind: str, address) -> InlineKeyboardMarkup:
-    tail = f"{account_id}:{'p' if kind == 'primary' else 'f'}:{address.id}"
+    kind_char = "p" if kind == "primary" else "f"
+    tail = f"{account_id}:{kind_char}:{address.id}"
     builder = InlineKeyboardBuilder()
     if address.server_id:
         builder.button(text=t(lang, "btn_hetzner_address_unassign"), callback_data=f"hzaddr:unassign:{tail}")
     else:
         builder.button(text=t(lang, "btn_hetzner_address_assign"), callback_data=f"hzaddr:assignask:{tail}")
     builder.button(text=t(lang, "btn_hetzner_address_delete"), callback_data=f"hzaddr:delask:{tail}")
-    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}:{kind_char}")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 

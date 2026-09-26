@@ -3035,10 +3035,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "⬅️ Back to IP addresses",
         "tk": "⬅️ IP salgylara gaýt",
     },
+    "hetzner_addresses_menu": {
+        "ru": "🌐 <b>IP-адреса проекта</b>\n\nВыберите тип адресов:",
+        "en": "🌐 <b>Project IP addresses</b>\n\nChoose an address type:",
+        "tk": "🌐 <b>Taslamanyň IP salgylary</b>\n\nSalgy görnüşini saýlaň:",
+    },
     "hetzner_addresses_header": {
-        "ru": "🌐 <b>IP-адреса проекта</b>\n\n{body}",
-        "en": "🌐 <b>Project IP addresses</b>\n\n{body}",
-        "tk": "🌐 <b>Taslamanyň IP salgylary</b>\n\n{body}",
+        "ru": "{icon} <b>{kind}</b>\n\n{body}",
+        "en": "{icon} <b>{kind}</b>\n\n{body}",
+        "tk": "{icon} <b>{kind}</b>\n\n{body}",
     },
     "hetzner_addresses_hint": {
         "ru": "<i>Выберите адрес, чтобы посмотреть детали, привязать/отвязать от сервера или удалить, либо купите новый.</i>",
@@ -3046,9 +3051,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "<i>Jikme-jiklikleri görmek, serwere baglamak/aýyrmak ýa-da pozmak üçin salgyny saýlaň, ýa-da täzesini satyn alyň.</i>",
     },
     "hetzner_addresses_empty": {
-        "ru": "<i>В проекте пока нет ни одного Primary или Floating IP. Можно купить новый.</i>",
-        "en": "<i>The project has no Primary or Floating IPs yet. You can buy a new one.</i>",
-        "tk": "<i>Taslamada heniz Primary ýa-da Floating IP ýok. Täzesini satyn alyp bolýar.</i>",
+        "ru": "<i>Такого адреса пока нет в проекте. Можно купить новый.</i>",
+        "en": "<i>The project has none of this address type yet. You can buy a new one.</i>",
+        "tk": "<i>Taslamada heniz bu görnüşli salgy ýok. Täzesini satyn alyp bolýar.</i>",
     },
     "hetzner_address_kind_primary": {"ru": "Primary IP", "en": "Primary IP", "tk": "Primary IP"},
     "hetzner_address_kind_floating": {"ru": "Floating IP", "en": "Floating IP", "tk": "Floating IP"},
@@ -3136,6 +3141,16 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "🗑 Да, удалить",
         "en": "🗑 Yes, delete",
         "tk": "🗑 Hawa, poz",
+    },
+    "btn_hetzner_address_category_primary": {
+        "ru": "🟩 Primary IP",
+        "en": "🟩 Primary IP",
+        "tk": "🟩 Primary IP",
+    },
+    "btn_hetzner_address_category_floating": {
+        "ru": "🌐 Floating IP",
+        "en": "🌐 Floating IP",
+        "tk": "🌐 Floating IP",
     },
 }
 
