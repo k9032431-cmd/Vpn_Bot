@@ -988,3 +988,81 @@ def hetzner_ip_add_confirm_text(lang: str, server) -> str:
 
 def hetzner_ip_remove_confirm_text(lang: str, server, address: str) -> str:
     return t(lang, "hetzner_ip_remove_confirm", icon=e("warning", "⚠️"), address=address, name=html.escape(server.name))
+
+
+# --- Hetzner: standalone IP addresses (Primary + Floating, account-level) ---
+
+
+def hetzner_address_kind_title(lang: str, kind: str) -> str:
+    return t(lang, "hetzner_address_kind_primary" if kind == "primary" else "hetzner_address_kind_floating")
+
+
+def hetzner_address_list_label(kind: str, address) -> str:
+    icon = "🟩" if kind == "primary" else "🌐"
+    return f"{icon} {address.ip}"
+
+
+def hetzner_addresses_header_text(lang: str, has_addresses: bool) -> str:
+    body_key = "hetzner_addresses_hint" if has_addresses else "hetzner_addresses_empty"
+    return t(lang, "hetzner_addresses_header", body=t(lang, body_key))
+
+
+def hetzner_address_detail_text(lang: str, kind: str, address, server_name: str | None) -> str:
+    assignment = html.escape(server_name) if server_name else t(lang, "hetzner_address_unassigned")
+    return t(
+        lang,
+        "hetzner_address_detail",
+        kind=hetzner_address_kind_title(lang, kind),
+        ip=address.ip,
+        ip_type=address.ip_type.upper(),
+        location=address.location or "—",
+        assignment=assignment,
+    )
+
+
+def hetzner_address_delete_confirm_text(lang: str, address) -> str:
+    return t(lang, "hetzner_address_delete_confirm", icon=e("warning", "⚠️"), ip=address.ip)
+
+
+def hetzner_address_create_choose_type_text(lang: str, kind: str) -> str:
+    return t(lang, "hetzner_address_create_choose_type", kind=hetzner_address_kind_title(lang, kind))
+
+
+def hetzner_address_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_address_create_choose_location") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_address_create_confirm_text(lang: str, kind: str, ip_type: str, location: str) -> str:
+    return t(
+        lang,
+        "hetzner_address_create_confirm",
+        kind=hetzner_address_kind_title(lang, kind),
+        ip_type=ip_type.upper(),
+        location=location,
+    )
+
+
+def hetzner_address_create_success_text(lang: str, kind: str, address) -> str:
+    return t(
+        lang,
+        "hetzner_address_create_success",
+        icon=e("success", "✅"),
+        kind=hetzner_address_kind_title(lang, kind),
+        ip=address.ip,
+    )
+
+
+def hetzner_address_assign_choose_server_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_address_assign_choose_server") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_address_assign_ok_text(lang: str) -> str:
+    return t(lang, "hetzner_address_assign_ok", icon=e("success", "✅"))
+
+
+def hetzner_address_unassign_ok_text(lang: str) -> str:
+    return t(lang, "hetzner_address_unassign_ok", icon=e("success", "✅"))
+
+
+def hetzner_address_deleted_text(lang: str) -> str:
+    return t(lang, "hetzner_address_deleted", icon=e("success", "✅"))

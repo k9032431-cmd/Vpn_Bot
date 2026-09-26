@@ -79,6 +79,17 @@ class FloatingIPInfo:
     id: int
     ip: str
     ip_type: str  # "ipv4" | "ipv6"
+    server_id: int | None = None
+    location: str = ""
+
+
+@dataclass
+class PrimaryIPInfo:
+    id: int
+    ip: str
+    ip_type: str  # "ipv4" | "ipv6"
+    location: str
+    server_id: int | None = None
 
 
 def _connector() -> aiohttp.TCPConnector:
@@ -387,7 +398,13 @@ async def hetzner_delete_server(creds: HetznerCredentials, server_id: int) -> No
 
 
 def _floating_ip_from_payload(item: dict) -> FloatingIPInfo:
-    return FloatingIPInfo(id=item["id"], ip=item.get("ip", ""), ip_type=item.get("type", "ipv4"))
+    return FloatingIPInfo(
+        id=item["id"],
+        ip=item.get("ip", ""),
+        ip_type=item.get("type", "ipv4"),
+        server_id=item.get("server"),
+        location=(item.get("home_location") or {}).get("name", ""),
+    )
 
 
 async def hetzner_list_floating_ips(creds: HetznerCredentials, server_id: int) -> list[FloatingIPInfo]:
@@ -396,6 +413,18 @@ async def hetzner_list_floating_ips(creds: HetznerCredentials, server_id: int) -
         _floating_ip_from_payload(item)
         for item in (payload or {}).get("floating_ips", [])
         if isinstance(item, dict) and item.get("server") == server_id
+    ]
+
+
+async def hetzner_list_all_floating_ips(creds: HetznerCredentials) -> list[FloatingIPInfo]:
+    """Every Floating IP owned by the project, assigned or not -- used by the
+    standalone IP-addresses section, unlike hetzner_list_floating_ips which
+    is scoped to one server's detail screen."""
+    _, payload = await _request(creds, "GET", "/floating_ips", params={"per_page": 50})
+    return [
+        _floating_ip_from_payload(item)
+        for item in (payload or {}).get("floating_ips", [])
+        if isinstance(item, dict)
     ]
 
 
@@ -409,7 +438,92 @@ async def hetzner_add_floating_ip(creds: HetznerCredentials, server_id: int, ip_
     return _floating_ip_from_payload(payload["floating_ip"])
 
 
+async def hetzner_create_floating_ip(creds: HetznerCredentials, ip_type: str, location: str) -> FloatingIPInfo:
+    """Buys a Floating IP that isn't attached to any server yet -- the
+    project-level "buy an IP" flow, as opposed to hetzner_add_floating_ip
+    which always attaches to a given server immediately."""
+    _, payload = await _request(
+        creds, "POST", "/floating_ips", json_body={"type": ip_type, "home_location": location}
+    )
+    action = payload.get("action")
+    if action and action.get("id"):
+        await _poll_action(creds, action["id"])
+    return _floating_ip_from_payload(payload["floating_ip"])
+
+
+async def hetzner_assign_floating_ip(creds: HetznerCredentials, floating_ip_id: int, server_id: int) -> None:
+    _, payload = await _request(
+        creds, "POST", f"/floating_ips/{floating_ip_id}/actions/assign", json_body={"server": server_id}
+    )
+    action = payload.get("action") or {}
+    if action.get("id"):
+        await _poll_action(creds, action["id"])
+
+
+async def hetzner_unassign_floating_ip(creds: HetznerCredentials, floating_ip_id: int) -> None:
+    _, payload = await _request(creds, "POST", f"/floating_ips/{floating_ip_id}/actions/unassign")
+    action = payload.get("action") or {}
+    if action.get("id"):
+        await _poll_action(creds, action["id"])
+
+
 async def hetzner_remove_floating_ip(creds: HetznerCredentials, floating_ip_id: int) -> None:
     status, _ = await _request(creds, "DELETE", f"/floating_ips/{floating_ip_id}")
+    if status == 404:
+        return
+
+
+# --- Primary IPs ---
+
+
+def _primary_ip_from_payload(item: dict) -> PrimaryIPInfo:
+    datacenter = item.get("datacenter") or {}
+    location = (datacenter.get("location") or {}).get("name", "")
+    return PrimaryIPInfo(
+        id=item["id"], ip=item.get("ip", ""), ip_type=item.get("type", "ipv4"),
+        location=location, server_id=item.get("assignee_id"),
+    )
+
+
+async def hetzner_list_primary_ips(creds: HetznerCredentials) -> list[PrimaryIPInfo]:
+    _, payload = await _request(creds, "GET", "/primary_ips", params={"per_page": 50})
+    return [
+        _primary_ip_from_payload(item) for item in (payload or {}).get("primary_ips", []) if isinstance(item, dict)
+    ]
+
+
+async def hetzner_create_primary_ip(creds: HetznerCredentials, ip_type: str, location: str) -> PrimaryIPInfo:
+    """Buys a Primary IP not assigned to any server -- Hetzner's newer
+    replacement for a server's automatic public IP, which (unlike a
+    Floating IP) can also be handed to a server right at creation time."""
+    name = f"arsicloudbot-{secrets.token_hex(4)}"
+    _, payload = await _request(
+        creds, "POST", "/primary_ips", json_body={"type": ip_type, "location": location, "name": name}
+    )
+    action = payload.get("action")
+    if action and action.get("id"):
+        await _poll_action(creds, action["id"])
+    return _primary_ip_from_payload(payload["primary_ip"])
+
+
+async def hetzner_assign_primary_ip(creds: HetznerCredentials, primary_ip_id: int, server_id: int) -> None:
+    _, payload = await _request(
+        creds, "POST", f"/primary_ips/{primary_ip_id}/actions/assign",
+        json_body={"assignee_id": server_id, "assignee_type": "server"},
+    )
+    action = payload.get("action") or {}
+    if action.get("id"):
+        await _poll_action(creds, action["id"])
+
+
+async def hetzner_unassign_primary_ip(creds: HetznerCredentials, primary_ip_id: int) -> None:
+    _, payload = await _request(creds, "POST", f"/primary_ips/{primary_ip_id}/actions/unassign")
+    action = payload.get("action") or {}
+    if action.get("id"):
+        await _poll_action(creds, action["id"])
+
+
+async def hetzner_delete_primary_ip(creds: HetznerCredentials, primary_ip_id: int) -> None:
+    status, _ = await _request(creds, "DELETE", f"/primary_ips/{primary_ip_id}")
     if status == 404:
         return

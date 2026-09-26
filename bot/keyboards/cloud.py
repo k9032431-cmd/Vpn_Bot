@@ -9,6 +9,7 @@ from bot.texts.cloud import (
     azure_vm_list_label,
     azure_zone_label,
     backup_list_label,
+    hetzner_address_list_label,
     hetzner_ip_list_label,
     hetzner_server_list_label,
     ip_list_label,
@@ -67,10 +68,15 @@ def cloud_error_keyboard(lang: str) -> InlineKeyboardMarkup:
 
 def account_dashboard_keyboard(lang: str, account_id: str, provider: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    rows = [1]
     builder.button(text=t(lang, "btn_cloud_servers"), callback_data=f"cacc:servers:{account_id}")
+    if provider == "hetzner":
+        builder.button(text=t(lang, "btn_cloud_addresses"), callback_data=f"hzaddr:list:{account_id}")
+        rows.append(1)
     builder.button(text=t(lang, "btn_cloud_account_remove"), callback_data=f"cacc:rmask:{account_id}")
     builder.button(text=t(lang, "btn_cloud_account_list"), callback_data=f"cprov:{provider}")
-    builder.adjust(1, 1, 1)
+    rows += [1, 1]
+    builder.adjust(*rows)
     return builder.as_markup()
 
 
@@ -643,3 +649,67 @@ def hetzner_plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzplan:cancel")
     builder.adjust(1, 1)
     return builder.as_markup()
+
+
+# --- Hetzner: standalone IP addresses (Primary + Floating, account-level) ---
+
+
+def hetzner_addresses_list_keyboard(
+    lang: str, account_id: str, primary_ips: list, floating_ips: list
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for ip in primary_ips:
+        builder.button(text=hetzner_address_list_label("primary", ip), callback_data=f"hzaddr:view:{account_id}:p:{ip.id}")
+        rows.append(1)
+    for ip in floating_ips:
+        builder.button(text=hetzner_address_list_label("floating", ip), callback_data=f"hzaddr:view:{account_id}:f:{ip.id}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_hetzner_address_buy_primary"), callback_data=f"hzaddr:buyp:{account_id}")
+    builder.button(text=t(lang, "btn_hetzner_address_buy_floating"), callback_data=f"hzaddr:buyf:{account_id}")
+    rows += [1, 1]
+    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def hetzner_address_detail_keyboard(lang: str, account_id: str, kind: str, address) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{'p' if kind == 'primary' else 'f'}:{address.id}"
+    builder = InlineKeyboardBuilder()
+    if address.server_id:
+        builder.button(text=t(lang, "btn_hetzner_address_unassign"), callback_data=f"hzaddr:unassign:{tail}")
+    else:
+        builder.button(text=t(lang, "btn_hetzner_address_assign"), callback_data=f"hzaddr:assignask:{tail}")
+    builder.button(text=t(lang, "btn_hetzner_address_delete"), callback_data=f"hzaddr:delask:{tail}")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def hetzner_address_delete_confirm_keyboard(lang: str, account_id: str, kind: str, address_id: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{'p' if kind == 'primary' else 'f'}:{address_id}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_hetzner_address_delete_confirm"), callback_data=f"hzaddr:del:{tail}")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:view:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_address_create_type_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="IPv4", callback_data="hzaddrcreate:type:ipv4")
+    builder.button(text="IPv6", callback_data="hzaddrcreate:type:ipv6")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def hetzner_address_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzaddrcreate:confirm")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+

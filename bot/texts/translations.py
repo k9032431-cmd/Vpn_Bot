@@ -3025,6 +3025,118 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "💿 Reinstall OS",
         "tk": "💿 OS-i gaýtadan gurnamak",
     },
+    "btn_cloud_addresses": {
+        "ru": "🌐 IP-адреса",
+        "en": "🌐 IP addresses",
+        "tk": "🌐 IP salgylar",
+    },
+    "btn_cloud_addresses_back": {
+        "ru": "⬅️ К IP-адресам",
+        "en": "⬅️ Back to IP addresses",
+        "tk": "⬅️ IP salgylara gaýt",
+    },
+    "hetzner_addresses_header": {
+        "ru": "🌐 <b>IP-адреса проекта</b>\n\n{body}",
+        "en": "🌐 <b>Project IP addresses</b>\n\n{body}",
+        "tk": "🌐 <b>Taslamanyň IP salgylary</b>\n\n{body}",
+    },
+    "hetzner_addresses_hint": {
+        "ru": "<i>Выберите адрес, чтобы посмотреть детали, привязать/отвязать от сервера или удалить, либо купите новый.</i>",
+        "en": "<i>Pick an address to view details, assign/unassign it, or delete it — or buy a new one.</i>",
+        "tk": "<i>Jikme-jiklikleri görmek, serwere baglamak/aýyrmak ýa-da pozmak üçin salgyny saýlaň, ýa-da täzesini satyn alyň.</i>",
+    },
+    "hetzner_addresses_empty": {
+        "ru": "<i>В проекте пока нет ни одного Primary или Floating IP. Можно купить новый.</i>",
+        "en": "<i>The project has no Primary or Floating IPs yet. You can buy a new one.</i>",
+        "tk": "<i>Taslamada heniz Primary ýa-da Floating IP ýok. Täzesini satyn alyp bolýar.</i>",
+    },
+    "hetzner_address_kind_primary": {"ru": "Primary IP", "en": "Primary IP", "tk": "Primary IP"},
+    "hetzner_address_kind_floating": {"ru": "Floating IP", "en": "Floating IP", "tk": "Floating IP"},
+    "hetzner_address_unassigned": {
+        "ru": "не привязан к серверу",
+        "en": "not assigned to a server",
+        "tk": "serwere baglanmadyk",
+    },
+    "hetzner_address_detail": {
+        "ru": "🌐 <b>{kind}</b>\n\nАдрес: <code>{ip}</code>\nТип: {ip_type}\nЛокация: {location}\nПривязка: {assignment}",
+        "en": "🌐 <b>{kind}</b>\n\nAddress: <code>{ip}</code>\nType: {ip_type}\nLocation: {location}\nAssignment: {assignment}",
+        "tk": "🌐 <b>{kind}</b>\n\nSalgy: <code>{ip}</code>\nGörnüşi: {ip_type}\nÝerleşişi: {location}\nBaglanyşyk: {assignment}",
+    },
+    "hetzner_address_delete_confirm": {
+        "ru": "{icon} Удалить <code>{ip}</code> насовсем? Это необратимо, адрес перестанет существовать.",
+        "en": "{icon} Permanently delete <code>{ip}</code>? This cannot be undone — the address will cease to exist.",
+        "tk": "{icon} <code>{ip}</code> hemişelik pozulsynmy? Bu yza gaýtaryp bolmaýar — salgy ýok bolar.",
+    },
+    "hetzner_address_create_choose_type": {
+        "ru": "Покупка {kind} — шаг 1/3\n\nВыберите версию протокола:",
+        "en": "Buying a {kind} — step 1/3\n\nChoose the protocol version:",
+        "tk": "{kind} satyn almak — 1/3 ädim\n\nProtokol wersiýasyny saýlaň:",
+    },
+    "hetzner_address_create_choose_location": {
+        "ru": "Покупка IP — шаг 2/3\n\nВыберите локацию (дата-центр):",
+        "en": "Buying an IP — step 2/3\n\nChoose a location (datacenter):",
+        "tk": "IP satyn almak — 2/3 ädim\n\nÝerleşişi (datacenter) saýlaň:",
+    },
+    "hetzner_address_create_confirm": {
+        "ru": "Подтвердите покупку:\n\n🌐 Тип: {kind}\n🔢 Версия: {ip_type}\n📍 Локация: {location}",
+        "en": "Confirm the purchase:\n\n🌐 Type: {kind}\n🔢 Version: {ip_type}\n📍 Location: {location}",
+        "tk": "Satyn almany tassyklaň:\n\n🌐 Görnüşi: {kind}\n🔢 Wersiýasy: {ip_type}\n📍 Ýerleşişi: {location}",
+    },
+    "hetzner_address_create_success": {
+        "ru": "{icon} {kind} <code>{ip}</code> куплен и пока не привязан ни к одному серверу.",
+        "en": "{icon} {kind} <code>{ip}</code> purchased and not yet assigned to any server.",
+        "tk": "{icon} {kind} <code>{ip}</code> satyn alyndy we heniz hiç bir servere baglanmady.",
+    },
+    "hetzner_address_assign_choose_server": {
+        "ru": "Выберите сервер, к которому привязать этот адрес:",
+        "en": "Choose the server to assign this address to:",
+        "tk": "Bu salgyny haýsy servere baglamak isleýändigiňizi saýlaň:",
+    },
+    "hetzner_address_assign_ok": {
+        "ru": "{icon} Адрес привязан к серверу.",
+        "en": "{icon} Address assigned to the server.",
+        "tk": "{icon} Salgy servere baglandy.",
+    },
+    "hetzner_address_unassign_ok": {
+        "ru": "{icon} Адрес отвязан от сервера.",
+        "en": "{icon} Address unassigned from the server.",
+        "tk": "{icon} Salgy serwerden aýryldy.",
+    },
+    "hetzner_address_deleted": {
+        "ru": "{icon} Адрес удалён.",
+        "en": "{icon} Address deleted.",
+        "tk": "{icon} Salgy pozuldy.",
+    },
+    "btn_hetzner_address_buy_primary": {
+        "ru": "➕ Купить Primary IP",
+        "en": "➕ Buy Primary IP",
+        "tk": "➕ Primary IP satyn almak",
+    },
+    "btn_hetzner_address_buy_floating": {
+        "ru": "➕ Купить Floating IP",
+        "en": "➕ Buy Floating IP",
+        "tk": "➕ Floating IP satyn almak",
+    },
+    "btn_hetzner_address_assign": {
+        "ru": "🔗 Привязать к серверу",
+        "en": "🔗 Assign to a server",
+        "tk": "🔗 Servere baglamak",
+    },
+    "btn_hetzner_address_unassign": {
+        "ru": "🔓 Отвязать от сервера",
+        "en": "🔓 Unassign from server",
+        "tk": "🔓 Serwerden aýyrmak",
+    },
+    "btn_hetzner_address_delete": {
+        "ru": "🗑 Удалить адрес",
+        "en": "🗑 Delete address",
+        "tk": "🗑 Salgyny pozmak",
+    },
+    "btn_hetzner_address_delete_confirm": {
+        "ru": "🗑 Да, удалить",
+        "en": "🗑 Yes, delete",
+        "tk": "🗑 Hawa, poz",
+    },
 }
 
 

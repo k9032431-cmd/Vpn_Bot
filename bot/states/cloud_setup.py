@@ -74,3 +74,13 @@ class HetznerVMCreateStates(StatesGroup):
 class HetznerPlanChangeStates(StatesGroup):
     choosing_type = State()
     confirming = State()
+
+
+class HetznerIPCreateStates(StatesGroup):
+    choosing_type = State()
+    choosing_location = State()
+    confirming = State()
+
+
+class HetznerIPAssignStates(StatesGroup):
+    choosing_server = State()
