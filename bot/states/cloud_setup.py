@@ -54,3 +54,23 @@ class AzureVMCreateStates(StatesGroup):
 class AzurePortStates(StatesGroup):
     waiting_port = State()
     choosing_protocol = State()
+
+
+class HetznerSetupStates(StatesGroup):
+    waiting_token = State()
+    connecting = State()
+
+
+class HetznerVMCreateStates(StatesGroup):
+    choosing_location = State()
+    choosing_type = State()
+    choosing_image = State()
+    waiting_hostname = State()
+    choosing_auth_method = State()
+    waiting_ssh_key = State()
+    confirming = State()
+
+
+class HetznerPlanChangeStates(StatesGroup):
+    choosing_type = State()
+    confirming = State()

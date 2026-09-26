@@ -6,8 +6,8 @@ import re
 from .premium_emoji import e
 from .translations import t
 
-PROVIDERS = ("upcloud", "aws", "azure", "linode", "kamatera")
-ACTIVE_PROVIDERS = ("upcloud", "azure")
+PROVIDERS = ("upcloud", "aws", "azure", "hetzner", "linode", "kamatera")
+ACTIVE_PROVIDERS = ("upcloud", "azure", "hetzner")
 
 _STATE_EMOJI = {
     "started": "🟢",
@@ -25,7 +25,9 @@ _CLOUD_ERR_KEYS = {
 }
 
 
-_PROVIDER_TITLES = {"upcloud": "UpCloud", "aws": "AWS", "azure": "Azure", "linode": "Linode", "kamatera": "Kamatera"}
+_PROVIDER_TITLES = {
+    "upcloud": "UpCloud", "aws": "AWS", "azure": "Azure", "hetzner": "Hetzner", "linode": "Linode", "kamatera": "Kamatera",
+}
 
 # UpCloud zone ids follow "<country>-<city><n>" (e.g. "us-nyc1") — the city
 # names for the zones UpCloud actually operates are listed here for a nice
@@ -822,3 +824,167 @@ def azure_create_success_text(lang: str, vm, ssh_key_used: bool = False) -> str:
 
 def ip_removed_text(lang: str) -> str:
     return t(lang, "cloud_ip_removed", icon=e("success", "✅"))
+
+
+# --- Hetzner ---
+
+_HETZNER_STATUS_EMOJI = {
+    "running": "🟢",
+    "off": "🔴",
+    "starting": "🚧",
+    "stopping": "🚧",
+    "rebuilding": "🚧",
+    "migrating": "🚧",
+    "deleting": "🚧",
+}
+
+
+def hetzner_location_display(location: "object") -> str:
+    flag = _flag_emoji(location.country) if location.country else "🌍"
+    return f"{flag} {location.description or location.name}"
+
+
+def hetzner_step_token_text(lang: str) -> str:
+    return t(lang, "hetzner_step_token")
+
+
+def hetzner_empty_field_text(lang: str) -> str:
+    return t(lang, "hetzner_empty_field")
+
+
+def hetzner_account_dashboard_text(lang: str, account: dict, info) -> str:
+    return t(lang, "hetzner_account_dashboard", servers=info.server_count)
+
+
+def hetzner_servers_header_text(lang: str, account: dict, has_servers: bool) -> str:
+    body_key = "cloud_servers_hint" if has_servers else "cloud_servers_empty"
+    return t(lang, "hetzner_servers_header", body=t(lang, body_key))
+
+
+def hetzner_server_list_label(server) -> str:
+    icon = _HETZNER_STATUS_EMOJI.get(server.status, "⚪️")
+    return f"{icon} {server.name}"
+
+
+def hetzner_server_detail_text(lang: str, server, stored_password: str | None = None) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
+    password_line = (
+        t(lang, "hetzner_server_detail_password_line", password=html.escape(stored_password))
+        if stored_password else ""
+    )
+    return t(
+        lang,
+        "hetzner_server_detail",
+        name=html.escape(server.name),
+        state=f"{_HETZNER_STATUS_EMOJI.get(server.status, '⚪️')} {server.status}",
+        location=server.location,
+        server_type=server.server_type,
+        ipv4=server.ipv4 or no_ip,
+        password_line=password_line,
+    )
+
+
+def hetzner_server_delete_confirm_text(lang: str, server) -> str:
+    return t(lang, "hetzner_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
+
+
+def hetzner_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_create_choose_location") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_create_choose_type_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_create_choose_type") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_create_choose_image") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_create_waiting_hostname_text(lang: str) -> str:
+    return t(lang, "hetzner_create_waiting_hostname")
+
+
+def hetzner_create_invalid_hostname_text(lang: str) -> str:
+    return t(lang, "hetzner_create_invalid_hostname")
+
+
+def hetzner_create_choose_auth_method_text(lang: str) -> str:
+    return t(lang, "cloud_create_choose_auth_method")
+
+
+def hetzner_create_waiting_ssh_key_text(lang: str) -> str:
+    return t(lang, "cloud_create_waiting_ssh_key")
+
+
+def hetzner_create_invalid_ssh_key_text(lang: str) -> str:
+    return t(lang, "cloud_create_invalid_ssh_key")
+
+
+def hetzner_create_confirm_text(
+    lang: str, hostname: str, location: str, server_type: str, image_title: str, auth_method: str
+) -> str:
+    auth_label = t(lang, "cloud_auth_method_key" if auth_method == "key" else "cloud_auth_method_password")
+    return t(
+        lang,
+        "hetzner_create_confirm",
+        hostname=html.escape(hostname),
+        location=location,
+        server_type=server_type,
+        image=html.escape(image_title),
+        auth_method=auth_label,
+    )
+
+
+_HETZNER_PROGRESS_KEYS = {
+    "ssh_key": "hetzner_progress_ssh_key",
+    "server": "hetzner_progress_server",
+    "provisioning": "hetzner_progress_provisioning",
+}
+
+
+def hetzner_progress_text(lang: str, step: str) -> str:
+    key = _HETZNER_PROGRESS_KEYS.get(step, "hetzner_progress_server")
+    return t(lang, key)
+
+
+def hetzner_create_success_text(lang: str, server, ssh_key_used: bool = False) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
+    password_line = ""
+    if ssh_key_used:
+        password_line = t(lang, "cloud_create_ssh_key_line")
+    elif server.root_password:
+        password_line = t(lang, "cloud_create_password_line", password=html.escape(server.root_password))
+    return t(
+        lang,
+        "hetzner_create_success",
+        icon=e("success", "✅"),
+        name=html.escape(server.name),
+        location=html.escape(server.location),
+        ip=server.ipv4 or no_ip,
+        password_line=password_line,
+    )
+
+
+def hetzner_server_rebuild_confirm_text(lang: str, server) -> str:
+    return t(lang, "hetzner_server_rebuild_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
+
+
+def hetzner_server_rebuild_ok_text(lang: str) -> str:
+    return t(lang, "hetzner_server_rebuild_ok", icon=e("success", "✅"))
+
+
+def hetzner_ips_header_text(lang: str, server, has_ips: bool) -> str:
+    body_key = "cloud_ips_hint" if has_ips else "cloud_ips_empty"
+    return t(lang, "hetzner_ips_header", name=html.escape(server.name), body=t(lang, body_key))
+
+
+def hetzner_ip_list_label(ip) -> str:
+    return f"🌐 {ip.ip}"
+
+
+def hetzner_ip_add_confirm_text(lang: str, server) -> str:
+    return t(lang, "hetzner_ip_add_confirm", name=html.escape(server.name))
+
+
+def hetzner_ip_remove_confirm_text(lang: str, server, address: str) -> str:
+    return t(lang, "hetzner_ip_remove_confirm", icon=e("warning", "⚠️"), address=address, name=html.escape(server.name))

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from types import SimpleNamespace
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
@@ -35,6 +36,18 @@ from bot.keyboards.cloud import (
     create_auth_method_keyboard,
     create_cancel_keyboard,
     create_confirm_keyboard,
+    hetzner_create_auth_method_keyboard,
+    hetzner_create_cancel_keyboard,
+    hetzner_create_confirm_keyboard,
+    hetzner_ip_add_confirm_keyboard,
+    hetzner_ip_remove_confirm_keyboard,
+    hetzner_ips_list_keyboard,
+    hetzner_must_stop_keyboard,
+    hetzner_plan_confirm_keyboard,
+    hetzner_server_delete_confirm_keyboard,
+    hetzner_server_detail_keyboard,
+    hetzner_server_rebuild_confirm_keyboard,
+    hetzner_servers_list_keyboard,
     ip_add_confirm_keyboard,
     ip_remove_confirm_keyboard,
     ips_list_keyboard,
@@ -80,6 +93,26 @@ from bot.services.azure_api import (
     is_valid_azure_username,
 )
 from bot.services.cloud_store import cloud_store
+from bot.services.hetzner_api import (
+    HetznerAPIError,
+    HetznerCredentials,
+    hetzner_add_floating_ip,
+    hetzner_create_server,
+    hetzner_delete_server,
+    hetzner_get_server,
+    hetzner_list_available_images,
+    hetzner_list_available_server_types,
+    hetzner_list_floating_ips,
+    hetzner_list_locations,
+    hetzner_list_servers,
+    hetzner_login,
+    hetzner_reboot_server,
+    hetzner_rebuild_server,
+    hetzner_remove_floating_ip,
+    hetzner_resize_server,
+    hetzner_start_server,
+    hetzner_stop_server,
+)
 from bot.services.upcloud_api import (
     UpCloudAPIError,
     storage_tier_for_plan,
@@ -114,6 +147,9 @@ from bot.states.cloud_setup import (
     CloudPlanChangeStates,
     CloudServerCreateStates,
     CloudSetupStates,
+    HetznerPlanChangeStates,
+    HetznerSetupStates,
+    HetznerVMCreateStates,
 )
 from bot.texts import cloud as texts
 from bot.texts.cloud import ACTIVE_PROVIDERS, PROVIDERS
@@ -136,6 +172,10 @@ def _azure_creds(account: dict) -> AzureCredentials:
         client_secret=account["client_secret"],
         subscription_id=account["subscription_id"],
     )
+
+
+def _hetzner_creds(account: dict) -> HetznerCredentials:
+    return HetznerCredentials(token=account["token"])
 
 
 async def _login(provider: str, username: str, password: str):
@@ -243,6 +283,13 @@ async def cb_add_account(callback: CallbackQuery, state: FSMContext, lang: str) 
         )
         await callback.answer()
         return
+    if provider == "hetzner":
+        await state.set_state(HetznerSetupStates.waiting_token)
+        await callback.message.edit_text(
+            texts.hetzner_step_token_text(lang), reply_markup=cloud_cancel_keyboard(lang)
+        )
+        await callback.answer()
+        return
     await state.set_state(CloudSetupStates.waiting_username)
     await callback.message.edit_text(
         texts.step_username_text(lang, provider), reply_markup=cloud_cancel_keyboard(lang)
@@ -343,6 +390,44 @@ async def process_azure_subscription(message: Message, state: FSMContext, lang: 
     )
 
 
+@router.message(HetznerSetupStates.waiting_token)
+async def process_hetzner_token(message: Message, state: FSMContext, lang: str) -> None:
+    value = message.text.strip() if message.text else ""
+    try:
+        await message.delete()
+    except Exception:
+        pass
+    if not value:
+        await message.answer(texts.hetzner_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        return
+
+    await state.set_state(HetznerSetupStates.connecting)
+    status_message = await message.answer(texts.connecting_text(lang))
+
+    creds = HetznerCredentials(token=value)
+    try:
+        await hetzner_login(creds)
+    except HetznerAPIError as exc:
+        await state.clear()
+        await status_message.edit_text(
+            texts.login_error_text(lang, str(exc), "hetzner"), reply_markup=cloud_error_keyboard(lang)
+        )
+        return
+    except Exception:  # noqa: BLE001 - surface unexpected errors to the user
+        await state.clear()
+        await status_message.edit_text(
+            texts.login_error_text(lang, "bad_response", "hetzner"), reply_markup=cloud_error_keyboard(lang)
+        )
+        return
+
+    account_id = await cloud_store.add(message.from_user.id, "hetzner", token=value)
+    await state.clear()
+    await status_message.edit_text(
+        texts.connected_text(lang, "hetzner"),
+        reply_markup=account_dashboard_keyboard(lang, account_id, "hetzner"),
+    )
+
+
 @router.message(CloudSetupStates.waiting_username)
 async def process_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
@@ -419,6 +504,17 @@ async def cb_view_account(callback: CallbackQuery, state: FSMContext, lang: str)
             reply_markup=account_dashboard_keyboard(lang, account_id, "azure"),
         )
         return
+    if account["provider"] == "hetzner":
+        try:
+            info = await hetzner_login(_hetzner_creds(account))
+        except HetznerAPIError as exc:
+            await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+            return
+        await callback.message.edit_text(
+            texts.hetzner_account_dashboard_text(lang, account, info),
+            reply_markup=account_dashboard_keyboard(lang, account_id, "hetzner"),
+        )
+        return
     try:
         info = await upcloud_get_account(account["username"], account["password"])
     except UpCloudAPIError as exc:
@@ -466,6 +562,9 @@ async def cb_account_servers(callback: CallbackQuery, state: FSMContext, lang: s
     if account["provider"] == "azure":
         await _show_azure_vms(callback, lang, account, account_id)
         return
+    if account["provider"] == "hetzner":
+        await _show_hetzner_servers(callback, lang, account, account_id)
+        return
     await _show_servers(callback, lang, account)
 
 
@@ -478,6 +577,18 @@ async def _show_azure_vms(callback: CallbackQuery, lang: str, account: dict, acc
     await callback.message.edit_text(
         texts.azure_vms_header_text(lang, account, bool(vms)),
         reply_markup=azure_vms_list_keyboard(lang, account_id, vms),
+    )
+
+
+async def _show_hetzner_servers(callback: CallbackQuery, lang: str, account: dict, account_id: str) -> None:
+    try:
+        servers = await hetzner_list_servers(_hetzner_creds(account))
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.hetzner_servers_header_text(lang, account, bool(servers)),
+        reply_markup=hetzner_servers_list_keyboard(lang, account_id, servers),
     )
 
 
@@ -2303,3 +2414,677 @@ async def cb_azure_port_delete(callback: CallbackQuery, lang: str) -> None:
         return
     await callback.message.edit_text(texts.azure_port_deleted_text(lang), reply_markup=None)
     await _show_azure_ports(callback, lang, account, account_id, vm_name)
+
+
+# --- Hetzner: server detail & actions ---
+
+
+@router.callback_query(F.data.startswith("hzsrv:list:"))
+async def cb_hetzner_server_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_hetzner_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("hzsrv:view:"))
+async def cb_hetzner_server_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        server = await hetzner_get_server(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.hetzner_server_detail_text(lang, server, stored_password),
+        reply_markup=hetzner_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+async def _run_hetzner_server_action(callback: CallbackQuery, lang: str, action, account_id: str, server_id: int) -> None:
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer(texts.server_action_ok_text(lang))
+    creds = _hetzner_creds(account)
+    try:
+        await action(creds, server_id)
+        server = await hetzner_get_server(creds, server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.hetzner_server_detail_text(lang, server, stored_password),
+        reply_markup=hetzner_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+@router.callback_query(F.data.startswith("hzsrv:start:"))
+async def cb_hetzner_server_start(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    await _run_hetzner_server_action(callback, lang, hetzner_start_server, account_id, int(server_id_raw))
+
+
+@router.callback_query(F.data.startswith("hzsrv:stop:"))
+async def cb_hetzner_server_stop(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    await _run_hetzner_server_action(callback, lang, hetzner_stop_server, account_id, int(server_id_raw))
+
+
+@router.callback_query(F.data.startswith("hzsrv:restart:"))
+async def cb_hetzner_server_restart(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    await _run_hetzner_server_action(callback, lang, hetzner_reboot_server, account_id, int(server_id_raw))
+
+
+@router.callback_query(F.data.startswith("hzsrv:delask:"))
+async def cb_hetzner_server_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await hetzner_get_server(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.hetzner_server_delete_confirm_text(lang, server),
+        reply_markup=hetzner_server_delete_confirm_keyboard(lang, account_id, server_id),
+    )
+
+
+@router.callback_query(F.data.startswith("hzsrv:del:"))
+async def cb_hetzner_server_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        await hetzner_delete_server(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await cloud_store.remove_vm_secret(callback.from_user.id, account_id, str(server_id))
+    await callback.message.edit_text(texts.server_deleted_text(lang), reply_markup=None)
+    await _show_hetzner_servers(callback, lang, account, account_id)
+
+
+# --- Hetzner: server creation ---
+
+
+def _hetzner_location_options(locations: list[dict]) -> list[tuple[str, str]]:
+    return [
+        (texts.hetzner_location_display(SimpleNamespace(**loc)), f"hzcreate:loc:{i}")
+        for i, loc in enumerate(locations)
+    ]
+
+
+def _hetzner_type_options(types_: list[dict]) -> list[tuple[str, str]]:
+    options = []
+    for i, s in enumerate(types_):
+        label = f"{s['name']} ({s['cores']} CPU / {s['memory_gb']:g} GB / {s['disk_gb']} GB disk)"
+        price = s.get("price_hourly")
+        if price is not None:
+            label += f" — ~€{price:.4f}/hr"
+        options.append((label, f"hzcreate:type:{i}"))
+    return options
+
+
+def _hetzner_image_options(images: list[dict]) -> list[tuple[str, str]]:
+    return [(img["description"], f"hzcreate:img:{i}") for i, img in enumerate(images)]
+
+
+@router.callback_query(F.data.startswith("hzsrv:add:"))
+async def cb_hetzner_server_add(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        locations = await hetzner_list_locations(_hetzner_creds(account))
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    await state.clear()
+    location_dicts = [{"name": loc.name, "description": loc.description, "country": loc.country} for loc in locations]
+    await state.update_data(account_id=account_id, locations=location_dicts)
+    await state.set_state(HetznerVMCreateStates.choosing_location)
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_location_text, _hetzner_location_options(location_dicts),
+        0, "hzcreate:locpage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("hzcreate:locpage:"), HetznerVMCreateStates.choosing_location)
+async def cb_hetzner_create_location_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_location_text, _hetzner_location_options(data["locations"]),
+        page, "hzcreate:locpage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data == "hzcreate:cancel", HetznerVMCreateStates)
+async def cb_hetzner_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account_id = data.get("account_id")
+    await state.clear()
+    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
+    await callback.answer()
+    if not account:
+        await _show_provider_list(callback, lang)
+        return
+    await _show_hetzner_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("hzcreate:loc:"), HetznerVMCreateStates.choosing_location)
+async def cb_hetzner_create_pick_location(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    location = data["locations"][index]
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        types_ = await hetzner_list_available_server_types(_hetzner_creds(account), location["name"])
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    type_dicts = [
+        {"name": s.name, "cores": s.cores, "memory_gb": s.memory_gb, "disk_gb": s.disk_gb, "price_hourly": s.price_hourly}
+        for s in types_
+    ]
+    await state.update_data(
+        location=location["name"],
+        location_display=texts.hetzner_location_display(SimpleNamespace(**location)),
+        types=type_dicts,
+    )
+    await state.set_state(HetznerVMCreateStates.choosing_type)
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(type_dicts),
+        0, "hzcreate:typepage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("hzcreate:typepage:"), HetznerVMCreateStates.choosing_type)
+async def cb_hetzner_create_type_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(data["types"]),
+        page, "hzcreate:typepage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("hzcreate:type:"), HetznerVMCreateStates.choosing_type)
+async def cb_hetzner_create_pick_type(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    server_type = data["types"][index]
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        images = await hetzner_list_available_images(_hetzner_creds(account))
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    image_dicts = [{"key": img.key, "name": img.name, "description": img.description} for img in images]
+    await state.update_data(server_type=server_type["name"], images=image_dicts)
+    await state.set_state(HetznerVMCreateStates.choosing_image)
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(image_dicts),
+        0, "hzcreate:imgpage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("hzcreate:imgpage:"), HetznerVMCreateStates.choosing_image)
+async def cb_hetzner_create_image_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(data["images"]),
+        page, "hzcreate:imgpage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("hzcreate:img:"), HetznerVMCreateStates.choosing_image)
+async def cb_hetzner_create_pick_image(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    image = data["images"][index]
+    await state.update_data(image_key=image["key"], image_title=image["description"])
+    await state.set_state(HetznerVMCreateStates.waiting_hostname)
+    await callback.message.edit_text(
+        texts.hetzner_create_waiting_hostname_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.message(HetznerVMCreateStates.waiting_hostname)
+async def process_hetzner_hostname(message: Message, state: FSMContext, lang: str) -> None:
+    hostname = message.text.strip() if message.text else ""
+    if not hostname or not HOSTNAME_RE.match(hostname) or len(hostname) > 63:
+        await message.answer(
+            texts.hetzner_create_invalid_hostname_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
+        )
+        return
+
+    await state.update_data(hostname=hostname)
+    await state.set_state(HetznerVMCreateStates.choosing_auth_method)
+    await message.answer(
+        texts.hetzner_create_choose_auth_method_text(lang), reply_markup=hetzner_create_auth_method_keyboard(lang)
+    )
+
+
+@router.callback_query(F.data == "hzcreate:auth:password", HetznerVMCreateStates.choosing_auth_method)
+async def cb_hetzner_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.update_data(ssh_public_key=None)
+    await _show_hetzner_create_confirmation(callback.message, state, lang)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "hzcreate:auth:key", HetznerVMCreateStates.choosing_auth_method)
+async def cb_hetzner_create_choose_key_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.set_state(HetznerVMCreateStates.waiting_ssh_key)
+    await callback.message.edit_text(
+        texts.hetzner_create_waiting_ssh_key_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.message(HetznerVMCreateStates.waiting_ssh_key)
+async def process_hetzner_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
+    public_key = message.text.strip() if message.text else ""
+    if not _is_valid_ssh_public_key(public_key):
+        await message.answer(
+            texts.hetzner_create_invalid_ssh_key_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
+        )
+        return
+
+    await state.update_data(ssh_public_key=public_key)
+    await _show_hetzner_create_confirmation(message, state, lang)
+
+
+async def _show_hetzner_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.set_state(HetznerVMCreateStates.confirming)
+    auth_method = "key" if data.get("ssh_public_key") else "password"
+    await target_message.answer(
+        texts.hetzner_create_confirm_text(
+            lang, data["hostname"], data["location_display"], data["server_type"], data["image_title"], auth_method
+        ),
+        reply_markup=hetzner_create_confirm_keyboard(lang),
+    )
+
+
+@router.callback_query(F.data == "hzcreate:confirm", HetznerVMCreateStates.confirming)
+async def cb_hetzner_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+
+    status_message = callback.message
+    await status_message.edit_text(texts.hetzner_progress_text(lang, "server"))
+
+    async def progress(step: str) -> None:
+        try:
+            await status_message.edit_text(texts.hetzner_progress_text(lang, step))
+        except Exception:
+            pass
+
+    ssh_public_key = data.get("ssh_public_key")
+    try:
+        server = await hetzner_create_server(
+            _hetzner_creds(account),
+            name=data["hostname"],
+            server_type=data["server_type"],
+            image_key=data["image_key"],
+            location=data["location"],
+            ssh_public_key=ssh_public_key,
+            progress=progress,
+        )
+    except HetznerAPIError as exc:
+        await state.clear()
+        await status_message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    if server.root_password:
+        # Hetzner never hands the root password back after this point --
+        # keep our own copy so the user can look it up again if forgotten.
+        await cloud_store.set_vm_secret(callback.from_user.id, data["account_id"], str(server.id), server.root_password)
+
+    await state.clear()
+    await status_message.edit_text(
+        texts.hetzner_create_success_text(lang, server, ssh_key_used=bool(ssh_public_key)),
+        reply_markup=hetzner_server_detail_keyboard(lang, data["account_id"], server),
+    )
+
+
+# --- Hetzner: rebuild (reinstall OS) ---
+
+
+@router.callback_query(F.data.startswith("hzsrv:rebuildask:"))
+async def cb_hetzner_server_rebuild_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await hetzner_get_server(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.hetzner_server_rebuild_confirm_text(lang, server),
+        reply_markup=hetzner_server_rebuild_confirm_keyboard(lang, account_id, server_id),
+    )
+
+
+@router.callback_query(F.data.startswith("hzsrv:rebuild:"))
+async def cb_hetzner_server_rebuild(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer(texts.hetzner_server_rebuild_ok_text(lang))
+    creds = _hetzner_creds(account)
+    try:
+        await hetzner_rebuild_server(creds, server_id)
+        server = await hetzner_get_server(creds, server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.hetzner_server_detail_text(lang, server, stored_password),
+        reply_markup=hetzner_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+# --- Hetzner: plan change ---
+
+
+@router.callback_query(F.data.startswith("hzplan:start:"))
+async def cb_hetzner_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        server = await hetzner_get_server(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    if server.status != "off":
+        await callback.message.edit_text(
+            texts.plan_must_stop_text(lang), reply_markup=hetzner_must_stop_keyboard(lang, account_id, server_id)
+        )
+        return
+
+    try:
+        types_ = await hetzner_list_available_server_types(_hetzner_creds(account), server.location)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    type_names = [s.name for s in types_]
+    await state.clear()
+    await state.update_data(account_id=account_id, server_id=server_id, current_type=server.server_type, types=type_names)
+    await state.set_state(HetznerPlanChangeStates.choosing_type)
+    options = [(name, f"hzplan:pick:{i}") for i, name in enumerate(type_names)]
+    await _render_create_page(
+        callback,
+        lang,
+        lambda plan_lang, page, total: texts.plan_choose_text(plan_lang, server.server_type, page, total),
+        options,
+        0,
+        "hzplan:page",
+        "hzplan:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("hzplan:page:"), HetznerPlanChangeStates.choosing_type)
+async def cb_hetzner_plan_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    options = [(name, f"hzplan:pick:{i}") for i, name in enumerate(data["types"])]
+    await _render_create_page(
+        callback,
+        lang,
+        lambda plan_lang, p, total: texts.plan_choose_text(plan_lang, data["current_type"], p, total),
+        options,
+        page,
+        "hzplan:page",
+        "hzplan:cancel",
+    )
+
+
+@router.callback_query(F.data == "hzplan:cancel", HetznerPlanChangeStates)
+async def cb_hetzner_plan_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.clear()
+    await callback.answer()
+    account_id = data.get("account_id")
+    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
+    if not account:
+        await _show_provider_list(callback, lang)
+        return
+    try:
+        server = await hetzner_get_server(_hetzner_creds(account), data["server_id"])
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.hetzner_server_detail_text(lang, server, stored_password),
+        reply_markup=hetzner_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+@router.callback_query(F.data.startswith("hzplan:pick:"), HetznerPlanChangeStates.choosing_type)
+async def cb_hetzner_plan_pick(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    new_type = data["types"][index]
+    await state.update_data(new_type=new_type)
+    await state.set_state(HetznerPlanChangeStates.confirming)
+    await callback.message.edit_text(
+        texts.plan_confirm_text(lang, data["current_type"], new_type), reply_markup=hetzner_plan_confirm_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "hzplan:confirm", HetznerPlanChangeStates.confirming)
+async def cb_hetzner_plan_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await _get_account(callback, lang, data["account_id"])
+    if not account:
+        await state.clear()
+        return
+    await callback.answer()
+    creds = _hetzner_creds(account)
+    try:
+        await hetzner_resize_server(creds, data["server_id"], data["new_type"])
+        server = await hetzner_get_server(creds, data["server_id"])
+    except HetznerAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await state.clear()
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, data["account_id"], str(server.id))
+    await callback.message.edit_text(
+        f"{texts.plan_changed_text(lang)}\n\n{texts.hetzner_server_detail_text(lang, server, stored_password)}",
+        reply_markup=hetzner_server_detail_keyboard(lang, data["account_id"], server),
+    )
+
+
+# --- Hetzner: floating IPs ---
+
+
+async def _show_hetzner_ips(callback: CallbackQuery, lang: str, account: dict, account_id: str, server_id: int) -> None:
+    creds = _hetzner_creds(account)
+    try:
+        server = await hetzner_get_server(creds, server_id)
+        ips = await hetzner_list_floating_ips(creds, server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.hetzner_ips_header_text(lang, server, bool(ips)),
+        reply_markup=hetzner_ips_list_keyboard(lang, account_id, server_id, ips),
+    )
+
+
+@router.callback_query(F.data.startswith("hzip:list:"))
+async def cb_hetzner_ips_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_hetzner_ips(callback, lang, account, account_id, int(server_id_raw))
+
+
+@router.callback_query(F.data.startswith("hzip:add:"))
+async def cb_hetzner_ip_add_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await hetzner_get_server(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.hetzner_ip_add_confirm_text(lang, server),
+        reply_markup=hetzner_ip_add_confirm_keyboard(lang, account_id, server_id),
+    )
+
+
+@router.callback_query(F.data.startswith("hzip:addc:"))
+async def cb_hetzner_ip_add(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        ip = await hetzner_add_floating_ip(_hetzner_creds(account), server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.ip_added_text(lang, ip.ip), reply_markup=None)
+    await _show_hetzner_ips(callback, lang, account, account_id, server_id)
+
+
+async def _resolve_hetzner_ip(account: dict, server_id: int, index: int):
+    creds = _hetzner_creds(account)
+    server = await hetzner_get_server(creds, server_id)
+    ips = await hetzner_list_floating_ips(creds, server_id)
+    if index >= len(ips):
+        return None, server
+    return ips[index], server
+
+
+@router.callback_query(F.data.startswith("hzip:rm:"))
+async def cb_hetzner_ip_remove_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw, index_raw = callback.data.split(":", 4)
+    server_id = int(server_id_raw)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        ip, server = await _resolve_hetzner_ip(account, server_id, index)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    if ip is None:
+        await _show_hetzner_ips(callback, lang, account, account_id, server_id)
+        return
+    await callback.message.edit_text(
+        texts.hetzner_ip_remove_confirm_text(lang, server, ip.ip),
+        reply_markup=hetzner_ip_remove_confirm_keyboard(lang, account_id, server_id, index),
+    )
+
+
+@router.callback_query(F.data.startswith("hzip:rmc:"))
+async def cb_hetzner_ip_remove(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw, index_raw = callback.data.split(":", 4)
+    server_id = int(server_id_raw)
+    index = int(index_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        ip, _server = await _resolve_hetzner_ip(account, server_id, index)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    if ip is None:
+        await _show_hetzner_ips(callback, lang, account, account_id, server_id)
+        return
+    try:
+        await hetzner_remove_floating_ip(_hetzner_creds(account), ip.id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(texts.ip_removed_text(lang), reply_markup=None)
+    await _show_hetzner_ips(callback, lang, account, account_id, server_id)

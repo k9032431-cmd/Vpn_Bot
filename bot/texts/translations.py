@@ -1810,6 +1810,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_provider_upcloud": {"ru": "☁️ UpCloud", "en": "☁️ UpCloud", "tk": "☁️ UpCloud"},
     "btn_cloud_provider_aws": {"ru": "🟧 AWS (скоро)", "en": "🟧 AWS (soon)", "tk": "🟧 AWS (ýakynda)"},
     "btn_cloud_provider_azure": {"ru": "🔷 Azure", "en": "🔷 Azure", "tk": "🔷 Azure"},
+    "btn_cloud_provider_hetzner": {"ru": "🟥 Hetzner", "en": "🟥 Hetzner", "tk": "🟥 Hetzner"},
     "btn_cloud_provider_linode": {"ru": "🟩 Linode (скоро)", "en": "🟩 Linode (soon)", "tk": "🟩 Linode (ýakynda)"},
     "btn_cloud_provider_kamatera": {
         "ru": "🟪 Kamatera (скоро)",
@@ -2821,6 +2822,208 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Правило удалено.",
         "en": "{icon} Rule deleted.",
         "tk": "{icon} Düzgün pozuldy.",
+    },
+    "hetzner_step_token": {
+        "ru": (
+            "🔑 <b>Подключение Hetzner Cloud</b>\n\n"
+            "Введите <b>API-токен</b> проекта Hetzner Cloud — его можно создать в "
+            "консоли Hetzner: Project → Security → API Tokens → Generate API Token "
+            "(права доступа — Read &amp; Write)."
+        ),
+        "en": (
+            "🔑 <b>Connect Hetzner Cloud</b>\n\n"
+            "Enter the Hetzner Cloud project's <b>API token</b> — create one in the "
+            "Hetzner console: Project → Security → API Tokens → Generate API Token "
+            "(permission — Read &amp; Write)."
+        ),
+        "tk": (
+            "🔑 <b>Hetzner Cloud birikdirmek</b>\n\n"
+            "Hetzner Cloud proýektiniň <b>API-tokenini</b> giriziň — ony Hetzner "
+            "konsolynda döredip bolar: Project → Security → API Tokens → Generate "
+            "API Token (rugsat — Read &amp; Write)."
+        ),
+    },
+    "hetzner_empty_field": {
+        "ru": "Значение не может быть пустым. Попробуйте ещё раз:",
+        "en": "The value can't be empty. Try again:",
+        "tk": "Baha boş bolup bilmez. Gaýtadan synanyň:",
+    },
+    "hetzner_account_dashboard": {
+        "ru": "🟥 <b>Hetzner Cloud</b>\n\nСерверов в проекте: {servers}",
+        "en": "🟥 <b>Hetzner Cloud</b>\n\nServers in this project: {servers}",
+        "tk": "🟥 <b>Hetzner Cloud</b>\n\nProýektdäki serwerler: {servers}",
+    },
+    "hetzner_servers_header": {
+        "ru": "🖥 <b>Серверы Hetzner</b>\n\n{body}",
+        "en": "🖥 <b>Hetzner servers</b>\n\n{body}",
+        "tk": "🖥 <b>Hetzner serwerleri</b>\n\n{body}",
+    },
+    "hetzner_server_detail": {
+        "ru": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Статус: {state}\n"
+            "📍 Локация: {location}\n"
+            "⚙️ Тип: {server_type}\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+        "en": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 State: {state}\n"
+            "📍 Location: {location}\n"
+            "⚙️ Type: {server_type}\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+        "tk": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Ýagdaýy: {state}\n"
+            "📍 Ýerleşişi: {location}\n"
+            "⚙️ Görnüşi: {server_type}\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+    },
+    "hetzner_server_detail_password_line": {
+        "ru": "\n🔑 <b>Пароль root:</b> <code>{password}</code>",
+        "en": "\n🔑 <b>Root password:</b> <code>{password}</code>",
+        "tk": "\n🔑 <b>Root paroly:</b> <code>{password}</code>",
+    },
+    "hetzner_server_delete_confirm": {
+        "ru": "{icon} Удалить сервер <b>{name}</b>? Это необратимо — диск тоже будет удалён.",
+        "en": "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.",
+        "tk": "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.",
+    },
+    "hetzner_create_choose_location": {
+        "ru": "🟥 <b>Новый сервер — шаг 1/4</b>\n\nВыберите локацию (дата-центр):",
+        "en": "🟥 <b>New server — step 1/4</b>\n\nChoose a location (datacenter):",
+        "tk": "🟥 <b>Täze serwer — 1/4 ädim</b>\n\nÝerleşişi (maglumat merkezi) saýlaň:",
+    },
+    "hetzner_create_choose_type": {
+        "ru": "🟥 <b>Новый сервер — шаг 2/4</b>\n\nВыберите тип сервера:",
+        "en": "🟥 <b>New server — step 2/4</b>\n\nChoose a server type:",
+        "tk": "🟥 <b>Täze serwer — 2/4 ädim</b>\n\nServer görnüşini saýlaň:",
+    },
+    "hetzner_create_choose_image": {
+        "ru": "🟥 <b>Новый сервер — шаг 3/4</b>\n\nВыберите операционную систему:",
+        "en": "🟥 <b>New server — step 3/4</b>\n\nChoose an OS image:",
+        "tk": "🟥 <b>Täze serwer — 3/4 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+    },
+    "hetzner_create_waiting_hostname": {
+        "ru": "✏️ <b>Новый сервер — шаг 4/4</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New server — step 4/4</b>\n\nEnter the server's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze serwer — 4/4 ädim</b>\n\nServeriň adyny giriziň (latyn harplary, sanlar, defisler):",
+    },
+    "hetzner_create_invalid_hostname": {
+        "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 63 символов). Попробуйте ещё раз:",
+        "en": "Invalid name. Use only Latin letters, digits and hyphens (up to 63 characters). Try again:",
+        "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (63 alamatdan köp däl). Gaýtadan synanyň:",
+    },
+    "hetzner_create_confirm": {
+        "ru": (
+            "✅ <b>Проверьте параметры сервера</b>\n\n"
+            "🖥 Имя: <code>{hostname}</code>\n"
+            "📍 Локация: {location}\n"
+            "⚙️ Тип: {server_type}\n"
+            "💿 ОС: {image}\n"
+            "🔐 Вход: {auth_method}\n\n"
+            "💰 Это создаст платный ресурс в Hetzner. Создать?"
+        ),
+        "en": (
+            "✅ <b>Review server parameters</b>\n\n"
+            "🖥 Name: <code>{hostname}</code>\n"
+            "📍 Location: {location}\n"
+            "⚙️ Type: {server_type}\n"
+            "💿 OS: {image}\n"
+            "🔐 Login via: {auth_method}\n\n"
+            "💰 This will create a billable resource in Hetzner. Create it?"
+        ),
+        "tk": (
+            "✅ <b>Serweriň parametrlerini barlaň</b>\n\n"
+            "🖥 Ady: <code>{hostname}</code>\n"
+            "📍 Ýerleşişi: {location}\n"
+            "⚙️ Görnüşi: {server_type}\n"
+            "💿 OS: {image}\n"
+            "🔐 Giriş: {auth_method}\n\n"
+            "💰 Bu Hetzner-de tölegli resurs dörediler. Döredilsinmi?"
+        ),
+    },
+    "hetzner_progress_ssh_key": {
+        "ru": "⏳ Регистрируем SSH-ключ...",
+        "en": "⏳ Registering the SSH key...",
+        "tk": "⏳ SSH açary hasaba alynýar...",
+    },
+    "hetzner_progress_server": {
+        "ru": "⏳ Создаём сервер...",
+        "en": "⏳ Creating the server...",
+        "tk": "⏳ Serwer döredilýär...",
+    },
+    "hetzner_progress_provisioning": {
+        "ru": "⏳ Разворачиваем сервер...",
+        "en": "⏳ Provisioning the server...",
+        "tk": "⏳ Serwer taýýarlanylýar...",
+    },
+    "hetzner_create_success": {
+        "ru": (
+            "{icon} <b>Сервер создан!</b>\n\n"
+            "🖥 <b>Имя:</b> {name}\n"
+            "📍 <b>Локация:</b> {location}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>\n"
+            "{password_line}"
+        ),
+        "en": (
+            "{icon} <b>Server created!</b>\n\n"
+            "🖥 <b>Name:</b> {name}\n"
+            "📍 <b>Location:</b> {location}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>\n"
+            "{password_line}"
+        ),
+        "tk": (
+            "{icon} <b>Serwer döredildi!</b>\n\n"
+            "🖥 <b>Ady:</b> {name}\n"
+            "📍 <b>Ýerleşişi:</b> {location}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>\n"
+            "{password_line}"
+        ),
+    },
+    "hetzner_server_rebuild_confirm": {
+        "ru": (
+            "{icon} Переустановить ОС на <b>{name}</b>? Диск будет полностью стёрт "
+            "и переустановлен с образа заново — это необратимо."
+        ),
+        "en": (
+            "{icon} Reinstall the OS on <b>{name}</b>? The disk will be completely "
+            "wiped and reinstalled from the image — this is irreversible."
+        ),
+        "tk": (
+            "{icon} <b>{name}</b> serweriniň OS-yny gaýtadan gurnamalymy? Disk "
+            "doly pozulyp, ýene-de şekilden gurnalar — bu yzyna gaýtarylmaz."
+        ),
+    },
+    "hetzner_server_rebuild_ok": {
+        "ru": "{icon} ОС переустановлена.",
+        "en": "{icon} OS reinstalled.",
+        "tk": "{icon} OS gaýtadan gurnaldy.",
+    },
+    "hetzner_ips_header": {
+        "ru": "🌐 <b>IP-адреса — {name}</b>\n\n{body}",
+        "en": "🌐 <b>IP addresses — {name}</b>\n\n{body}",
+        "tk": "🌐 <b>IP salgylar — {name}</b>\n\n{body}",
+    },
+    "hetzner_ip_add_confirm": {
+        "ru": "Добавить новый плавающий IP (Floating IP) серверу <b>{name}</b>? Это платный ресурс.",
+        "en": "Add a new Floating IP to server <b>{name}</b>? This is a billable resource.",
+        "tk": "<b>{name}</b> serwerine täze Floating IP goşulsynmy? Bu tölegli resurs.",
+    },
+    "hetzner_ip_remove_confirm": {
+        "ru": "{icon} Удалить IP <code>{address}</code> у сервера <b>{name}</b>?",
+        "en": "{icon} Remove IP <code>{address}</code> from server <b>{name}</b>?",
+        "tk": "{icon} <b>{name}</b> serweriniň <code>{address}</code> IP-sini aýyrmalymy?",
+    },
+    "btn_hetzner_server_rebuild": {
+        "ru": "💿 Переустановить ОС",
+        "en": "💿 Reinstall OS",
+        "tk": "💿 OS-i gaýtadan gurnamak",
     },
 }
 

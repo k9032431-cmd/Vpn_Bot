@@ -9,6 +9,8 @@ from bot.texts.cloud import (
     azure_vm_list_label,
     azure_zone_label,
     backup_list_label,
+    hetzner_ip_list_label,
+    hetzner_server_list_label,
     ip_list_label,
     server_list_label,
     storage_list_label,
@@ -516,5 +518,128 @@ def azure_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="azcreate:confirm")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Hetzner ---
+
+
+def hetzner_servers_list_keyboard(lang: str, account_id: str, servers: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for server in servers:
+        builder.button(text=hetzner_server_list_label(server), callback_data=f"hzsrv:view:{account_id}:{server.id}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_server_add"), callback_data=f"hzsrv:add:{account_id}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def hetzner_server_detail_keyboard(lang: str, account_id: str, server) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    if server.status == "off":
+        builder.button(text=t(lang, "btn_cloud_server_start"), callback_data=f"hzsrv:start:{account_id}:{server.id}")
+    else:
+        builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"hzsrv:stop:{account_id}:{server.id}")
+    builder.button(text=t(lang, "btn_cloud_server_restart"), callback_data=f"hzsrv:restart:{account_id}:{server.id}")
+    builder.button(text=t(lang, "btn_cloud_server_plan"), callback_data=f"hzplan:start:{account_id}:{server.id}")
+    builder.button(text=t(lang, "btn_cloud_server_ips"), callback_data=f"hzip:list:{account_id}:{server.id}")
+    builder.button(
+        text=t(lang, "btn_hetzner_server_rebuild"), callback_data=f"hzsrv:rebuildask:{account_id}:{server.id}"
+    )
+    builder.button(text=t(lang, "btn_cloud_server_delete"), callback_data=f"hzsrv:delask:{account_id}:{server.id}")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"hzsrv:list:{account_id}")
+    builder.adjust(2, 2, 1, 1, 1)
+    return builder.as_markup()
+
+
+def hetzner_server_delete_confirm_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"hzsrv:del:{account_id}:{server_id}")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"hzsrv:list:{account_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_server_rebuild_confirm_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_hetzner_server_rebuild"), callback_data=f"hzsrv:rebuild:{account_id}:{server_id}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def hetzner_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="hzcreate:auth:password")
+    builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="hzcreate:auth:key")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def hetzner_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzcreate:confirm")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_ips_list_keyboard(lang: str, account_id: str, server_id: int, ips: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, ip in enumerate(ips):
+        builder.button(text=hetzner_ip_list_label(ip), callback_data=f"hzip:rm:{account_id}:{server_id}:{i}")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_ip_add"), callback_data=f"hzip:add:{account_id}:{server_id}")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def hetzner_ip_add_confirm_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_id}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_ip_add_confirm"), callback_data=f"hzip:addc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzip:list:{tail}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_ip_remove_confirm_keyboard(lang: str, account_id: str, server_id: int, index: int) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server_id}:{index}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_ip_remove_confirm"), callback_data=f"hzip:rmc:{tail}")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzip:list:{account_id}:{server_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_must_stop_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"hzsrv:stop:{account_id}:{server_id}")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def hetzner_plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_plan_confirm"), callback_data="hzplan:confirm")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzplan:cancel")
     builder.adjust(1, 1)
     return builder.as_markup()
