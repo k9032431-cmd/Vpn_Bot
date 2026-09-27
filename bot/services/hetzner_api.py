@@ -57,7 +57,7 @@ class ServerTypeInfo:
 
 @dataclass
 class ImageInfo:
-    key: str  # Hetzner's numeric image id, kept as a string
+    key: str  # the image's name -- see hetzner_list_available_images for why
     name: str
     description: str
 
@@ -227,9 +227,9 @@ async def hetzner_list_available_server_types(creds: HetznerCredentials, locatio
 
 
 async def hetzner_list_available_images(creds: HetznerCredentials) -> list[ImageInfo]:
-    # Unlike Azure's fully-static image catalog, Hetzner's numeric image
-    # ids differ per project, so the curated names still have to be
-    # resolved against this project's own /images list.
+    # Unlike Azure's fully-static image catalog, Hetzner's image catalog
+    # differs per project, so the curated names still have to be resolved
+    # against this project's own /images list.
     _, payload = await _request(creds, "GET", "/images", params={"type": "system", "per_page": 50})
     by_name = {
         item["name"]: item for item in (payload or {}).get("images", []) if isinstance(item, dict) and item.get("name")
@@ -239,7 +239,15 @@ async def hetzner_list_available_images(creds: HetznerCredentials) -> list[Image
         item = by_name.get(name)
         if not item:
             continue
-        result.append(ImageInfo(key=str(item["id"]), name=item["name"], description=item.get("description") or item["name"]))
+        # ``key`` deliberately holds the image *name*, not its numeric id.
+        # Hetzner now keys images by (name, architecture) -- e.g. two
+        # separate "ubuntu-24.04" entries, one x86 and one arm -- and
+        # /images can return either one for a given name arbitrarily here.
+        # Passing that id straight to server creation risks an architecture
+        # mismatch with whatever server type was picked ("image has wrong
+        # architecture"); passing the name instead lets Hetzner's own API
+        # resolve the correct architecture-matching image itself.
+        result.append(ImageInfo(key=item["name"], name=item["name"], description=item.get("description") or item["name"]))
     return result
 
 
