@@ -2909,6 +2909,22 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🟥 <b>New server — step 3/4</b>\n\nChoose an OS image:",
         "tk": "🟥 <b>Täze serwer — 3/4 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
     },
+    "hetzner_create_type_unavailable": {
+        "ru": (
+            "{icon} Тип <b>{server_type}</b> только что оказался недоступен в этой локации "
+            "прямо сейчас (Hetzner не показывает это заранее, только при самом создании). "
+            "Выберите другой тип:"
+        ),
+        "en": (
+            "{icon} Type <b>{server_type}</b> just turned out to be unavailable in this location "
+            "right now (Hetzner doesn't show this ahead of time, only at creation). "
+            "Choose a different type:"
+        ),
+        "tk": (
+            "{icon} <b>{server_type}</b> görnüşi şu ýerleşişde häzir elýeterli däl eken "
+            "(muny Hetzner öňünden görkezmeýär, diňe döredilende). Başga görnüş saýlaň:"
+        ),
+    },
     "hetzner_create_waiting_hostname": {
         "ru": "✏️ <b>Новый сервер — шаг 4/4</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",
         "en": "✏️ <b>New server — step 4/4</b>\n\nEnter the server's name (letters, digits, hyphens):",

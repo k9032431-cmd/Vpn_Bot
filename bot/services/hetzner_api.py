@@ -16,7 +16,7 @@ POLL_TIMEOUT = 240
 # A small, curated shortlist rather than the full catalog (Hetzner has 20+
 # server types and dozens of images) — same reasoning as Azure's curated
 # size/image lists: showing everything would just be unusable in a chat UI.
-CURATED_SERVER_TYPES = ["cx22", "cx32", "cx42", "cpx11", "cpx21", "cpx31"]
+CURATED_SERVER_TYPES = ["cx22", "cx32", "cx42", "cpx22", "cpx32", "cpx42"]
 CURATED_IMAGES = ["ubuntu-24.04", "ubuntu-22.04", "debian-12"]
 
 
@@ -527,3 +527,17 @@ async def hetzner_delete_primary_ip(creds: HetznerCredentials, primary_ip_id: in
     status, _ = await _request(creds, "DELETE", f"/primary_ips/{primary_ip_id}")
     if status == 404:
         return
+
+
+def hetzner_is_type_unavailable_error(error_detail: str) -> bool:
+    """Best-effort detection of Hetzner's own deploy-time rejection when a
+    server type turns out not to actually be orderable in the chosen
+    location (e.g. "unsupported location for server type") -- a live user
+    hit this. hetzner_list_available_server_types can't predict it ahead of
+    time: its only signal is whether the location appears in the type's own
+    "prices" array, and that can still be true for a type that Hetzner
+    doesn't actually let you order there right now (limited/sold-out
+    hardware generations). The create flow catches this and drops just the
+    failed type from the picker instead of dying with a raw error."""
+    lowered = error_detail.lower()
+    return "location" in lowered and ("server type" in lowered or "server_type" in lowered)

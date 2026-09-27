@@ -112,6 +112,7 @@ from bot.services.hetzner_api import (
     hetzner_delete_primary_ip,
     hetzner_delete_server,
     hetzner_get_server,
+    hetzner_is_type_unavailable_error,
     hetzner_list_available_images,
     hetzner_list_available_server_types,
     hetzner_list_all_floating_ips,
@@ -2801,8 +2802,24 @@ async def cb_hetzner_create_confirm(callback: CallbackQuery, state: FSMContext, 
             progress=progress,
         )
     except HetznerAPIError as exc:
+        reason = str(exc)
+        detail = reason[len("detail:"):] if reason.startswith("detail:") else ""
+        if detail and hetzner_is_type_unavailable_error(detail):
+            failed_type = data["server_type"]
+            remaining_types = [t for t in data["types"] if t["name"] != failed_type]
+            if remaining_types:
+                await state.update_data(types=remaining_types)
+                await state.set_state(HetznerVMCreateStates.choosing_type)
+                await _render_create_page(
+                    callback,
+                    lang,
+                    lambda l, p, tp, _type=failed_type: texts.hetzner_create_type_unavailable_text(l, _type, p, tp),
+                    _hetzner_type_options(remaining_types),
+                    0, "hzcreate:typepage", "hzcreate:cancel",
+                )
+                return
         await state.clear()
-        await status_message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
         return
 
     if server.root_password:

@@ -896,6 +896,12 @@ def hetzner_create_choose_type_text(lang: str, page: int = 0, total_pages: int =
     return t(lang, "hetzner_create_choose_type") + _page_suffix(lang, page, total_pages)
 
 
+def hetzner_create_type_unavailable_text(lang: str, failed_type: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_create_type_unavailable", icon=e("error", "❌"), server_type=failed_type) + _page_suffix(
+        lang, page, total_pages
+    )
+
+
 def hetzner_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
     return t(lang, "hetzner_create_choose_image") + _page_suffix(lang, page, total_pages)
 
