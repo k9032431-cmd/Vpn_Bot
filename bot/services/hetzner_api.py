@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import aiohttp
 
@@ -53,6 +53,7 @@ class ServerTypeInfo:
     memory_gb: float
     disk_gb: int
     price_hourly: float | None = None
+    locations: list[str] = field(default_factory=list)  # where this type is actually sold, from its own prices[]
 
 
 @dataclass
@@ -226,6 +227,49 @@ async def hetzner_list_available_server_types(creds: HetznerCredentials, locatio
     return result
 
 
+async def hetzner_list_curated_server_types(creds: HetznerCredentials) -> list[ServerTypeInfo]:
+    """Every curated server type that's sold *anywhere* at all, each
+    annotated with exactly which locations it's sold in (from its own
+    "prices" array). Used to drive the create wizard in Hetzner's own
+    website order -- type first, then only that type's own available
+    locations -- instead of the other way around. A type with prices in no
+    location at all is skipped entirely, same principle as filtering by a
+    single location in hetzner_list_available_server_types."""
+    _, payload = await _request(creds, "GET", "/server_types")
+    by_name: dict[str, dict] = {}
+    for item in (payload or {}).get("server_types", []):
+        if not isinstance(item, dict) or item.get("name") not in CURATED_SERVER_TYPES or item.get("deprecated"):
+            continue
+        by_name[item["name"]] = item
+
+    result = []
+    for name in CURATED_SERVER_TYPES:
+        item = by_name.get(name)
+        if not item:
+            continue
+        prices = item.get("prices") or []
+        locations = [p.get("location") for p in prices if isinstance(p, dict) and p.get("location")]
+        if not locations:
+            continue
+        gross_values: list[float] = []
+        for p in prices:
+            gross = (p.get("price_hourly") or {}).get("gross")
+            if gross is not None:
+                try:
+                    gross_values.append(float(gross))
+                except (TypeError, ValueError):
+                    pass
+        result.append(
+            ServerTypeInfo(
+                name=name, cores=int(item.get("cores", 0) or 0), memory_gb=float(item.get("memory", 0) or 0),
+                disk_gb=int(item.get("disk", 0) or 0),
+                price_hourly=min(gross_values) if gross_values else None,
+                locations=locations,
+            )
+        )
+    return result
+
+
 async def hetzner_list_available_images(creds: HetznerCredentials) -> list[ImageInfo]:
     # Unlike Azure's fully-static image catalog, Hetzner's image catalog
     # differs per project, so the curated names still have to be resolved
@@ -308,6 +352,8 @@ async def hetzner_create_server(
     image_key: str,
     location: str,
     ssh_public_key: str | None = None,
+    ipv6_enabled: bool = True,
+    primary_ipv4_id: int | None = None,
     progress=None,
 ) -> ServerInfo:
     async def tick(step: str) -> None:
@@ -323,6 +369,15 @@ async def hetzner_create_server(
     body = {"name": name, "server_type": server_type, "image": image_key, "location": location}
     if ssh_key_ids:
         body["ssh_keys"] = ssh_key_ids
+    # Only sent when the caller wants something other than Hetzner's own
+    # default (a freshly auto-generated IPv4 + IPv6) -- an explicit
+    # public_net omits ipv4/ipv6 entirely for "auto", or names an existing
+    # unassigned Primary IP's id to attach that one instead.
+    if not ipv6_enabled or primary_ipv4_id is not None:
+        public_net: dict = {"enable_ipv4": True, "enable_ipv6": ipv6_enabled}
+        if primary_ipv4_id is not None:
+            public_net["ipv4"] = primary_ipv4_id
+        body["public_net"] = public_net
 
     _, payload = await _request(creds, "POST", "/servers", json_body=body)
     server_data = payload["server"]

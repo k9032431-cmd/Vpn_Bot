@@ -595,6 +595,15 @@ def hetzner_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def hetzner_create_ipv6_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_hetzner_ipv6_on"), callback_data="hzcreate:ipv6:on")
+    builder.button(text=t(lang, "btn_hetzner_ipv6_off"), callback_data="hzcreate:ipv6:off")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
 def hetzner_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzcreate:confirm")

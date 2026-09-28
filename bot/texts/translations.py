@@ -2894,47 +2894,81 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.",
         "tk": "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.",
     },
-    "hetzner_create_choose_location": {
-        "ru": "🟥 <b>Новый сервер — шаг 1/4</b>\n\nВыберите локацию (дата-центр):",
-        "en": "🟥 <b>New server — step 1/4</b>\n\nChoose a location (datacenter):",
-        "tk": "🟥 <b>Täze serwer — 1/4 ädim</b>\n\nÝerleşişi (maglumat merkezi) saýlaň:",
-    },
     "hetzner_create_choose_type": {
-        "ru": "🟥 <b>Новый сервер — шаг 2/4</b>\n\nВыберите тип сервера:",
-        "en": "🟥 <b>New server — step 2/4</b>\n\nChoose a server type:",
-        "tk": "🟥 <b>Täze serwer — 2/4 ädim</b>\n\nServer görnüşini saýlaň:",
+        "ru": "🟥 <b>Новый сервер — шаг 1/6</b>\n\nВыберите тарифный план (тип сервера):",
+        "en": "🟥 <b>New server — step 1/6</b>\n\nChoose a plan (server type):",
+        "tk": "🟥 <b>Täze serwer — 1/6 ädim</b>\n\nTary̋f meýilnamasyny (server görnüşini) saýlaň:",
     },
-    "hetzner_create_choose_image": {
-        "ru": "🟥 <b>Новый сервер — шаг 3/4</b>\n\nВыберите операционную систему:",
-        "en": "🟥 <b>New server — step 3/4</b>\n\nChoose an OS image:",
-        "tk": "🟥 <b>Täze serwer — 3/4 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+    "hetzner_create_choose_location": {
+        "ru": "🟥 <b>Новый сервер — шаг 2/6</b>\n\nВыберите локацию (дата-центр) — показаны только те, где доступен выбранный тариф:",
+        "en": "🟥 <b>New server — step 2/6</b>\n\nChoose a location (datacenter) — only ones where the chosen plan is available are shown:",
+        "tk": "🟥 <b>Täze serwer — 2/6 ädim</b>\n\nÝerleşişi (maglumat merkezi) saýlaň — diňe saýlanan tarif elýeterli bolan ýerler görkezilýär:",
     },
-    "hetzner_create_type_unavailable": {
+    "hetzner_create_location_unavailable": {
         "ru": (
-            "{icon} Тип <b>{server_type}</b> только что оказался недоступен в этой локации "
+            "{icon} Локация <b>{location}</b> только что оказалась недоступна для этого тарифа "
             "прямо сейчас (Hetzner не показывает это заранее, только при самом создании). "
-            "Выберите другой тип:"
+            "Выберите другую локацию:"
         ),
         "en": (
-            "{icon} Type <b>{server_type}</b> just turned out to be unavailable in this location "
+            "{icon} Location <b>{location}</b> just turned out to be unavailable for this plan "
             "right now (Hetzner doesn't show this ahead of time, only at creation). "
-            "Choose a different type:"
+            "Choose a different location:"
         ),
         "tk": (
-            "{icon} <b>{server_type}</b> görnüşi şu ýerleşişde häzir elýeterli däl eken "
-            "(muny Hetzner öňünden görkezmeýär, diňe döredilende). Başga görnüş saýlaň:"
+            "{icon} <b>{location}</b> ýerleşişi bu tarif üçin häzir elýeterli däl eken "
+            "(muny Hetzner öňünden görkezmeýär, diňe döredilende). Başga ýerleşiş saýlaň:"
         ),
     },
+    "hetzner_create_choose_image": {
+        "ru": "🟥 <b>Новый сервер — шаг 3/6</b>\n\nВыберите операционную систему:",
+        "en": "🟥 <b>New server — step 3/6</b>\n\nChoose an OS image:",
+        "tk": "🟥 <b>Täze serwer — 3/6 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+    },
     "hetzner_create_waiting_hostname": {
-        "ru": "✏️ <b>Новый сервер — шаг 4/4</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",
-        "en": "✏️ <b>New server — step 4/4</b>\n\nEnter the server's name (letters, digits, hyphens):",
-        "tk": "✏️ <b>Täze serwer — 4/4 ädim</b>\n\nServeriň adyny giriziň (latyn harplary, sanlar, defisler):",
+        "ru": "✏️ <b>Новый сервер — шаг 4/6</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New server — step 4/6</b>\n\nEnter the server's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze serwer — 4/6 ädim</b>\n\nServeriň adyny giriziň (latyn harplary, sanlar, defisler):",
     },
     "hetzner_create_invalid_hostname": {
         "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 63 символов). Попробуйте ещё раз:",
         "en": "Invalid name. Use only Latin letters, digits and hyphens (up to 63 characters). Try again:",
         "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (63 alamatdan köp däl). Gaýtadan synanyň:",
     },
+    "hetzner_create_choose_ipv6": {
+        "ru": "🌐 <b>Новый сервер — шаг 5/6</b>\n\nПодключить IPv6? (бесплатно; можно отключить, если он не нужен)",
+        "en": "🌐 <b>New server — step 5/6</b>\n\nEnable IPv6? (free; you can turn it off if you don't need it)",
+        "tk": "🌐 <b>Täze serwer — 5/6 ädim</b>\n\nIPv6 goşulsynmy? (mugt; gerek bolmasa öçürip bilersiňiz)",
+    },
+    "btn_hetzner_ipv6_on": {"ru": "🟢 Включить IPv6", "en": "🟢 Enable IPv6", "tk": "🟢 IPv6-ny goş"},
+    "btn_hetzner_ipv6_off": {"ru": "🔴 Отключить IPv6", "en": "🔴 Disable IPv6", "tk": "🔴 IPv6-ny öçür"},
+    "hetzner_ipv6_on": {"ru": "включён", "en": "enabled", "tk": "goşulan"},
+    "hetzner_ipv6_off": {"ru": "отключён", "en": "disabled", "tk": "öçürilen"},
+    "hetzner_create_choose_auth_method": {
+        "ru": "🔐 <b>Новый сервер — шаг 6/6</b>\n\nКак вы будете заходить на сервер?",
+        "en": "🔐 <b>New server — step 6/6</b>\n\nHow will you log into the server?",
+        "tk": "🔐 <b>Täze serwer — 6/6 ädim</b>\n\nServere nädip girersiňiz?",
+    },
+    "hetzner_create_choose_primary_ip": {
+        "ru": (
+            "🔌 <b>Публичный IPv4</b>\n\nМожно привязать уже купленный Primary IP (в этой же локации) "
+            "вместо автоматически создаваемого нового:"
+        ),
+        "en": (
+            "🔌 <b>Public IPv4</b>\n\nYou can attach an already-purchased Primary IP (in this same location) "
+            "instead of a freshly auto-created one:"
+        ),
+        "tk": (
+            "🔌 <b>Public IPv4</b>\n\nAwtomatiki döredilen täzesiniň deregine, öň satyn alnan Primary IP-ni "
+            "(şol bir ýerleşişde) birikdirip bolýar:"
+        ),
+    },
+    "btn_hetzner_primary_ip_auto": {
+        "ru": "🆕 Новый автоматический IP",
+        "en": "🆕 New automatic IP",
+        "tk": "🆕 Täze awtomatik IP",
+    },
+    "hetzner_primary_ip_auto": {"ru": "новый (авто)", "en": "new (auto)", "tk": "täze (awto)"},
     "hetzner_create_confirm": {
         "ru": (
             "✅ <b>Проверьте параметры сервера</b>\n\n"
@@ -2942,7 +2976,9 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📍 Локация: {location}\n"
             "⚙️ Тип: {server_type}\n"
             "💿 ОС: {image}\n"
-            "🔐 Вход: {auth_method}\n\n"
+            "🔐 Вход: {auth_method}\n"
+            "🌐 IPv6: {ipv6}\n"
+            "🔌 IPv4: {primary_ip}\n\n"
             "💰 Это создаст платный ресурс в Hetzner. Создать?"
         ),
         "en": (
@@ -2951,7 +2987,9 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📍 Location: {location}\n"
             "⚙️ Type: {server_type}\n"
             "💿 OS: {image}\n"
-            "🔐 Login via: {auth_method}\n\n"
+            "🔐 Login via: {auth_method}\n"
+            "🌐 IPv6: {ipv6}\n"
+            "🔌 IPv4: {primary_ip}\n\n"
             "💰 This will create a billable resource in Hetzner. Create it?"
         ),
         "tk": (
@@ -2960,7 +2998,9 @@ _STRINGS: dict[str, dict[str, str]] = {
             "📍 Ýerleşişi: {location}\n"
             "⚙️ Görnüşi: {server_type}\n"
             "💿 OS: {image}\n"
-            "🔐 Giriş: {auth_method}\n\n"
+            "🔐 Giriş: {auth_method}\n"
+            "🌐 IPv6: {ipv6}\n"
+            "🔌 IPv4: {primary_ip}\n\n"
             "💰 Bu Hetzner-de tölegli resurs dörediler. Döredilsinmi?"
         ),
     },

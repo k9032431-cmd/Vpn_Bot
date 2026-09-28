@@ -46,6 +46,7 @@ from bot.keyboards.cloud import (
     hetzner_create_auth_method_keyboard,
     hetzner_create_cancel_keyboard,
     hetzner_create_confirm_keyboard,
+    hetzner_create_ipv6_keyboard,
     hetzner_ip_add_confirm_keyboard,
     hetzner_ip_remove_confirm_keyboard,
     hetzner_ips_list_keyboard,
@@ -115,6 +116,7 @@ from bot.services.hetzner_api import (
     hetzner_is_type_unavailable_error,
     hetzner_list_available_images,
     hetzner_list_available_server_types,
+    hetzner_list_curated_server_types,
     hetzner_list_all_floating_ips,
     hetzner_list_floating_ips,
     hetzner_list_locations,
@@ -2546,13 +2548,11 @@ async def cb_hetzner_server_delete(callback: CallbackQuery, lang: str) -> None:
 
 
 # --- Hetzner: server creation ---
-
-
-def _hetzner_location_options(locations: list[dict]) -> list[tuple[str, str]]:
-    return [
-        (texts.hetzner_location_display(SimpleNamespace(**loc)), f"hzcreate:loc:{i}")
-        for i, loc in enumerate(locations)
-    ]
+#
+# Mirrors the order Hetzner's own website uses: plan (type) first, then
+# only the locations that plan is actually sold in, then image, hostname,
+# auth, and a couple of optional networking add-ons (IPv6 toggle, reusing
+# an already-purchased Primary IP) before the final confirmation.
 
 
 def _hetzner_type_options(types_: list[dict]) -> list[tuple[str, str]]:
@@ -2564,6 +2564,13 @@ def _hetzner_type_options(types_: list[dict]) -> list[tuple[str, str]]:
             label += f" — ~€{price:.4f}/hr"
         options.append((label, f"hzcreate:type:{i}"))
     return options
+
+
+def _hetzner_location_options(locations: list[dict]) -> list[tuple[str, str]]:
+    return [
+        (texts.hetzner_location_display(SimpleNamespace(**loc)), f"hzcreate:loc:{i}")
+        for i, loc in enumerate(locations)
+    ]
 
 
 def _hetzner_image_options(images: list[dict]) -> list[tuple[str, str]]:
@@ -2578,72 +2585,20 @@ async def cb_hetzner_server_add(callback: CallbackQuery, state: FSMContext, lang
         return
     await callback.answer()
     try:
-        locations = await hetzner_list_locations(_hetzner_creds(account))
+        types_ = await hetzner_list_curated_server_types(_hetzner_creds(account))
     except HetznerAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
 
     await state.clear()
-    location_dicts = [{"name": loc.name, "description": loc.description, "country": loc.country} for loc in locations]
-    await state.update_data(account_id=account_id, locations=location_dicts)
-    await state.set_state(HetznerVMCreateStates.choosing_location)
-    await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_location_text, _hetzner_location_options(location_dicts),
-        0, "hzcreate:locpage", "hzcreate:cancel",
-    )
-
-
-@router.callback_query(F.data.startswith("hzcreate:locpage:"), HetznerVMCreateStates.choosing_location)
-async def cb_hetzner_create_location_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    page = int(callback.data.split(":", 2)[2])
-    data = await state.get_data()
-    await callback.answer()
-    await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_location_text, _hetzner_location_options(data["locations"]),
-        page, "hzcreate:locpage", "hzcreate:cancel",
-    )
-
-
-@router.callback_query(F.data == "hzcreate:cancel", StateFilter(HetznerVMCreateStates))
-async def cb_hetzner_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    data = await state.get_data()
-    account_id = data.get("account_id")
-    await state.clear()
-    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
-    await callback.answer()
-    if not account:
-        await _show_provider_list(callback, lang)
-        return
-    await _show_hetzner_servers(callback, lang, account, account_id)
-
-
-@router.callback_query(F.data.startswith("hzcreate:loc:"), HetznerVMCreateStates.choosing_location)
-async def cb_hetzner_create_pick_location(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    index = int(callback.data.split(":", 2)[2])
-    data = await state.get_data()
-    location = data["locations"][index]
-    account = await cloud_store.get(callback.from_user.id, data["account_id"])
-    if not account:
-        await state.clear()
-        await _show_provider_list(callback, lang)
-        await callback.answer()
-        return
-    await callback.answer()
-    try:
-        types_ = await hetzner_list_available_server_types(_hetzner_creds(account), location["name"])
-    except HetznerAPIError as exc:
-        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
-        return
-
     type_dicts = [
-        {"name": s.name, "cores": s.cores, "memory_gb": s.memory_gb, "disk_gb": s.disk_gb, "price_hourly": s.price_hourly}
+        {
+            "name": s.name, "cores": s.cores, "memory_gb": s.memory_gb, "disk_gb": s.disk_gb,
+            "price_hourly": s.price_hourly, "locations": s.locations,
+        }
         for s in types_
     ]
-    await state.update_data(
-        location=location["name"],
-        location_display=texts.hetzner_location_display(SimpleNamespace(**location)),
-        types=type_dicts,
-    )
+    await state.update_data(account_id=account_id, types=type_dicts)
     await state.set_state(HetznerVMCreateStates.choosing_type)
     await _render_create_page(
         callback, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(type_dicts),
@@ -2662,11 +2617,69 @@ async def cb_hetzner_create_type_page(callback: CallbackQuery, state: FSMContext
     )
 
 
+@router.callback_query(F.data == "hzcreate:cancel", StateFilter(HetznerVMCreateStates))
+async def cb_hetzner_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account_id = data.get("account_id")
+    await state.clear()
+    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
+    await callback.answer()
+    if not account:
+        await _show_provider_list(callback, lang)
+        return
+    await _show_hetzner_servers(callback, lang, account, account_id)
+
+
+async def _render_hetzner_location_step(
+    callback: CallbackQuery, lang: str, locations: list[dict], header_fn, page: int = 0
+) -> None:
+    await _render_create_page(
+        callback, lang, header_fn, _hetzner_location_options(locations), page, "hzcreate:locpage", "hzcreate:cancel",
+    )
+
+
 @router.callback_query(F.data.startswith("hzcreate:type:"), HetznerVMCreateStates.choosing_type)
 async def cb_hetzner_create_pick_type(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     index = int(callback.data.split(":", 2)[2])
     data = await state.get_data()
     server_type = data["types"][index]
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        all_locations = await hetzner_list_locations(_hetzner_creds(account))
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    allowed = set(server_type["locations"])
+    location_dicts = [
+        {"name": loc.name, "description": loc.description, "country": loc.country}
+        for loc in all_locations
+        if loc.name in allowed
+    ]
+    await state.update_data(server_type=server_type["name"], locations=location_dicts)
+    await state.set_state(HetznerVMCreateStates.choosing_location)
+    await _render_hetzner_location_step(callback, lang, location_dicts, texts.hetzner_create_choose_location_text)
+
+
+@router.callback_query(F.data.startswith("hzcreate:locpage:"), HetznerVMCreateStates.choosing_location)
+async def cb_hetzner_create_location_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_hetzner_location_step(callback, lang, data["locations"], texts.hetzner_create_choose_location_text, page)
+
+
+@router.callback_query(F.data.startswith("hzcreate:loc:"), HetznerVMCreateStates.choosing_location)
+async def cb_hetzner_create_pick_location(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    location = data["locations"][index]
     account = await cloud_store.get(callback.from_user.id, data["account_id"])
     if not account:
         await state.clear()
@@ -2681,7 +2694,11 @@ async def cb_hetzner_create_pick_type(callback: CallbackQuery, state: FSMContext
         return
 
     image_dicts = [{"key": img.key, "name": img.name, "description": img.description} for img in images]
-    await state.update_data(server_type=server_type["name"], images=image_dicts)
+    await state.update_data(
+        location=location["name"],
+        location_display=texts.hetzner_location_display(SimpleNamespace(**location)),
+        images=image_dicts,
+    )
     await state.set_state(HetznerVMCreateStates.choosing_image)
     await _render_create_page(
         callback, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(image_dicts),
@@ -2723,16 +2740,25 @@ async def process_hetzner_hostname(message: Message, state: FSMContext, lang: st
         return
 
     await state.update_data(hostname=hostname)
+    await state.set_state(HetznerVMCreateStates.choosing_ipv6)
+    await message.answer(texts.hetzner_create_choose_ipv6_text(lang), reply_markup=hetzner_create_ipv6_keyboard(lang))
+
+
+@router.callback_query(F.data.startswith("hzcreate:ipv6:"), HetznerVMCreateStates.choosing_ipv6)
+async def cb_hetzner_create_pick_ipv6(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    ipv6_enabled = callback.data.split(":", 2)[2] == "on"
+    await state.update_data(ipv6_enabled=ipv6_enabled)
     await state.set_state(HetznerVMCreateStates.choosing_auth_method)
-    await message.answer(
+    await callback.message.edit_text(
         texts.hetzner_create_choose_auth_method_text(lang), reply_markup=hetzner_create_auth_method_keyboard(lang)
     )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "hzcreate:auth:password", HetznerVMCreateStates.choosing_auth_method)
 async def cb_hetzner_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(ssh_public_key=None)
-    await _show_hetzner_create_confirmation(callback.message, state, lang)
+    await _hetzner_create_offer_primary_ip(callback.message, state, lang, callback.from_user.id)
     await callback.answer()
 
 
@@ -2755,7 +2781,85 @@ async def process_hetzner_ssh_public_key(message: Message, state: FSMContext, la
         return
 
     await state.update_data(ssh_public_key=public_key)
-    await _show_hetzner_create_confirmation(message, state, lang)
+    await _hetzner_create_offer_primary_ip(message, state, lang, message.from_user.id)
+
+
+async def _render_create_page_on_message(
+    target_message: Message, lang: str, header_fn, options: list[tuple[str, str]], page: int, nav_prefix: str,
+    cancel_callback: str = "hzcreate:cancel",
+) -> None:
+    """Same rendering as _render_create_page, but for a step that can be
+    entered from a plain text-message handler (not just a callback), where
+    there's no existing bot message to edit in place -- sends a new one."""
+    total_pages = max(1, -(-len(options) // PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    await target_message.answer(
+        header_fn(lang, page, total_pages),
+        reply_markup=paginated_pick_keyboard(lang, options, page, nav_prefix, cancel_callback),
+    )
+
+
+async def _hetzner_create_offer_primary_ip(target_message: Message, state: FSMContext, lang: str, user_id: int) -> None:
+    """Offers to reuse an already-purchased, unassigned Primary IPv4 from
+    this same location instead of Hetzner auto-generating a new one --
+    matching the "SELECT EXISTING IP" option on Hetzner's own create-server
+    page. Skipped entirely (straight to confirmation) when there's nothing
+    to offer, same "don't show what isn't available" principle as the
+    type/location filtering."""
+    data = await state.get_data()
+    account = await cloud_store.get(user_id, data["account_id"])
+    if not account:
+        await state.clear()
+        return
+    try:
+        primary_ips = await hetzner_list_primary_ips(_hetzner_creds(account))
+    except HetznerAPIError:
+        primary_ips = []
+
+    reusable = [ip for ip in primary_ips if ip.server_id is None and ip.ip_type == "ipv4" and ip.location == data["location"]]
+    if not reusable:
+        await _show_hetzner_create_confirmation(target_message, state, lang)
+        return
+
+    ip_dicts = [{"id": ip.id, "ip": ip.ip} for ip in reusable]
+    await state.update_data(reusable_primary_ips=ip_dicts)
+    await state.set_state(HetznerVMCreateStates.choosing_primary_ip)
+    options = [(texts.hetzner_primary_ip_auto_label(lang), "hzcreate:primaryip:auto")] + [
+        (ip["ip"], f"hzcreate:primaryip:{i}") for i, ip in enumerate(ip_dicts)
+    ]
+    await _render_create_page_on_message(
+        target_message, lang, texts.hetzner_create_choose_primary_ip_text, options, 0, "hzcreate:primaryippage",
+    )
+
+
+@router.callback_query(F.data.startswith("hzcreate:primaryippage:"), HetznerVMCreateStates.choosing_primary_ip)
+async def cb_hetzner_create_primary_ip_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    options = [(texts.hetzner_primary_ip_auto_label(lang), "hzcreate:primaryip:auto")] + [
+        (ip["ip"], f"hzcreate:primaryip:{i}") for i, ip in enumerate(data["reusable_primary_ips"])
+    ]
+    await _render_create_page(
+        callback, lang, texts.hetzner_create_choose_primary_ip_text, options, page, "hzcreate:primaryippage", "hzcreate:cancel",
+    )
+
+
+@router.callback_query(F.data == "hzcreate:primaryip:auto", HetznerVMCreateStates.choosing_primary_ip)
+async def cb_hetzner_create_primary_ip_auto(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.update_data(primary_ipv4_id=None, primary_ipv4_address=None)
+    await _show_hetzner_create_confirmation(callback.message, state, lang)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("hzcreate:primaryip:"), HetznerVMCreateStates.choosing_primary_ip)
+async def cb_hetzner_create_primary_ip_pick(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    ip = data["reusable_primary_ips"][index]
+    await state.update_data(primary_ipv4_id=ip["id"], primary_ipv4_address=ip["ip"])
+    await _show_hetzner_create_confirmation(callback.message, state, lang)
+    await callback.answer()
 
 
 async def _show_hetzner_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
@@ -2764,7 +2868,8 @@ async def _show_hetzner_create_confirmation(target_message: Message, state: FSMC
     auth_method = "key" if data.get("ssh_public_key") else "password"
     await target_message.answer(
         texts.hetzner_create_confirm_text(
-            lang, data["hostname"], data["location_display"], data["server_type"], data["image_title"], auth_method
+            lang, data["hostname"], data["location_display"], data["server_type"], data["image_title"], auth_method,
+            ipv6_enabled=data.get("ipv6_enabled", True), primary_ip=data.get("primary_ipv4_address"),
         ),
         reply_markup=hetzner_create_confirm_keyboard(lang),
     )
@@ -2799,23 +2904,25 @@ async def cb_hetzner_create_confirm(callback: CallbackQuery, state: FSMContext, 
             image_key=data["image_key"],
             location=data["location"],
             ssh_public_key=ssh_public_key,
+            ipv6_enabled=data.get("ipv6_enabled", True),
+            primary_ipv4_id=data.get("primary_ipv4_id"),
             progress=progress,
         )
     except HetznerAPIError as exc:
         reason = str(exc)
         detail = reason[len("detail:"):] if reason.startswith("detail:") else ""
         if detail and hetzner_is_type_unavailable_error(detail):
-            failed_type = data["server_type"]
-            remaining_types = [t for t in data["types"] if t["name"] != failed_type]
-            if remaining_types:
-                await state.update_data(types=remaining_types)
-                await state.set_state(HetznerVMCreateStates.choosing_type)
+            failed_location = data["location"]
+            remaining_locations = [l for l in data["locations"] if l["name"] != failed_location]
+            if remaining_locations:
+                await state.update_data(locations=remaining_locations)
+                await state.set_state(HetznerVMCreateStates.choosing_location)
                 await _render_create_page(
                     callback,
                     lang,
-                    lambda l, p, tp, _type=failed_type: texts.hetzner_create_type_unavailable_text(l, _type, p, tp),
-                    _hetzner_type_options(remaining_types),
-                    0, "hzcreate:typepage", "hzcreate:cancel",
+                    lambda l, p, tp, _loc=failed_location: texts.hetzner_create_location_unavailable_text(l, _loc, p, tp),
+                    _hetzner_location_options(remaining_locations),
+                    0, "hzcreate:locpage", "hzcreate:cancel",
                 )
                 return
         await state.clear()

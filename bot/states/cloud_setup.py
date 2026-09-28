@@ -62,12 +62,14 @@ class HetznerSetupStates(StatesGroup):
 
 
 class HetznerVMCreateStates(StatesGroup):
-    choosing_location = State()
     choosing_type = State()
+    choosing_location = State()
     choosing_image = State()
     waiting_hostname = State()
     choosing_auth_method = State()
     waiting_ssh_key = State()
+    choosing_ipv6 = State()
+    choosing_primary_ip = State()
     confirming = State()
 
 

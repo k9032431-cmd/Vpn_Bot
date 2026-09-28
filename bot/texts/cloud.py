@@ -888,18 +888,18 @@ def hetzner_server_delete_confirm_text(lang: str, server) -> str:
     return t(lang, "hetzner_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
 
 
-def hetzner_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "hetzner_create_choose_location") + _page_suffix(lang, page, total_pages)
-
-
 def hetzner_create_choose_type_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
     return t(lang, "hetzner_create_choose_type") + _page_suffix(lang, page, total_pages)
 
 
-def hetzner_create_type_unavailable_text(lang: str, failed_type: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "hetzner_create_type_unavailable", icon=e("error", "❌"), server_type=failed_type) + _page_suffix(
-        lang, page, total_pages
-    )
+def hetzner_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_create_choose_location") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_create_location_unavailable_text(lang: str, failed_location: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(
+        lang, "hetzner_create_location_unavailable", icon=e("error", "❌"), location=failed_location
+    ) + _page_suffix(lang, page, total_pages)
 
 
 def hetzner_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
@@ -914,8 +914,12 @@ def hetzner_create_invalid_hostname_text(lang: str) -> str:
     return t(lang, "hetzner_create_invalid_hostname")
 
 
+def hetzner_create_choose_ipv6_text(lang: str) -> str:
+    return t(lang, "hetzner_create_choose_ipv6")
+
+
 def hetzner_create_choose_auth_method_text(lang: str) -> str:
-    return t(lang, "cloud_create_choose_auth_method")
+    return t(lang, "hetzner_create_choose_auth_method")
 
 
 def hetzner_create_waiting_ssh_key_text(lang: str) -> str:
@@ -926,10 +930,27 @@ def hetzner_create_invalid_ssh_key_text(lang: str) -> str:
     return t(lang, "cloud_create_invalid_ssh_key")
 
 
+def hetzner_create_choose_primary_ip_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "hetzner_create_choose_primary_ip") + _page_suffix(lang, page, total_pages)
+
+
+def hetzner_primary_ip_auto_label(lang: str) -> str:
+    return t(lang, "btn_hetzner_primary_ip_auto")
+
+
 def hetzner_create_confirm_text(
-    lang: str, hostname: str, location: str, server_type: str, image_title: str, auth_method: str
+    lang: str,
+    hostname: str,
+    location: str,
+    server_type: str,
+    image_title: str,
+    auth_method: str,
+    ipv6_enabled: bool = True,
+    primary_ip: str | None = None,
 ) -> str:
     auth_label = t(lang, "cloud_auth_method_key" if auth_method == "key" else "cloud_auth_method_password")
+    ipv6_label = t(lang, "hetzner_ipv6_on" if ipv6_enabled else "hetzner_ipv6_off")
+    ip_label = primary_ip if primary_ip else t(lang, "hetzner_primary_ip_auto")
     return t(
         lang,
         "hetzner_create_confirm",
@@ -938,6 +959,8 @@ def hetzner_create_confirm_text(
         server_type=server_type,
         image=html.escape(image_title),
         auth_method=auth_label,
+        ipv6=ipv6_label,
+        primary_ip=ip_label,
     )
 
 
