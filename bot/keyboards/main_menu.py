@@ -9,22 +9,19 @@ from bot.texts.translations import t
 
 def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    # Bot API 9.4 button "style" (primary/success/danger/default) -- used
-    # sparingly so it actually reads as a hierarchy: the four
-    # infrastructure-management sections in blue, SOS in red for urgency,
-    # everything else left at the client's default color. icon_custom_emoji_id
-    # (also Bot API 9.4) reuses the same IDS as the message-text premium
-    # emoji -- see bot/texts/premium_emoji.py for the Premium/Fragment
-    # requirement that gates whether Telegram actually shows it.
+    # Bot API 9.4 button "style" (primary/success/danger/default) and
+    # icon_custom_emoji_id -- see bot/texts/premium_emoji.py for the
+    # Premium/Fragment requirement that gates whether Telegram actually
+    # shows the icon. All blue except Info (green) and SOS (red).
     builder.button(text=t(lang, "btn_node"), callback_data="menu:node", style="primary", icon_custom_emoji_id=button_icon("node"))
     builder.button(text=t(lang, "btn_panel"), callback_data="menu:panel", style="primary", icon_custom_emoji_id=button_icon("panel"))
-    builder.button(text=t(lang, "btn_profile"), callback_data="menu:profile", icon_custom_emoji_id=button_icon("profile"))
-    builder.button(text=t(lang, "btn_whois"), callback_data="menu:whois", icon_custom_emoji_id=button_icon("whois"))
+    builder.button(text=t(lang, "btn_profile"), callback_data="menu:profile", style="primary", icon_custom_emoji_id=button_icon("profile"))
+    builder.button(text=t(lang, "btn_whois"), callback_data="menu:whois", style="primary", icon_custom_emoji_id=button_icon("whois"))
     builder.button(text=t(lang, "btn_cloud_vps"), callback_data="menu:cloud_vps", style="primary", icon_custom_emoji_id=button_icon("cloud_vps"))
     builder.button(text=t(lang, "btn_cloud_account"), callback_data="menu:cloud_account", style="primary", icon_custom_emoji_id=button_icon("cloud_account"))
-    builder.button(text=t(lang, "btn_crypt"), callback_data="menu:crypt", icon_custom_emoji_id=button_icon("crypt"))
-    builder.button(text=t(lang, "btn_language"), callback_data="menu:language", icon_custom_emoji_id=button_icon("language"))
-    builder.button(text=t(lang, "btn_info"), callback_data="menu:info", icon_custom_emoji_id=button_icon("info"))
+    builder.button(text=t(lang, "btn_crypt"), callback_data="menu:crypt", style="primary", icon_custom_emoji_id=button_icon("crypt"))
+    builder.button(text=t(lang, "btn_language"), callback_data="menu:language", style="primary", icon_custom_emoji_id=button_icon("language"))
+    builder.button(text=t(lang, "btn_info"), callback_data="menu:info", style="success", icon_custom_emoji_id=button_icon("info"))
 
     # When a support contact is configured, SOS opens a chat with the admin
     # directly (pre-filled greeting) instead of a menu screen.

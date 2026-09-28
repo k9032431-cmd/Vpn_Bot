@@ -42,13 +42,13 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     # --- Button labels ---
-    "btn_node": {"ru": "🖥 Node", "en": "🖥 Node", "tk": "🖥 Node"},
-    "btn_cloud_vps": {"ru": "☁️ Cloud VPS", "en": "☁️ Cloud VPS", "tk": "☁️ Cloud VPS"},
-    "btn_cloud_account": {"ru": "📇 Cloud Account", "en": "📇 Cloud Account", "tk": "📇 Cloud Account"},
-    "btn_crypt": {"ru": "🔐 Crypt/Decrypt", "en": "🔐 Crypt/Decrypt", "tk": "🔐 Crypt/Decrypt"},
-    "btn_language": {"ru": "💬 Язык", "en": "💬 Language", "tk": "💬 Dil"},
-    "btn_info": {"ru": "ℹ️ Инфо", "en": "ℹ️ Info", "tk": "ℹ️ Maglumat"},
-    "btn_sos": {"ru": "🆘 SOS", "en": "🆘 SOS", "tk": "🆘 SOS"},
+    "btn_node": {"ru": "Node", "en": "Node", "tk": "Node"},
+    "btn_cloud_vps": {"ru": "Cloud VPS", "en": "Cloud VPS", "tk": "Cloud VPS"},
+    "btn_cloud_account": {"ru": "Cloud Account", "en": "Cloud Account", "tk": "Cloud Account"},
+    "btn_crypt": {"ru": "Crypt/Decrypt", "en": "Crypt/Decrypt", "tk": "Crypt/Decrypt"},
+    "btn_language": {"ru": "Язык", "en": "Language", "tk": "Dil"},
+    "btn_info": {"ru": "Инфо", "en": "Info", "tk": "Maglumat"},
+    "btn_sos": {"ru": "SOS", "en": "SOS", "tk": "SOS"},
     "sos_greeting": {
         "ru": "Здравствуйте! У меня вопрос:",
         "en": "Hello! I have a question:",
@@ -61,7 +61,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_install": {"ru": "✅ Установить", "en": "✅ Install", "tk": "✅ Ornaşdyr"},
     "btn_node_menu": {"ru": "🖥 В меню Node", "en": "🖥 Node menu", "tk": "🖥 Node menýusy"},
     "btn_main_menu": {"ru": "🏠 Главное меню", "en": "🏠 Main menu", "tk": "🏠 Baş menýu"},
-    "btn_panel": {"ru": "⚙️ Panel", "en": "⚙️ Panel", "tk": "⚙️ Panel"},
+    "btn_panel": {"ru": "Panel", "en": "Panel", "tk": "Panel"},
     "btn_panel_marzban": {"ru": "⚡ Marzban", "en": "⚡ Marzban", "tk": "⚡ Marzban"},
     "btn_panel_pasarguard": {"ru": "🛡 PasarGuard", "en": "🛡 PasarGuard", "tk": "🛡 PasarGuard"},
     "btn_panel_3xui": {"ru": "3️⃣ 3X-UI", "en": "3️⃣ 3X-UI", "tk": "3️⃣ 3X-UI"},
@@ -129,7 +129,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_panel_node_delete": {"ru": "🗑 Удалить ноду", "en": "🗑 Delete node", "tk": "🗑 Node poz"},
     "btn_panel_node_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
     "btn_panel_node_create_confirm": {"ru": "✅ Добавить", "en": "✅ Add", "tk": "✅ Goş"},
-    "btn_profile": {"ru": "👤 Профиль", "en": "👤 Profile", "tk": "👤 Profil"},
+    "btn_profile": {"ru": "Профиль", "en": "Profile", "tk": "Profil"},
     "profile_no_username": {"ru": "не указан", "en": "not set", "tk": "görkezilmedik"},
     "profile_text": {
         "ru": (
@@ -1708,7 +1708,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} Müşderi pozuldy.",
     },
     # --- Arsi WhoIs ---
-    "btn_whois": {"ru": "🌐 Arsi WhoIs", "en": "🌐 Arsi WhoIs", "tk": "🌐 Arsi WhoIs"},
+    "btn_whois": {"ru": "Arsi WhoIs", "en": "Arsi WhoIs", "tk": "Arsi WhoIs"},
     "btn_whois_again": {"ru": "🔎 Новый запрос", "en": "🔎 New lookup", "tk": "🔎 Täze sorag"},
     "whois_prompt": {
         "ru": (
