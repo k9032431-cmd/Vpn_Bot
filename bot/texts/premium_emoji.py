@@ -64,6 +64,12 @@ IDS: dict[str, str] = {
     "profile": "",
     # whois — заголовок и кнопка раздела Arsi WhoIs
     "whois": "",
+    # upcloud — заголовок раздела UpCloud (баланс аккаунта)
+    "upcloud": "",
+    # azure — заголовок раздела Azure (карточка подписки)
+    "azure": "",
+    # hetzner — заголовок раздела Hetzner Cloud
+    "hetzner": "",
 }
 
 

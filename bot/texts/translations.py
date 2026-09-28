@@ -1941,17 +1941,17 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_cancel": {"ru": "❌ Отмена", "en": "❌ Cancel", "tk": "❌ Ýatyr"},
     "cloud_account_dashboard": {
         "ru": (
-            "☁️ <b>{provider}</b>\n\n"
+            "{icon} <b>{provider}</b>\n\n"
             "👤 Аккаунт: <code>{username}</code>\n"
             "💰 Баланс: {credits} {currency}"
         ),
         "en": (
-            "☁️ <b>{provider}</b>\n\n"
+            "{icon} <b>{provider}</b>\n\n"
             "👤 Account: <code>{username}</code>\n"
             "💰 Balance: {credits} {currency}"
         ),
         "tk": (
-            "☁️ <b>{provider}</b>\n\n"
+            "{icon} <b>{provider}</b>\n\n"
             "👤 Hasap: <code>{username}</code>\n"
             "💰 Balans: {credits} {currency}"
         ),
@@ -2441,41 +2441,41 @@ _STRINGS: dict[str, dict[str, str]] = {
     # --- Azure account connect ---
     "azure_step_tenant": {
         "ru": (
-            "🔷 <b>Подключение Azure — шаг 1/4</b>\n\n"
+            "{icon} <b>Подключение Azure — шаг 1/4</b>\n\n"
             "Введите <b>Tenant ID</b> (Directory ID) вашего Azure AD / Entra ID."
         ),
         "en": (
-            "🔷 <b>Connect Azure — step 1/4</b>\n\n"
+            "{icon} <b>Connect Azure — step 1/4</b>\n\n"
             "Enter your <b>Tenant ID</b> (Directory ID) from Azure AD / Entra ID."
         ),
         "tk": (
-            "🔷 <b>Azure birikdirmek — 1/4 ädim</b>\n\n"
+            "{icon} <b>Azure birikdirmek — 1/4 ädim</b>\n\n"
             "Azure AD / Entra ID-den <b>Tenant ID</b> (Directory ID) giriziň."
         ),
     },
     "azure_step_client_id": {
-        "ru": "🔷 <b>Шаг 2/4</b>\n\nТеперь <b>Client ID</b> (Application ID) вашего App Registration:",
-        "en": "🔷 <b>Step 2/4</b>\n\nNow the <b>Client ID</b> (Application ID) of your App Registration:",
-        "tk": "🔷 <b>2/4 ädim</b>\n\nIndi App Registration-yňyzyň <b>Client ID</b> (Application ID)-sini giriziň:",
+        "ru": "{icon} <b>Шаг 2/4</b>\n\nТеперь <b>Client ID</b> (Application ID) вашего App Registration:",
+        "en": "{icon} <b>Step 2/4</b>\n\nNow the <b>Client ID</b> (Application ID) of your App Registration:",
+        "tk": "{icon} <b>2/4 ädim</b>\n\nIndi App Registration-yňyzyň <b>Client ID</b> (Application ID)-sini giriziň:",
     },
     "azure_step_client_secret": {
         "ru": (
-            "🔷 <b>Шаг 3/4</b>\n\nТеперь <b>Client Secret</b> (значение секрета, не его Secret ID).\n\n"
+            "{icon} <b>Шаг 3/4</b>\n\nТеперь <b>Client Secret</b> (значение секрета, не его Secret ID).\n\n"
             "⚠️ <i>Сообщение с секретом бот удалит сразу после получения.</i>"
         ),
         "en": (
-            "🔷 <b>Step 3/4</b>\n\nNow the <b>Client Secret</b> (the secret's value, not its Secret ID).\n\n"
+            "{icon} <b>Step 3/4</b>\n\nNow the <b>Client Secret</b> (the secret's value, not its Secret ID).\n\n"
             "⚠️ <i>The bot deletes the message with the secret right after receiving it.</i>"
         ),
         "tk": (
-            "🔷 <b>3/4 ädim</b>\n\nIndi <b>Client Secret</b> (syryň gymmaty, onuň ID-si däl) giriziň.\n\n"
+            "{icon} <b>3/4 ädim</b>\n\nIndi <b>Client Secret</b> (syryň gymmaty, onuň ID-si däl) giriziň.\n\n"
             "⚠️ <i>Bot syr bilen habary alnandan derrew soň pozar.</i>"
         ),
     },
     "azure_step_subscription": {
-        "ru": "🔷 <b>Шаг 4/4</b>\n\nИ последнее — <b>Subscription ID</b>:",
-        "en": "🔷 <b>Step 4/4</b>\n\nAnd finally — the <b>Subscription ID</b>:",
-        "tk": "🔷 <b>4/4 ädim</b>\n\nWe iň soňunda — <b>Subscription ID</b>:",
+        "ru": "{icon} <b>Шаг 4/4</b>\n\nИ последнее — <b>Subscription ID</b>:",
+        "en": "{icon} <b>Step 4/4</b>\n\nAnd finally — the <b>Subscription ID</b>:",
+        "tk": "{icon} <b>4/4 ädim</b>\n\nWe iň soňunda — <b>Subscription ID</b>:",
     },
     "azure_empty_field": {
         "ru": "Значение не может быть пустым. Попробуйте ещё раз:",
@@ -2484,28 +2484,28 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "azure_account_dashboard": {
         "ru": (
-            "🔷 <b>Azure</b>\n\n"
+            "{icon} <b>Azure</b>\n\n"
             "🆔 Subscription: <code>{subscription_id}</code>\n"
             "📛 Название: {display_name}\n"
             "📶 Статус: {state}"
         ),
         "en": (
-            "🔷 <b>Azure</b>\n\n"
+            "{icon} <b>Azure</b>\n\n"
             "🆔 Subscription: <code>{subscription_id}</code>\n"
             "📛 Name: {display_name}\n"
             "📶 State: {state}"
         ),
         "tk": (
-            "🔷 <b>Azure</b>\n\n"
+            "{icon} <b>Azure</b>\n\n"
             "🆔 Subscription: <code>{subscription_id}</code>\n"
             "📛 Ady: {display_name}\n"
             "📶 Ýagdaýy: {state}"
         ),
     },
     "azure_vms_header": {
-        "ru": "🔷 <b>VM аккаунта</b> <code>{subscription_id}</code>\n\n{body}",
-        "en": "🔷 <b>VMs for</b> <code>{subscription_id}</code>\n\n{body}",
-        "tk": "🔷 <code>{subscription_id}</code> <b>hasabynyň VM-leri</b>\n\n{body}",
+        "ru": "{icon} <b>VM аккаунта</b> <code>{subscription_id}</code>\n\n{body}",
+        "en": "{icon} <b>VMs for</b> <code>{subscription_id}</code>\n\n{body}",
+        "tk": "{icon} <code>{subscription_id}</code> <b>hasabynyň VM-leri</b>\n\n{body}",
     },
     "azure_vm_detail": {
         "ru": (
@@ -2550,14 +2550,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>{name}</b> wirtual maşynyny pozmalymy? Bu yzyna gaýtaryp bolmaýar — diski we ulgamy hem pozular.",
     },
     "azure_create_choose_location": {
-        "ru": "🔷 <b>Новая VM — шаг 1/7</b>\n\nВыберите регион (location):",
-        "en": "🔷 <b>New VM — step 1/7</b>\n\nChoose a region (location):",
-        "tk": "🔷 <b>Täze VM — 1/7 ädim</b>\n\nSebiti (location) saýlaň:",
+        "ru": "{icon} <b>Новая VM — шаг 1/7</b>\n\nВыберите регион (location):",
+        "en": "{icon} <b>New VM — step 1/7</b>\n\nChoose a region (location):",
+        "tk": "{icon} <b>Täze VM — 1/7 ädim</b>\n\nSebiti (location) saýlaň:",
     },
     "azure_create_choose_size": {
-        "ru": "🔷 <b>Новая VM — шаг 2/7</b>\n\nВыберите размер (size):",
-        "en": "🔷 <b>New VM — step 2/7</b>\n\nChoose a size:",
-        "tk": "🔷 <b>Täze VM — 2/7 ädim</b>\n\nÖlçegi saýlaň:",
+        "ru": "{icon} <b>Новая VM — шаг 2/7</b>\n\nВыберите размер (size):",
+        "en": "{icon} <b>New VM — step 2/7</b>\n\nChoose a size:",
+        "tk": "{icon} <b>Täze VM — 2/7 ädim</b>\n\nÖlçegi saýlaň:",
     },
     "azure_create_size_capacity_error": {
         "ru": (
@@ -2577,9 +2577,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "azure_create_choose_image": {
-        "ru": "🔷 <b>Новая VM — шаг 4/7</b>\n\nВыберите операционную систему:",
-        "en": "🔷 <b>New VM — step 4/7</b>\n\nChoose an OS image:",
-        "tk": "🔷 <b>Täze VM — 4/7 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+        "ru": "{icon} <b>Новая VM — шаг 4/7</b>\n\nВыберите операционную систему:",
+        "en": "{icon} <b>New VM — step 4/7</b>\n\nChoose an OS image:",
+        "tk": "{icon} <b>Täze VM — 4/7 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
     },
     "azure_create_waiting_hostname": {
         "ru": "✏️ <b>Новая VM — шаг 5/7</b>\n\nВведите имя виртуальной машины (латиница, цифры, дефисы):",
@@ -2683,9 +2683,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "🗺 Elýeterlilik zolagy: {zone}\n",
     },
     "azure_create_choose_zone": {
-        "ru": "🔷 <b>Новая VM — шаг 3/7</b>\n\nВыберите зону доступности (availability zone) для этого размера в этом регионе:",
-        "en": "🔷 <b>New VM — step 3/7</b>\n\nChoose an availability zone for this size in this region:",
-        "tk": "🔷 <b>Täze VM — 3/7 ädim</b>\n\nBu sebitde bu ölçeg üçin elýeterlilik zolagyny saýlaň:",
+        "ru": "{icon} <b>Новая VM — шаг 3/7</b>\n\nВыберите зону доступности (availability zone) для этого размера в этом регионе:",
+        "en": "{icon} <b>New VM — step 3/7</b>\n\nChoose an availability zone for this size in this region:",
+        "tk": "{icon} <b>Täze VM — 3/7 ädim</b>\n\nBu sebitde bu ölçeg üçin elýeterlilik zolagyny saýlaň:",
     },
     "azure_zone_none": {
         "ru": "Без зоны (авто)",
@@ -2698,34 +2698,34 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{zone}-nji zolak",
     },
     "azure_progress_resource_group": {
-        "ru": "🔷 Создаю группу ресурсов...",
-        "en": "🔷 Creating the resource group...",
-        "tk": "🔷 Resurs topary döredilýär...",
+        "ru": "{icon} Создаю группу ресурсов...",
+        "en": "{icon} Creating the resource group...",
+        "tk": "{icon} Resurs topary döredilýär...",
     },
     "azure_progress_network": {
-        "ru": "🔷 Настраиваю сеть (VNet/подсеть)...",
-        "en": "🔷 Setting up the network (VNet/subnet)...",
-        "tk": "🔷 Ulgam sazlanýar (VNet/subnet)...",
+        "ru": "{icon} Настраиваю сеть (VNet/подсеть)...",
+        "en": "{icon} Setting up the network (VNet/subnet)...",
+        "tk": "{icon} Ulgam sazlanýar (VNet/subnet)...",
     },
     "azure_progress_public_ip": {
-        "ru": "🔷 Выделяю публичный IP...",
-        "en": "🔷 Allocating a public IP...",
-        "tk": "🔷 Açyk IP bölünip berilýär...",
+        "ru": "{icon} Выделяю публичный IP...",
+        "en": "{icon} Allocating a public IP...",
+        "tk": "{icon} Açyk IP bölünip berilýär...",
     },
     "azure_progress_nsg": {
-        "ru": "🔷 Настраиваю фаервол (NSG)...",
-        "en": "🔷 Setting up the firewall (NSG)...",
-        "tk": "🔷 Firewall sazlanýar (NSG)...",
+        "ru": "{icon} Настраиваю фаервол (NSG)...",
+        "en": "{icon} Setting up the firewall (NSG)...",
+        "tk": "{icon} Firewall sazlanýar (NSG)...",
     },
     "azure_progress_nic": {
-        "ru": "🔷 Создаю сетевой интерфейс...",
-        "en": "🔷 Creating the network interface...",
-        "tk": "🔷 Ulgam interfeýsi döredilýär...",
+        "ru": "{icon} Создаю сетевой интерфейс...",
+        "en": "{icon} Creating the network interface...",
+        "tk": "{icon} Ulgam interfeýsi döredilýär...",
     },
     "azure_progress_vm": {
-        "ru": "🔷 Создаю виртуальную машину, это может занять пару минут...",
-        "en": "🔷 Creating the virtual machine, this can take a couple of minutes...",
-        "tk": "🔷 Wirtual maşyn döredilýär, birnäçe minut wagt alyp biler...",
+        "ru": "{icon} Создаю виртуальную машину, это может занять пару минут...",
+        "en": "{icon} Creating the virtual machine, this can take a couple of minutes...",
+        "tk": "{icon} Wirtual maşyn döredilýär, birnäçe minut wagt alyp biler...",
     },
     "azure_create_success": {
         "ru": (
@@ -2855,9 +2855,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "Baha boş bolup bilmez. Gaýtadan synanyň:",
     },
     "hetzner_account_dashboard": {
-        "ru": "🟥 <b>Hetzner Cloud</b>\n\nСерверов в проекте: {servers}",
-        "en": "🟥 <b>Hetzner Cloud</b>\n\nServers in this project: {servers}",
-        "tk": "🟥 <b>Hetzner Cloud</b>\n\nProýektdäki serwerler: {servers}",
+        "ru": "{icon} <b>Hetzner Cloud</b>\n\nСерверов в проекте: {servers}",
+        "en": "{icon} <b>Hetzner Cloud</b>\n\nServers in this project: {servers}",
+        "tk": "{icon} <b>Hetzner Cloud</b>\n\nProýektdäki serwerler: {servers}",
     },
     "hetzner_servers_header": {
         "ru": "🖥 <b>Серверы Hetzner</b>\n\n{body}",
@@ -2937,14 +2937,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "hetzner_create_choose_type": {
-        "ru": "🟥 <b>Новый сервер — шаг 1/6</b>\n\nВыберите тарифный план (тип сервера):",
-        "en": "🟥 <b>New server — step 1/6</b>\n\nChoose a plan (server type):",
-        "tk": "🟥 <b>Täze serwer — 1/6 ädim</b>\n\nTary̋f meýilnamasyny (server görnüşini) saýlaň:",
+        "ru": "{icon} <b>Новый сервер — шаг 1/6</b>\n\nВыберите тарифный план (тип сервера):",
+        "en": "{icon} <b>New server — step 1/6</b>\n\nChoose a plan (server type):",
+        "tk": "{icon} <b>Täze serwer — 1/6 ädim</b>\n\nTary̋f meýilnamasyny (server görnüşini) saýlaň:",
     },
     "hetzner_create_choose_location": {
-        "ru": "🟥 <b>Новый сервер — шаг 2/6</b>\n\nВыберите локацию (дата-центр) — показаны только те, где доступен выбранный тариф:",
-        "en": "🟥 <b>New server — step 2/6</b>\n\nChoose a location (datacenter) — only ones where the chosen plan is available are shown:",
-        "tk": "🟥 <b>Täze serwer — 2/6 ädim</b>\n\nÝerleşişi (maglumat merkezi) saýlaň — diňe saýlanan tarif elýeterli bolan ýerler görkezilýär:",
+        "ru": "{icon} <b>Новый сервер — шаг 2/6</b>\n\nВыберите локацию (дата-центр) — показаны только те, где доступен выбранный тариф:",
+        "en": "{icon} <b>New server — step 2/6</b>\n\nChoose a location (datacenter) — only ones where the chosen plan is available are shown:",
+        "tk": "{icon} <b>Täze serwer — 2/6 ädim</b>\n\nÝerleşişi (maglumat merkezi) saýlaň — diňe saýlanan tarif elýeterli bolan ýerler görkezilýär:",
     },
     "hetzner_create_location_unavailable": {
         "ru": (
@@ -2963,9 +2963,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "hetzner_create_choose_image": {
-        "ru": "🟥 <b>Новый сервер — шаг 3/6</b>\n\nВыберите операционную систему:",
-        "en": "🟥 <b>New server — step 3/6</b>\n\nChoose an OS image:",
-        "tk": "🟥 <b>Täze serwer — 3/6 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+        "ru": "{icon} <b>Новый сервер — шаг 3/6</b>\n\nВыберите операционную систему:",
+        "en": "{icon} <b>New server — step 3/6</b>\n\nChoose an OS image:",
+        "tk": "{icon} <b>Täze serwer — 3/6 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
     },
     "hetzner_create_waiting_hostname": {
         "ru": "✏️ <b>Новый сервер — шаг 4/6</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",

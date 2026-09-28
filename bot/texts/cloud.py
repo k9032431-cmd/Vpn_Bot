@@ -173,6 +173,7 @@ def account_dashboard_text(lang: str, account: dict, credits: float) -> str:
     return t(
         lang,
         "cloud_account_dashboard",
+        icon=e("upcloud", "☁️"),
         provider=provider_title(account["provider"]),
         username=html.escape(account_display_name(account)),
         credits=f"{credits:.2f}",
@@ -561,19 +562,19 @@ def azure_location_display(location_name: str, display_name: str) -> str:
 
 
 def azure_step_tenant_text(lang: str) -> str:
-    return t(lang, "azure_step_tenant")
+    return t(lang, "azure_step_tenant", icon=e("azure", "🔷"))
 
 
 def azure_step_client_id_text(lang: str) -> str:
-    return t(lang, "azure_step_client_id")
+    return t(lang, "azure_step_client_id", icon=e("azure", "🔷"))
 
 
 def azure_step_client_secret_text(lang: str) -> str:
-    return t(lang, "azure_step_client_secret")
+    return t(lang, "azure_step_client_secret", icon=e("azure", "🔷"))
 
 
 def azure_step_subscription_text(lang: str) -> str:
-    return t(lang, "azure_step_subscription")
+    return t(lang, "azure_step_subscription", icon=e("azure", "🔷"))
 
 
 def azure_empty_field_text(lang: str) -> str:
@@ -584,6 +585,7 @@ def azure_account_dashboard_text(lang: str, account: dict, info) -> str:
     return t(
         lang,
         "azure_account_dashboard",
+        icon=e("azure", "🔷"),
         subscription_id=html.escape(account.get("subscription_id", "")),
         display_name=html.escape(info.display_name) or "—",
         state=html.escape(info.state),
@@ -593,7 +595,8 @@ def azure_account_dashboard_text(lang: str, account: dict, info) -> str:
 def azure_vms_header_text(lang: str, account: dict, has_vms: bool) -> str:
     body_key = "cloud_servers_hint" if has_vms else "cloud_servers_empty"
     return t(
-        lang, "azure_vms_header", subscription_id=html.escape(account.get("subscription_id", "")), body=t(lang, body_key)
+        lang, "azure_vms_header", icon=e("azure", "🔷"),
+        subscription_id=html.escape(account.get("subscription_id", "")), body=t(lang, body_key)
     )
 
 
@@ -636,11 +639,11 @@ def azure_vm_deleted_text(lang: str) -> str:
 
 
 def azure_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "azure_create_choose_location") + _page_suffix(lang, page, total_pages)
+    return t(lang, "azure_create_choose_location", icon=e("azure", "🔷")) + _page_suffix(lang, page, total_pages)
 
 
 def azure_create_choose_size_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "azure_create_choose_size") + _page_suffix(lang, page, total_pages)
+    return t(lang, "azure_create_choose_size", icon=e("azure", "🔷")) + _page_suffix(lang, page, total_pages)
 
 
 def azure_create_size_capacity_error_text(
@@ -652,7 +655,7 @@ def azure_create_size_capacity_error_text(
 
 
 def azure_create_choose_zone_text(lang: str) -> str:
-    return t(lang, "azure_create_choose_zone")
+    return t(lang, "azure_create_choose_zone", icon=e("azure", "🔷"))
 
 
 def azure_zone_label(lang: str, zone: str | None) -> str:
@@ -662,7 +665,7 @@ def azure_zone_label(lang: str, zone: str | None) -> str:
 
 
 def azure_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "azure_create_choose_image") + _page_suffix(lang, page, total_pages)
+    return t(lang, "azure_create_choose_image", icon=e("azure", "🔷")) + _page_suffix(lang, page, total_pages)
 
 
 def azure_create_waiting_hostname_text(lang: str) -> str:
@@ -742,7 +745,7 @@ _AZURE_PROGRESS_KEYS = {
 
 def azure_progress_text(lang: str, step: str) -> str:
     key = _AZURE_PROGRESS_KEYS.get(step, "azure_progress_vm")
-    return t(lang, key)
+    return t(lang, key, icon=e("azure", "🔷"))
 
 
 def azure_vm_reimage_confirm_text(lang: str, vm) -> str:
@@ -853,7 +856,7 @@ def hetzner_empty_field_text(lang: str) -> str:
 
 
 def hetzner_account_dashboard_text(lang: str, account: dict, info) -> str:
-    return t(lang, "hetzner_account_dashboard", servers=info.server_count)
+    return t(lang, "hetzner_account_dashboard", icon=e("hetzner", "🟥"), servers=info.server_count)
 
 
 def hetzner_servers_header_text(lang: str, account: dict, has_servers: bool) -> str:
@@ -905,11 +908,11 @@ def hetzner_server_deleted_ips_partial_text(lang: str, failed_ips: list[str]) ->
 
 
 def hetzner_create_choose_type_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "hetzner_create_choose_type") + _page_suffix(lang, page, total_pages)
+    return t(lang, "hetzner_create_choose_type", icon=e("hetzner", "🟥")) + _page_suffix(lang, page, total_pages)
 
 
 def hetzner_create_choose_location_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "hetzner_create_choose_location") + _page_suffix(lang, page, total_pages)
+    return t(lang, "hetzner_create_choose_location", icon=e("hetzner", "🟥")) + _page_suffix(lang, page, total_pages)
 
 
 def hetzner_create_location_unavailable_text(lang: str, failed_location: str, page: int = 0, total_pages: int = 1) -> str:
@@ -919,7 +922,7 @@ def hetzner_create_location_unavailable_text(lang: str, failed_location: str, pa
 
 
 def hetzner_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
-    return t(lang, "hetzner_create_choose_image") + _page_suffix(lang, page, total_pages)
+    return t(lang, "hetzner_create_choose_image", icon=e("hetzner", "🟥")) + _page_suffix(lang, page, total_pages)
 
 
 def hetzner_create_waiting_hostname_text(lang: str) -> str:
