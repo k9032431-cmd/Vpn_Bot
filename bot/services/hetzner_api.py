@@ -317,6 +317,19 @@ async def _ensure_ssh_key(creds: HetznerCredentials, public_key: str) -> int:
 # --- Servers ---
 
 
+def _location_name(item: dict) -> str:
+    """Hetzner moved Servers and Primary IPs from a nested
+    datacenter.location.name to a top-level location.name -- the old
+    "datacenter" field was deprecated in Dec 2025 and is gone from live
+    responses since Jul 2026. Prefer the new field, fall back to the old
+    one for anything (older API version, cached data) that still sends
+    it."""
+    location = item.get("location")
+    if not location:
+        location = (item.get("datacenter") or {}).get("location")
+    return (location or {}).get("name", "")
+
+
 def _server_from_payload(item: dict) -> ServerInfo:
     public_net = item.get("public_net") or {}
     ipv4 = (public_net.get("ipv4") or {}).get("ip")
@@ -326,7 +339,7 @@ def _server_from_payload(item: dict) -> ServerInfo:
         name=item.get("name", ""),
         status=item.get("status", "unknown"),
         server_type=(item.get("server_type") or {}).get("name", ""),
-        location=(item.get("datacenter") or {}).get("location", {}).get("name", ""),
+        location=_location_name(item),
         ipv4=ipv4,
         ipv6=ipv6,
     )
@@ -540,11 +553,9 @@ async def hetzner_remove_floating_ip(creds: HetznerCredentials, floating_ip_id: 
 
 
 def _primary_ip_from_payload(item: dict) -> PrimaryIPInfo:
-    datacenter = item.get("datacenter") or {}
-    location = (datacenter.get("location") or {}).get("name", "")
     return PrimaryIPInfo(
         id=item["id"], ip=item.get("ip", ""), ip_type=item.get("type", "ipv4"),
-        location=location, server_id=item.get("assignee_id"),
+        location=_location_name(item), server_id=item.get("assignee_id"),
     )
 
 
