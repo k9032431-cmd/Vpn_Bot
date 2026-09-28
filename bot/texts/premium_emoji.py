@@ -10,9 +10,13 @@
      что указан в комментарии), всё работает как есть, ничего больше
      менять не нужно.
 
-Важно: премиум-эмодзи (тег <tg-emoji>) работает только в ТЕКСТЕ сообщений.
-Telegram не позволяет вставлять его в подписи кнопок — там эмодзи всегда
-остаются обычными юникод-символами (см. bot/keyboards/*.py).
+Важно: одни и те же ID из IDS ниже используются в двух местах —
+  - в ТЕКСТЕ сообщений через e(key, fallback) (тег <tg-emoji>);
+  - на КНОПКАХ через button_icon(key) (поле icon_custom_emoji_id,
+    Bot API 9.4+, см. bot/keyboards/*.py). Показ иконки на кнопке Telegram
+    разрешает только если у аккаунта, на который зарегистрирован бот
+    (BotFather), есть активная Premium-подписка, либо у бота куплен
+    username на Fragment — иначе иконка на кнопке может не показаться.
 
 Список сгруппирован по разделам бота — так и заполняйте, по одному разделу
 за раз.
@@ -107,3 +111,13 @@ def e(key: str, fallback: str) -> str:
     if custom_id:
         return f'<tg-emoji emoji-id="{custom_id}">{fallback}</tg-emoji>'
     return fallback
+
+
+def button_icon(key: str) -> str | None:
+    """ID для icon_custom_emoji_id у InlineKeyboardButton/KeyboardButton
+    (Bot API 9.4+) -- None, пока в IDS для этого ключа пусто, тогда кнопка
+    просто остаётся без иконки. Показ такой иконки на кнопке сам Telegram
+    разрешает только если у аккаунта, на который зарегистрирован бот
+    (BotFather), есть активная Premium-подписка, либо у бота куплен
+    username на Fragment."""
+    return IDS.get(key) or None
