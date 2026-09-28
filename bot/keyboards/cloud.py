@@ -563,11 +563,23 @@ def hetzner_server_detail_keyboard(lang: str, account_id: str, server) -> Inline
     return builder.as_markup()
 
 
-def hetzner_server_delete_confirm_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+def hetzner_server_delete_confirm_keyboard(
+    lang: str, account_id: str, server_id: int, has_attached_ips: bool = False
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"hzsrv:del:{account_id}:{server_id}")
-    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"hzsrv:list:{account_id}")
-    builder.adjust(1, 1)
+    if has_attached_ips:
+        builder.button(
+            text=t(lang, "btn_hetzner_server_delete_with_ips"), callback_data=f"hzsrv:delwithip:{account_id}:{server_id}"
+        )
+        builder.button(
+            text=t(lang, "btn_hetzner_server_delete_keep_ips"), callback_data=f"hzsrv:del:{account_id}:{server_id}"
+        )
+        builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"hzsrv:list:{account_id}")
+        builder.adjust(1, 1, 1)
+    else:
+        builder.button(text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"hzsrv:del:{account_id}:{server_id}")
+        builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"hzsrv:list:{account_id}")
+        builder.adjust(1, 1)
     return builder.as_markup()
 
 

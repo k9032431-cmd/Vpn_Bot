@@ -2509,6 +2509,16 @@ async def cb_hetzner_server_restart(callback: CallbackQuery, lang: str) -> None:
     await _run_hetzner_server_action(callback, lang, hetzner_reboot_server, account_id, int(server_id_raw))
 
 
+async def _hetzner_attached_ips(creds: HetznerCredentials, server_id: int) -> tuple[list, list]:
+    """Primary and Floating IPs currently attached to this server. Hetzner
+    doesn't delete either kind along with the server -- they'd otherwise be
+    left behind, unassigned, still billed -- so the delete-confirmation
+    step needs to know about them upfront."""
+    floating_ips = await hetzner_list_floating_ips(creds, server_id)
+    primary_ips = [ip for ip in await hetzner_list_primary_ips(creds) if ip.server_id == server_id]
+    return primary_ips, floating_ips
+
+
 @router.callback_query(F.data.startswith("hzsrv:delask:"))
 async def cb_hetzner_server_delete_ask(callback: CallbackQuery, lang: str) -> None:
     _, _, account_id, server_id_raw = callback.data.split(":", 3)
@@ -2516,16 +2526,20 @@ async def cb_hetzner_server_delete_ask(callback: CallbackQuery, lang: str) -> No
     account = await _get_account(callback, lang, account_id)
     if not account:
         return
+    creds = _hetzner_creds(account)
     try:
-        server = await hetzner_get_server(_hetzner_creds(account), server_id)
+        server = await hetzner_get_server(creds, server_id)
+        primary_ips, floating_ips = await _hetzner_attached_ips(creds, server_id)
     except HetznerAPIError as exc:
         await callback.answer()
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
     await callback.answer()
     await callback.message.edit_text(
-        texts.hetzner_server_delete_confirm_text(lang, server),
-        reply_markup=hetzner_server_delete_confirm_keyboard(lang, account_id, server_id),
+        texts.hetzner_server_delete_confirm_text(lang, server, primary_ips, floating_ips),
+        reply_markup=hetzner_server_delete_confirm_keyboard(
+            lang, account_id, server_id, has_attached_ips=bool(primary_ips or floating_ips)
+        ),
     )
 
 
@@ -2544,6 +2558,50 @@ async def cb_hetzner_server_delete(callback: CallbackQuery, lang: str) -> None:
         return
     await cloud_store.remove_vm_secret(callback.from_user.id, account_id, str(server_id))
     await callback.message.edit_text(texts.server_deleted_text(lang), reply_markup=None)
+    await _show_hetzner_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("hzsrv:delwithip:"))
+async def cb_hetzner_server_delete_with_ips(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    creds = _hetzner_creds(account)
+    try:
+        primary_ips, floating_ips = await _hetzner_attached_ips(creds, server_id)
+        await hetzner_delete_server(creds, server_id)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await cloud_store.remove_vm_secret(callback.from_user.id, account_id, str(server_id))
+
+    failed_ips: list[str] = []
+    for ip in floating_ips:
+        try:
+            await hetzner_remove_floating_ip(creds, ip.id)
+        except HetznerAPIError:
+            failed_ips.append(ip.ip)
+    for ip in primary_ips:
+        try:
+            # The server that held it is already gone, so this is normally
+            # already unassigned -- but Hetzner requires a Primary IP to be
+            # unassigned before it can be deleted, and there's no harm in
+            # asking again if it somehow still shows assigned.
+            try:
+                await hetzner_unassign_primary_ip(creds, ip.id)
+            except HetznerAPIError:
+                pass
+            await hetzner_delete_primary_ip(creds, ip.id)
+        except HetznerAPIError:
+            failed_ips.append(ip.ip)
+
+    if failed_ips:
+        await callback.message.edit_text(texts.hetzner_server_deleted_ips_partial_text(lang, failed_ips), reply_markup=None)
+    else:
+        await callback.message.edit_text(texts.hetzner_server_deleted_with_ips_text(lang), reply_markup=None)
     await _show_hetzner_servers(callback, lang, account, account_id)
 
 

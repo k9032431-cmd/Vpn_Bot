@@ -2034,6 +2034,12 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_server_restart": {"ru": "🔄 Перезагрузить", "en": "🔄 Restart", "tk": "🔄 Täzeden başlat"},
     "btn_cloud_server_delete": {"ru": "🗑 Удалить сервер", "en": "🗑 Delete server", "tk": "🗑 Serweri poz"},
     "btn_cloud_server_delete_confirm": {"ru": "🗑 Да, удалить", "en": "🗑 Yes, delete", "tk": "🗑 Hawa, poz"},
+    "btn_hetzner_server_delete_with_ips": {
+        "ru": "🗑 Удалить сервер и IP-адреса", "en": "🗑 Delete server + IP addresses", "tk": "🗑 Serweri we IP-lary poz",
+    },
+    "btn_hetzner_server_delete_keep_ips": {
+        "ru": "🗑 Удалить только сервер", "en": "🗑 Delete server only", "tk": "🗑 Diňe serweri poz",
+    },
     "cloud_server_action_ok": {
         "ru": "{icon} Команда отправлена, статус сервера скоро обновится.",
         "en": "{icon} Command sent, the server's status will update shortly.",
@@ -2893,6 +2899,42 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "{icon} Удалить сервер <b>{name}</b>? Это необратимо — диск тоже будет удалён.",
         "en": "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.",
         "tk": "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.",
+    },
+    "hetzner_server_delete_confirm_with_ips": {
+        "ru": (
+            "{icon} Удалить сервер <b>{name}</b>? Это необратимо — диск тоже будет удалён.\n\n"
+            "📌 К серверу привязаны IP-адреса. Hetzner не удаляет их вместе с сервером — "
+            "они останутся в аккаунте и будут тарифицироваться дальше, если не удалить их отдельно:\n{ip_list}"
+        ),
+        "en": (
+            "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.\n\n"
+            "📌 This server has IP addresses attached. Hetzner doesn't delete them along with the server — "
+            "they'll stay in the account and keep being billed unless deleted separately:\n{ip_list}"
+        ),
+        "tk": (
+            "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.\n\n"
+            "📌 Serwere IP-adreslar birikdirilen. Hetzner olary serwer bilen bilelikde pozmaýar — "
+            "olar hasapda galar we aýratyn pozulmasa, töleg alynmagyny dowam etdirer:\n{ip_list}"
+        ),
+    },
+    "hetzner_server_deleted_with_ips": {
+        "ru": "{icon} Сервер и привязанные к нему IP-адреса удалены.",
+        "en": "{icon} Server and its attached IP addresses deleted.",
+        "tk": "{icon} Serwer we oňa birikdirilen IP-adreslar pozuldy.",
+    },
+    "hetzner_server_deleted_ips_partial": {
+        "ru": (
+            "{icon} Сервер удалён, но не получилось удалить IP-адрес(а): {ips}. "
+            "Удалите их вручную в разделе «🌐 IP-адреса»."
+        ),
+        "en": (
+            "{icon} Server deleted, but couldn't delete IP address(es): {ips}. "
+            "Remove them manually from the \"🌐 IP addresses\" section."
+        ),
+        "tk": (
+            "{icon} Serwer pozuldy, ýöne IP-adres(ler)i pozup bolmady: {ips}. "
+            "Olary «🌐 IP-adresler» bölüminde elde pozuň."
+        ),
     },
     "hetzner_create_choose_type": {
         "ru": "🟥 <b>Новый сервер — шаг 1/6</b>\n\nВыберите тарифный план (тип сервера):",

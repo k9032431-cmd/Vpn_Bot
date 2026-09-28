@@ -884,8 +884,24 @@ def hetzner_server_detail_text(lang: str, server, stored_password: str | None = 
     )
 
 
-def hetzner_server_delete_confirm_text(lang: str, server) -> str:
-    return t(lang, "hetzner_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
+def hetzner_server_delete_confirm_text(lang: str, server, primary_ips=None, floating_ips=None) -> str:
+    primary_ips = primary_ips or []
+    floating_ips = floating_ips or []
+    if not primary_ips and not floating_ips:
+        return t(lang, "hetzner_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
+    lines = [f"🟩 <code>{ip.ip}</code>" for ip in primary_ips] + [f"🌐 <code>{ip.ip}</code>" for ip in floating_ips]
+    return t(
+        lang, "hetzner_server_delete_confirm_with_ips",
+        icon=e("warning", "⚠️"), name=html.escape(server.name), ip_list="\n".join(lines),
+    )
+
+
+def hetzner_server_deleted_with_ips_text(lang: str) -> str:
+    return t(lang, "hetzner_server_deleted_with_ips", icon=e("success", "✅"))
+
+
+def hetzner_server_deleted_ips_partial_text(lang: str, failed_ips: list[str]) -> str:
+    return t(lang, "hetzner_server_deleted_ips_partial", icon=e("warning", "⚠️"), ips=", ".join(failed_ips))
 
 
 def hetzner_create_choose_type_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
