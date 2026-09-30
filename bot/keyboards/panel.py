@@ -9,6 +9,7 @@ from bot.texts.panel import (
     node_list_label,
     panel_list_label,
 )
+from bot.texts.premium_emoji import button_icon
 from bot.texts.translations import t
 
 
@@ -28,9 +29,9 @@ def panel_list_keyboard(lang: str, panels: list[dict]) -> InlineKeyboardMarkup:
 
 def panel_add_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_panel_marzban"), callback_data="padd:marzban", style="primary")
-    builder.button(text=t(lang, "btn_panel_pasarguard"), callback_data="padd:pasarguard", style="primary")
-    builder.button(text=t(lang, "btn_panel_3xui"), callback_data="padd:3xui", style="primary")
+    builder.button(text=t(lang, "btn_panel_marzban"), callback_data="padd:marzban", style="primary", icon_custom_emoji_id=button_icon("marzban"))
+    builder.button(text=t(lang, "btn_panel_pasarguard"), callback_data="padd:pasarguard", style="primary", icon_custom_emoji_id=button_icon("pasarguard"))
+    builder.button(text=t(lang, "btn_panel_3xui"), callback_data="padd:3xui", style="primary", icon_custom_emoji_id=button_icon("threexui"))
     builder.button(text=t(lang, "btn_back"), callback_data="pdash:list", style="primary")
     builder.adjust(1, 1, 1, 1)
     return builder.as_markup()

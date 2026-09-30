@@ -62,9 +62,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_node_menu": {"ru": "🖥 В меню Node", "en": "🖥 Node menu", "tk": "🖥 Node menýusy"},
     "btn_main_menu": {"ru": "🏠 Главное меню", "en": "🏠 Main menu", "tk": "🏠 Baş menýu"},
     "btn_panel": {"ru": "Panel", "en": "Panel", "tk": "Panel"},
-    "btn_panel_marzban": {"ru": "⚡ Marzban", "en": "⚡ Marzban", "tk": "⚡ Marzban"},
-    "btn_panel_pasarguard": {"ru": "🛡 PasarGuard", "en": "🛡 PasarGuard", "tk": "🛡 PasarGuard"},
-    "btn_panel_3xui": {"ru": "3️⃣ 3X-UI", "en": "3️⃣ 3X-UI", "tk": "3️⃣ 3X-UI"},
+    "btn_panel_marzban": {"ru": "Marzban", "en": "Marzban", "tk": "Marzban"},
+    "btn_panel_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
+    "btn_panel_3xui": {"ru": "3X-UI", "en": "3X-UI", "tk": "3X-UI"},
     "btn_panel_stats": {"ru": "📊 Статистика", "en": "📊 Statistics", "tk": "📊 Statistika"},
     "btn_panel_users": {"ru": "👥 Пользователи", "en": "👥 Users", "tk": "👥 Ulanyjylar"},
     "btn_panel_remove": {
@@ -1807,10 +1807,10 @@ _STRINGS: dict[str, dict[str, str]] = {
             "provaýderi saýlaň:</i>"
         ),
     },
-    "btn_cloud_provider_upcloud": {"ru": "☁️ UpCloud", "en": "☁️ UpCloud", "tk": "☁️ UpCloud"},
+    "btn_cloud_provider_upcloud": {"ru": "UpCloud", "en": "UpCloud", "tk": "UpCloud"},
     "btn_cloud_provider_aws": {"ru": "🟧 AWS (скоро)", "en": "🟧 AWS (soon)", "tk": "🟧 AWS (ýakynda)"},
-    "btn_cloud_provider_azure": {"ru": "🔷 Azure", "en": "🔷 Azure", "tk": "🔷 Azure"},
-    "btn_cloud_provider_hetzner": {"ru": "🟥 Hetzner", "en": "🟥 Hetzner", "tk": "🟥 Hetzner"},
+    "btn_cloud_provider_azure": {"ru": "Azure", "en": "Azure", "tk": "Azure"},
+    "btn_cloud_provider_hetzner": {"ru": "Hetzner", "en": "Hetzner", "tk": "Hetzner"},
     "btn_cloud_provider_linode": {"ru": "🟩 Linode (скоро)", "en": "🟩 Linode (soon)", "tk": "🟩 Linode (ýakynda)"},
     "btn_cloud_provider_kamatera": {
         "ru": "🟪 Kamatera (скоро)",

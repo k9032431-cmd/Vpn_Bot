@@ -16,6 +16,7 @@ from bot.texts.cloud import (
     server_list_label,
     storage_list_label,
 )
+from bot.texts.premium_emoji import button_icon
 from bot.texts.translations import t
 
 PAGE_SIZE = 5
@@ -24,7 +25,10 @@ PAGE_SIZE = 5
 def provider_list_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for provider in PROVIDERS:
-        builder.button(text=t(lang, f"btn_cloud_provider_{provider}"), callback_data=f"cprov:{provider}", style="primary")
+        builder.button(
+            text=t(lang, f"btn_cloud_provider_{provider}"), callback_data=f"cprov:{provider}", style="primary",
+            icon_custom_emoji_id=button_icon(provider),
+        )
     builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="primary")
     builder.adjust(*([1] * len(PROVIDERS)), 1)
     return builder.as_markup()
