@@ -22,24 +22,9 @@ def resolve_language(code: str | None) -> str:
 
 _STRINGS: dict[str, dict[str, str]] = {
     "welcome": {
-        "ru": (
-            "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
-            "<i>Умный помощник для управления VPN: ноды, облако, шифрование и "
-            "безопасность — всё в одном месте.</i>\n\n"
-            "👇 Выберите раздел, чтобы начать"
-        ),
-        "en": (
-            "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
-            "<i>Your smart VPN companion: nodes, cloud, encryption and security — "
-            "all in one place.</i>\n\n"
-            "👇 Choose a section to get started"
-        ),
-        "tk": (
-            "{icon} <b>ArsiCloudBot</b> 🌐\n\n"
-            "<i>VPN dolandyryşy üçin akylly kömekçiňiz: node-lar, bulut, şifrleme "
-            "we howpsuzlyk — bary-ýogy bir ýerde.</i>\n\n"
-            "👇 Başlamak üçin bölümi saýlaň"
-        ),
+        "ru": "{icon} <b>ArsiCloudBot</b>\n<i>Ноды, облако и шифрование — в одном месте.</i>\n\n👇 Выберите раздел",
+        "en": "{icon} <b>ArsiCloudBot</b>\n<i>Nodes, cloud and encryption — all in one place.</i>\n\n👇 Choose a section",
+        "tk": "{icon} <b>ArsiCloudBot</b>\n<i>Node-lar, bulut we şifrleme — bir ýerde.</i>\n\n👇 Bölümi saýlaň",
     },
     # --- Button labels ---
     "btn_node": {"ru": "Node", "en": "Node", "tk": "Node"},
@@ -2560,21 +2545,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Täze VM — 2/7 ädim</b>\n\nÖlçegi saýlaň:",
     },
     "azure_create_size_capacity_error": {
-        "ru": (
-            "{icon} Размер <b>{size}</b> только что оказался недоступен в этом регионе "
-            "прямо сейчас (нехватка мощностей у Azure в дата-центре) — такое Azure не "
-            "показывает заранее, только при самом создании. Выберите другой размер:"
-        ),
-        "en": (
-            "{icon} <b>{size}</b> just turned out to be unavailable in this region right "
-            "now (an Azure datacenter capacity shortage) — Azure doesn't report this "
-            "ahead of time, only when actually deploying. Choose another size:"
-        ),
-        "tk": (
-            "{icon} <b>{size}</b> ölçegi häzir bu sebitde elýeterli däl (Azure-yň "
-            "maglumat merkezinde kuwwat ýetmezçiligi) — Azure muny öňünden görkezmeýär, "
-            "diňe döredilende belli bolýar. Başga ölçegi saýlaň:"
-        ),
+        "ru": "{icon} <b>{size}</b> сейчас недоступен в этом регионе (нет мощностей у Azure). Выберите другой:",
+        "en": "{icon} <b>{size}</b> is unavailable in this region right now (Azure capacity). Choose another:",
+        "tk": "{icon} <b>{size}</b> häzir bu sebitde elýeterli däl (Azure-da kuwwat ýok). Başga saýlaň:",
     },
     "azure_create_choose_image": {
         "ru": "{icon} <b>Новая VM — шаг 4/7</b>\n\nВыберите операционную систему:",
@@ -2901,21 +2874,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.",
     },
     "hetzner_server_delete_confirm_with_ips": {
-        "ru": (
-            "{icon} Удалить сервер <b>{name}</b>? Это необратимо — диск тоже будет удалён.\n\n"
-            "📌 К серверу привязаны IP-адреса. Hetzner не удаляет их вместе с сервером — "
-            "они останутся в аккаунте и будут тарифицироваться дальше, если не удалить их отдельно:\n{ip_list}"
-        ),
-        "en": (
-            "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.\n\n"
-            "📌 This server has IP addresses attached. Hetzner doesn't delete them along with the server — "
-            "they'll stay in the account and keep being billed unless deleted separately:\n{ip_list}"
-        ),
-        "tk": (
-            "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.\n\n"
-            "📌 Serwere IP-adreslar birikdirilen. Hetzner olary serwer bilen bilelikde pozmaýar — "
-            "olar hasapda galar we aýratyn pozulmasa, töleg alynmagyny dowam etdirer:\n{ip_list}"
-        ),
+        "ru": "{icon} Удалить сервер <b>{name}</b>?\n\n📌 К нему привязаны IP-адреса — сами по себе не удалятся:\n{ip_list}",
+        "en": "{icon} Delete server <b>{name}</b>?\n\n📌 It has IP addresses attached — they won't delete on their own:\n{ip_list}",
+        "tk": "{icon} <b>{name}</b> serwerini pozmalymy?\n\n📌 Oňa IP-adreslar birikdirilen — özi pozulmaz:\n{ip_list}",
     },
     "hetzner_server_deleted_with_ips": {
         "ru": "{icon} Сервер и привязанные к нему IP-адреса удалены.",
@@ -2942,25 +2903,14 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Täze serwer — 1/6 ädim</b>\n\nTary̋f meýilnamasyny (server görnüşini) saýlaň:",
     },
     "hetzner_create_choose_location": {
-        "ru": "{icon} <b>Новый сервер — шаг 2/6</b>\n\nВыберите локацию (дата-центр) — показаны только те, где доступен выбранный тариф:",
-        "en": "{icon} <b>New server — step 2/6</b>\n\nChoose a location (datacenter) — only ones where the chosen plan is available are shown:",
-        "tk": "{icon} <b>Täze serwer — 2/6 ädim</b>\n\nÝerleşişi (maglumat merkezi) saýlaň — diňe saýlanan tarif elýeterli bolan ýerler görkezilýär:",
+        "ru": "{icon} <b>Новый сервер — шаг 2/6</b>\n\nВыберите локацию (доступные для этого тарифа):",
+        "en": "{icon} <b>New server — step 2/6</b>\n\nChoose a location (available for this plan):",
+        "tk": "{icon} <b>Täze serwer — 2/6 ädim</b>\n\nÝerleşişi saýlaň (bu tarif üçin elýeterli):",
     },
     "hetzner_create_location_unavailable": {
-        "ru": (
-            "{icon} Локация <b>{location}</b> только что оказалась недоступна для этого тарифа "
-            "прямо сейчас (Hetzner не показывает это заранее, только при самом создании). "
-            "Выберите другую локацию:"
-        ),
-        "en": (
-            "{icon} Location <b>{location}</b> just turned out to be unavailable for this plan "
-            "right now (Hetzner doesn't show this ahead of time, only at creation). "
-            "Choose a different location:"
-        ),
-        "tk": (
-            "{icon} <b>{location}</b> ýerleşişi bu tarif üçin häzir elýeterli däl eken "
-            "(muny Hetzner öňünden görkezmeýär, diňe döredilende). Başga ýerleşiş saýlaň:"
-        ),
+        "ru": "{icon} <b>{location}</b> только что стала недоступна для этого тарифа. Выберите другую:",
+        "en": "{icon} <b>{location}</b> just became unavailable for this plan. Choose another:",
+        "tk": "{icon} <b>{location}</b> bu tarif üçin häzir elýeterli däl. Başgasyny saýlaň:",
     },
     "hetzner_create_choose_image": {
         "ru": "{icon} <b>Новый сервер — шаг 3/6</b>\n\nВыберите операционную систему:",
@@ -2992,18 +2942,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "🔐 <b>Täze serwer — 6/6 ädim</b>\n\nServere nädip girersiňiz?",
     },
     "hetzner_create_choose_primary_ip": {
-        "ru": (
-            "🔌 <b>Публичный IPv4</b>\n\nМожно привязать уже купленный Primary IP (в этой же локации) "
-            "вместо автоматически создаваемого нового:"
-        ),
-        "en": (
-            "🔌 <b>Public IPv4</b>\n\nYou can attach an already-purchased Primary IP (in this same location) "
-            "instead of a freshly auto-created one:"
-        ),
-        "tk": (
-            "🔌 <b>Public IPv4</b>\n\nAwtomatiki döredilen täzesiniň deregine, öň satyn alnan Primary IP-ni "
-            "(şol bir ýerleşişde) birikdirip bolýar:"
-        ),
+        "ru": "🔌 <b>Публичный IPv4</b>\n\nПривязать существующий Primary IP вместо нового:",
+        "en": "🔌 <b>Public IPv4</b>\n\nAttach an existing Primary IP instead of a new one:",
+        "tk": "🔌 <b>Public IPv4</b>\n\nTäzesiniň deregine bar bolan Primary IP-ni birikdiriň:",
     },
     "btn_hetzner_primary_ip_auto": {
         "ru": "🆕 Новый автоматический IP",
