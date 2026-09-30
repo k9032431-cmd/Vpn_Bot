@@ -710,21 +710,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "title_panel_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "title_panel_3xui": {"ru": "3X-UI", "en": "3X-UI", "tk": "3X-UI"},
     "panel_list_header": {
-        "ru": (
-            "{icon} <b>Мои панели</b>\n\n"
-            "<i>Список подключённых панелей — управляйте каждой отдельно.</i>\n\n"
-            "👇 Выберите панель или добавьте новую"
-        ),
-        "en": (
-            "{icon} <b>My panels</b>\n\n"
-            "<i>Your connected panels — manage each one separately.</i>\n\n"
-            "👇 Pick a panel or add a new one"
-        ),
-        "tk": (
-            "{icon} <b>Panellerim</b>\n\n"
-            "<i>Birikdirilen panelleriňiz — her birini aýratyn dolandyryň.</i>\n\n"
-            "👇 Paneli saýlaň ýa-da täzesini goşuň"
-        ),
+        "ru": "{icon} <b>Мои панели</b>\n\n👇 Выберите панель или добавьте новую",
+        "en": "{icon} <b>My panels</b>\n\n👇 Pick a panel or add a new one",
+        "tk": "{icon} <b>Panellerim</b>\n\n👇 Paneli saýlaň ýa-da täzesini goşuň",
     },
     "panel_list_empty": {
         "ru": (
@@ -797,21 +785,18 @@ _STRINGS: dict[str, dict[str, str]] = {
     "step_panel_password": {
         "ru": (
             "{header}\n<i>Шаг 3 из 3</i>\n\n"
-            "Пароль от <b>{username}</b>, пожалуйста.\n\n"
-            "{icon} <i>Сообщение с паролем удалится сразу после отправки — он нужен только "
-            "для подключения к панели и нигде не хранится в чате.</i>"
+            "Пароль от <b>{username}</b>.\n\n"
+            "{icon} <i>Ваше сообщение будет удалено сразу же — пароль нигде не хранится.</i>"
         ),
         "en": (
             "{header}\n<i>Step 3 of 3</i>\n\n"
-            "Password for <b>{username}</b>, please.\n\n"
-            "{icon} <i>The message with the password will be deleted right after you send it — "
-            "it's only used to connect to the panel and never kept in the chat.</i>"
+            "Password for <b>{username}</b>.\n\n"
+            "{icon} <i>Your message is deleted right away — the password is never stored.</i>"
         ),
         "tk": (
             "{header}\n<i>3-nji ädim / 3</i>\n\n"
-            "<b>{username}</b> üçin parol, haýyş edýäris.\n\n"
-            "{icon} <i>Parol bilen habar iberilenden soň derrew öçüriler — ol diňe panele "
-            "birikmek üçin gerek we çatda saklanmaýar.</i>"
+            "<b>{username}</b> üçin parol.\n\n"
+            "{icon} <i>Habaryňyz derrew pozular — parol hiç ýerde saklanmaýar.</i>"
         ),
     },
     "empty_panel_password": {
@@ -916,21 +901,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{header}\n👥 <b>Ulanyjylar</b>\n\nHeniz ulanyjy ýok.",
     },
     "panel_remove_confirm": {
-        "ru": (
-            "{header}\n\n"
-            "⚠️ Убрать эту панель из бота? Сама панель продолжит работать как обычно — "
-            "отвяжется только управление через бота. Чтобы вернуть его, подключите панель заново."
-        ),
-        "en": (
-            "{header}\n\n"
-            "⚠️ Remove this panel from the bot? The panel itself keeps running as usual — "
-            "only bot management is unlinked. Connect it again to bring it back."
-        ),
-        "tk": (
-            "{header}\n\n"
-            "⚠️ Bu paneli botdan aýyrmakmy? Paneliň özi adatdakysy ýaly işlemegini dowam etdirer — "
-            "diňe bot arkaly dolandyryş aýrylar. Yzyna almak üçin paneli täzeden birikdiriň."
-        ),
+        "ru": "{header}\n\n⚠️ Убрать панель из бота? Сама панель продолжит работать — просто подключите заново, если понадобится.",
+        "en": "{header}\n\n⚠️ Remove this panel from the bot? It keeps running — just reconnect it if needed.",
+        "tk": "{header}\n\n⚠️ Paneli botdan aýyrmalymy? Ol işlemegini dowam etdirer — gerek bolsa täzeden birikdiriň.",
     },
     "panel_removed": {
         "ru": "🗑 Панель убрана из бота.\n\n👇 Можно подключить другую в любой момент",
