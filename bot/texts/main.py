@@ -18,7 +18,7 @@ _SECTION_ICON = {
 # The banner image shown above the welcome caption on /start and when
 # returning to the main menu. FSInputFile just remembers this path and
 # reads the file fresh on every send -- safe to reuse the one instance.
-WELCOME_BANNER = FSInputFile(Path(__file__).resolve().parent.parent / "assets" / "welcome_banner.png")
+WELCOME_BANNER = FSInputFile(Path(__file__).resolve().parent.parent / "assets" / "welcome_banner.jpg")
 
 
 def welcome_text(lang: str) -> str:
