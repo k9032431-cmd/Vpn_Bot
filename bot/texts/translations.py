@@ -191,23 +191,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_crypt_encrypt": {"ru": "🔒 Crypt (зашифровать)", "en": "🔒 Crypt (encrypt)", "tk": "🔒 Crypt (şifrle)"},
     "btn_crypt_decrypt": {"ru": "🔓 Decrypt (расшифровать)", "en": "🔓 Decrypt (decrypt)", "tk": "🔓 Decrypt (deşifrle)"},
     "crypt_decrypt_soon": {
-        "ru": (
-            "🛠️ <b>Decrypt пока недоступен</b>\n\n"
-            "У Happ нет официального способа расшифровать ссылку обратно — это сделано "
-            "специально, чтобы конфиги внутри подписки нельзя было посмотреть. Добавим, "
-            "если появится безопасный способ это сделать."
-        ),
-        "en": (
-            "🛠️ <b>Decrypt isn't available yet</b>\n\n"
-            "Happ has no official way to decrypt a link back — that's intentional, so the "
-            "configs inside a subscription can't be viewed. We'll add it if a safe way "
-            "to do that shows up."
-        ),
-        "tk": (
-            "🛠️ <b>Decrypt entek elýeterli däl</b>\n\n"
-            "Happ-yň baglanyşygy yzyna deşifrlemek üçin resmi usuly ýok — bu ýörite edilen, "
-            "abunalykdaky konfigurasiýalary görüp bolmaz ýaly. Howpsuz usul tapylsa goşarys."
-        ),
+        "ru": "🛠️ <b>Decrypt пока недоступен</b>\n\nУ Happ нет официального способа расшифровать ссылку обратно — это намеренно, чтобы скрыть конфиги.",
+        "en": "🛠️ <b>Decrypt isn't available yet</b>\n\nHapp has no official way to decrypt a link back — that's intentional, to keep configs hidden.",
+        "tk": "🛠️ <b>Decrypt entek elýeterli däl</b>\n\nHapp-yň baglanyşygy yzyna deşifrlemek üçin resmi usuly ýok — bu konfigleri gizlemek üçin ýörite edilen.",
     },
     "crypt_choose_vpn": {
         "ru": "📱 Для какого VPN-клиента нужна ссылка?",
@@ -1630,27 +1616,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_whois": {"ru": "Arsi WhoIs", "en": "Arsi WhoIs", "tk": "Arsi WhoIs"},
     "btn_whois_again": {"ru": "🔎 Новый запрос", "en": "🔎 New lookup", "tk": "🔎 Täze sorag"},
     "whois_prompt": {
-        "ru": (
-            "{icon} <b>Arsi WhoIs</b>\n\n"
-            "Отправьте IP-адрес или домен — соберу всё, что доступно: геолокацию, "
-            "провайдера, ASN, признаки VPN/прокси/хостинга, а для доменов — "
-            "регистратора, дату регистрации и серверы имён.\n\n"
-            "✏️ Например: <code>8.8.8.8</code> или <code>example.com</code>"
-        ),
-        "en": (
-            "{icon} <b>Arsi WhoIs</b>\n\n"
-            "Send an IP address or a domain — I'll gather everything available: "
-            "geolocation, provider, ASN, VPN/proxy/hosting flags, and for domains "
-            "— registrar, registration date and nameservers.\n\n"
-            "✏️ Example: <code>8.8.8.8</code> or <code>example.com</code>"
-        ),
-        "tk": (
-            "{icon} <b>Arsi WhoIs</b>\n\n"
-            "IP salgysyny ýa-da domeni iberiň — geolokasiýa, provaýder, ASN, "
-            "VPN/proksi/hosting alamatlaryny, domenler üçin bolsa — registratory, "
-            "hasaba alnan senesini we at serwerlerini tapyp bererin.\n\n"
-            "✏️ Mysal: <code>8.8.8.8</code> ýa-da <code>example.com</code>"
-        ),
+        "ru": "{icon} <b>Arsi WhoIs</b>\n\nIP-адрес или домен — верну геолокацию, провайдера, ASN, признаки VPN/прокси.\n\n✏️ Например: <code>8.8.8.8</code> или <code>example.com</code>",
+        "en": "{icon} <b>Arsi WhoIs</b>\n\nAn IP address or domain — I'll return geolocation, provider, ASN, VPN/proxy flags.\n\n✏️ Example: <code>8.8.8.8</code> or <code>example.com</code>",
+        "tk": "{icon} <b>Arsi WhoIs</b>\n\nIP salgy ýa-da domen — geolokasiýa, provaýder, ASN, VPN/proksi alamatlaryny tapyp bererin.\n\n✏️ Mysal: <code>8.8.8.8</code> ýa-da <code>example.com</code>",
     },
     "whois_cancelled": {
         "ru": "🚫 <i>Запрос отменён.</i>",
