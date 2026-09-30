@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from bot.keyboards.main_menu import back_keyboard, main_menu_keyboard
-from bot.texts.main import section_text, welcome_text
+from bot.texts.main import WELCOME_BANNER, section_text, welcome_text
 
 router = Router(name="menu")
 
@@ -11,7 +11,15 @@ router = Router(name="menu")
 @router.callback_query(F.data == "menu:back")
 async def cb_back(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.edit_text(welcome_text(lang), reply_markup=main_menu_keyboard(lang))
+    # The welcome screen carries a banner photo, so a plain text message
+    # can't just be edited into it -- replace it instead.
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+    await callback.message.answer_photo(
+        WELCOME_BANNER, caption=welcome_text(lang), reply_markup=main_menu_keyboard(lang)
+    )
     await callback.answer()
 
 

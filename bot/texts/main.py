@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from aiogram.types import FSInputFile
+
 from bot.config import config
 
 from .premium_emoji import e
@@ -10,6 +14,11 @@ _SECTION_ICON = {
     "cloud_account": ("cloud_account", "👤"),
     "info": ("info", "ℹ️"),
 }
+
+# The banner image shown above the welcome caption on /start and when
+# returning to the main menu. FSInputFile just remembers this path and
+# reads the file fresh on every send -- safe to reuse the one instance.
+WELCOME_BANNER = FSInputFile(Path(__file__).resolve().parent.parent / "assets" / "welcome_banner.png")
 
 
 def welcome_text(lang: str) -> str:

@@ -9,7 +9,7 @@ from bot.keyboards.whois import whois_again_keyboard, whois_cancel_keyboard
 from bot.services.whois_api import WhoisAPIError, is_domain, is_ip, lookup_domain, lookup_ip
 from bot.states.whois import WhoisStates
 from bot.texts import whois as texts
-from bot.texts.main import welcome_text
+from bot.texts.main import WELCOME_BANNER, welcome_text
 
 router = Router(name="whois")
 
@@ -36,7 +36,7 @@ async def cb_whois_cancel(callback: CallbackQuery, state: FSMContext, lang: str)
 @router.callback_query(F.data == "whois:home")
 async def cb_whois_home(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.answer(welcome_text(lang), reply_markup=main_menu_keyboard(lang))
+    await callback.message.answer_photo(WELCOME_BANNER, caption=welcome_text(lang), reply_markup=main_menu_keyboard(lang))
     await callback.answer()
 
 
