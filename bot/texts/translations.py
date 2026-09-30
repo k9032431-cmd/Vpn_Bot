@@ -1710,21 +1710,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "whois_l_dns_txt": {"ru": "📝 DNS TXT", "en": "📝 DNS TXT", "tk": "📝 DNS TXT"},
     # --- Cloud VPS ---
     "cloud_provider_list": {
-        "ru": (
-            "{icon} <b>Cloud VPS</b> 🖥\n\n"
-            "<i>Покупка и управление серверами напрямую через API облачных "
-            "провайдеров — выберите провайдера:</i>"
-        ),
-        "en": (
-            "{icon} <b>Cloud VPS</b> 🖥\n\n"
-            "<i>Buy and manage servers directly through cloud-provider APIs — "
-            "choose a provider:</i>"
-        ),
-        "tk": (
-            "{icon} <b>Cloud VPS</b> 🖥\n\n"
-            "<i>Bulut provaýderleriň API-si arkaly serwer satyn almak we dolandyrmak — "
-            "provaýderi saýlaň:</i>"
-        ),
+        "ru": "{icon} <b>Cloud VPS</b> 🖥\n\n<i>Выберите провайдера:</i>",
+        "en": "{icon} <b>Cloud VPS</b> 🖥\n\n<i>Choose a provider:</i>",
+        "tk": "{icon} <b>Cloud VPS</b> 🖥\n\n<i>Provaýderi saýlaň:</i>",
     },
     "btn_cloud_provider_upcloud": {"ru": "UpCloud", "en": "UpCloud", "tk": "UpCloud"},
     "btn_cloud_provider_aws": {"ru": "🟧 AWS (скоро)", "en": "🟧 AWS (soon)", "tk": "🟧 AWS (ýakynda)"},
@@ -1760,21 +1748,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_account_add": {"ru": "➕ Подключить аккаунт", "en": "➕ Connect account", "tk": "➕ Hasap birikdir"},
     "btn_cloud_provider_list": {"ru": "☁️ К провайдерам", "en": "☁️ Back to providers", "tk": "☁️ Provaýderlere gaýt"},
     "cloud_step_username_upcloud": {
-        "ru": (
-            "🔑 <b>Подключение UpCloud</b>\n\n"
-            "Введите <b>логин</b> от вашего аккаунта UpCloud — тот же, которым "
-            "вы входите на upcloud.com."
-        ),
-        "en": (
-            "🔑 <b>Connect UpCloud</b>\n\n"
-            "Enter your UpCloud account's <b>username</b> — the same one you use "
-            "to log in at upcloud.com."
-        ),
-        "tk": (
-            "🔑 <b>UpCloud birikdirmek</b>\n\n"
-            "UpCloud hasabyňyzyň <b>username</b>-ini giriziň — upcloud.com-a "
-            "girýän ulanyjy adyňyz."
-        ),
+        "ru": "🔑 <b>Подключение UpCloud</b>\n\nЛогин от вашего аккаунта UpCloud (как на upcloud.com):",
+        "en": "🔑 <b>Connect UpCloud</b>\n\nYour UpCloud account username (same as on upcloud.com):",
+        "tk": "🔑 <b>UpCloud birikdirmek</b>\n\nUpCloud hasabyňyzyň ulanyjy ady (upcloud.com-daky ýaly):",
     },
     "cloud_step_password": {
         "ru": "🔒 Теперь введите пароль от этого аккаунта (сообщение удалится сразу после отправки):",
@@ -2290,21 +2266,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_backup_restore": {"ru": "♻️ Восстановить", "en": "♻️ Restore", "tk": "♻️ Dikelt"},
     "btn_cloud_backup_restore_confirm": {"ru": "♻️ Да, восстановить", "en": "♻️ Yes, restore", "tk": "♻️ Hawa, dikelt"},
     "cloud_backup_restore_confirm": {
-        "ru": (
-            "{icon} <b>Восстановить диск из бэкапа {title}?</b>\n\n"
-            "⚠️ Все текущие данные на диске будут заменены содержимым бэкапа. "
-            "Сервер должен быть выключен."
-        ),
-        "en": (
-            "{icon} <b>Restore the disk from backup {title}?</b>\n\n"
-            "⚠️ All current data on the disk will be replaced with the backup's contents. "
-            "The server must be stopped."
-        ),
-        "tk": (
-            "{icon} <b>Disk {title} ätiýaçlyk nusgasyndan dikeldilsinmi?</b>\n\n"
-            "⚠️ Diskdäki ähli häzirki maglumat ätiýaçlyk nusgasynyň mazmuny bilen çalşyrylar. "
-            "Serwer öçürilen bolmaly."
-        ),
+        "ru": "{icon} <b>Восстановить диск из бэкапа {title}?</b>\n\n⚠️ Текущие данные на диске будут заменены. Сервер должен быть выключен.",
+        "en": "{icon} <b>Restore the disk from backup {title}?</b>\n\n⚠️ Current disk data will be replaced. The server must be stopped.",
+        "tk": "{icon} <b>Disk {title} ätiýaçlyk nusgasyndan dikeldilsinmi?</b>\n\n⚠️ Diskdäki häzirki maglumat çalşyrylar. Serwer öçürilen bolmaly.",
     },
     "cloud_backup_restored": {"ru": "{icon} Диск восстановлен из бэкапа.", "en": "{icon} Disk restored from backup.", "tk": "{icon} Disk ätiýaçlyk nusgasyndan dikeldildi."},
     "btn_cloud_backup_delete": {"ru": "🗑 Удалить бэкап", "en": "🗑 Delete backup", "tk": "🗑 Ätiýaçlyk nusgany poz"},
@@ -2499,21 +2463,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (64 alamatdan köp däl). Gaýtadan synanyň:",
     },
     "azure_create_waiting_username": {
-        "ru": (
-            "👤 <b>Новая VM — шаг 6/7</b>\n\n"
-            "Введите логин администратора (латиница, цифры, «.», «_», «-», не может быть "
-            "«root»/«admin»/«administrator» и т.п. — их запрещает сама Azure):"
-        ),
-        "en": (
-            "👤 <b>New VM — step 6/7</b>\n\n"
-            "Enter the admin username (letters, digits, '.', '_', '-' — can't be "
-            "'root'/'admin'/'administrator' etc., Azure itself rejects those):"
-        ),
-        "tk": (
-            "👤 <b>Täze VM — 6/7 ädim</b>\n\n"
-            "Administrator ulanyjy adyny giriziň (latyn harplary, sanlar, «.», «_», «-» — "
-            "«root»/«admin»/«administrator» we ş.m. bolup bilmez, Azure-yň özi ret edýär):"
-        ),
+        "ru": "👤 <b>Новая VM — шаг 6/7</b>\n\nЛогин администратора (латиница, цифры, «.», «_», «-»; «root»/«admin» и подобные Azure не разрешает):",
+        "en": "👤 <b>New VM — step 6/7</b>\n\nAdmin username (letters, digits, '.', '_', '-'; Azure rejects 'root'/'admin' and similar):",
+        "tk": "👤 <b>Täze VM — 6/7 ädim</b>\n\nAdministrator ulanyjy ady (latyn harplar, sanlar, «.», «_», «-»; Azure «root»/«admin» ýaly atlary ret edýär):",
     },
     "azure_create_invalid_username": {
         "ru": "Такой логин Azure не примет (зарезервированное имя, недопустимые символы или длина). Попробуйте другой:",
@@ -2663,21 +2615,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_azure_vm_ports": {"ru": "🔌 Порты", "en": "🔌 Ports", "tk": "🔌 Portlar"},
     "btn_azure_vm_reimage": {"ru": "💿 Переустановить ОС", "en": "💿 Reinstall OS", "tk": "💿 OS-i gaýtadan gurnamak"},
     "azure_vm_reimage_confirm": {
-        "ru": (
-            "{icon} Переустановить ОС на <b>{name}</b>? Диск будет полностью очищен и "
-            "заново развёрнут из исходного образа — все данные на нём пропадут. "
-            "IP, сеть и размер VM не изменятся."
-        ),
-        "en": (
-            "{icon} Reinstall the OS on <b>{name}</b>? The disk will be fully wiped and "
-            "redeployed from the original image — all data on it will be lost. "
-            "The VM's IP, network and size stay the same."
-        ),
-        "tk": (
-            "{icon} <b>{name}</b> serweriniň OS-ini gaýtadan gurnamalymy? Disk doly arassalanar "
-            "we asyl şekilden täzeden ýaýlar — ondaky ähli maglumatlar ýitýär. "
-            "VM-iň IP, ulgam we ölçegi üýtgemez."
-        ),
+        "ru": "{icon} Переустановить ОС на <b>{name}</b>? Диск очистится полностью — данные пропадут. IP и размер VM останутся прежними.",
+        "en": "{icon} Reinstall the OS on <b>{name}</b>? The disk is wiped completely — data will be lost. IP and VM size stay the same.",
+        "tk": "{icon} <b>{name}</b> serweriniň OS-ini gaýtadan gurnamalymy? Disk doly arassalanar — maglumat ýitýär. IP we ölçeg üýtgemez.",
     },
     "azure_vm_reimage_ok": {
         "ru": "{icon} ОС переустановлена.",
