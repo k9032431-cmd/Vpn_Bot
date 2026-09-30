@@ -269,21 +269,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Node</b> 🖥\n<i>Birnäçe minutda VPN node.</i>\n\n👇 Platformany saýlaň",
     },
     "node_cancelled": {
-        "ru": (
-            "{icon} <b>Node</b>\n\n"
-            "🚫 <i>Установка отменена — данные не сохранены.</i>\n\n"
-            "👇 Можно начать заново в любой момент"
-        ),
-        "en": (
-            "{icon} <b>Node</b>\n\n"
-            "🚫 <i>Installation cancelled — nothing was saved.</i>\n\n"
-            "👇 You can start again anytime"
-        ),
-        "tk": (
-            "{icon} <b>Node</b>\n\n"
-            "🚫 <i>Ornaşdyrma ýatyryldy — hiç zat ýatda saklanmady.</i>\n\n"
-            "👇 Islän wagtyňyz täzeden başlap bilersiňiz"
-        ),
+        "ru": "{icon} <b>Node</b>\n\n🚫 <i>Отменено — ничего не сохранено.</i> Можно начать заново.",
+        "en": "{icon} <b>Node</b>\n\n🚫 <i>Cancelled — nothing was saved.</i> Start again anytime.",
+        "tk": "{icon} <b>Node</b>\n\n🚫 <i>Ýatyryldy — hiç zat saklanmady.</i> Täzeden başlap bilersiňiz.",
     },
     "step_ip": {
         "ru": "{header}\n<i>Шаг 1 из 3</i>\n\n{icon} Пришлите IP-адрес или домен сервера.",
@@ -641,21 +629,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Panellerim</b>\n\n👇 Paneli saýlaň ýa-da täzesini goşuň",
     },
     "panel_list_empty": {
-        "ru": (
-            "{icon} <b>Мои панели</b>\n\n"
-            "<i>Панелей пока нет — подключите свою первую панель.</i>\n\n"
-            "👇 Нажмите «Добавить панель»"
-        ),
-        "en": (
-            "{icon} <b>My panels</b>\n\n"
-            "<i>No panels yet — connect your first one.</i>\n\n"
-            "👇 Tap “Add panel”"
-        ),
-        "tk": (
-            "{icon} <b>Panellerim</b>\n\n"
-            "<i>Heniz panel ýok — ilkinji paneliňizi birikdiriň.</i>\n\n"
-            "👇 «Panel goş» düwmesine basyň"
-        ),
+        "ru": "{icon} <b>Мои панели</b>\n\n<i>Панелей пока нет.</i>\n\n👇 Нажмите «Добавить панель»",
+        "en": "{icon} <b>My panels</b>\n\n<i>No panels yet.</i>\n\n👇 Tap “Add panel”",
+        "tk": "{icon} <b>Panellerim</b>\n\n<i>Heniz panel ýok.</i>\n\n👇 «Panel goş» düwmesine basyň",
     },
     "panel_add_menu": {
         "ru": "{icon} <b>Добавить панель</b>\n\n<i>Какую панель подключаем?</i>\n\n👇 Выберите платформу",
@@ -663,21 +639,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <b>Panel goş</b>\n\n<i>Haýsy paneli birikdirýäris?</i>\n\n👇 Platformany saýlaň",
     },
     "panel_cancelled": {
-        "ru": (
-            "{icon} <b>Panel</b>\n\n"
-            "🚫 <i>Подключение отменено — данные не сохранены.</i>\n\n"
-            "👇 Можно начать заново в любой момент"
-        ),
-        "en": (
-            "{icon} <b>Panel</b>\n\n"
-            "🚫 <i>Connection cancelled — nothing was saved.</i>\n\n"
-            "👇 You can start again anytime"
-        ),
-        "tk": (
-            "{icon} <b>Panel</b>\n\n"
-            "🚫 <i>Birikdirme ýatyryldy — hiç zat ýatda saklanmady.</i>\n\n"
-            "👇 Islän wagtyňyz täzeden başlap bilersiňiz"
-        ),
+        "ru": "{icon} <b>Panel</b>\n\n🚫 <i>Отменено — ничего не сохранено.</i> Можно начать заново.",
+        "en": "{icon} <b>Panel</b>\n\n🚫 <i>Cancelled — nothing was saved.</i> Start again anytime.",
+        "tk": "{icon} <b>Panel</b>\n\n🚫 <i>Ýatyryldy — hiç zat saklanmady.</i> Täzeden başlap bilersiňiz.",
     },
     "step_panel_url": {
         "ru": (
