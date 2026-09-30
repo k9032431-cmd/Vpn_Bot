@@ -167,21 +167,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     # --- Section placeholders ---
     "section_cloud_account": {
-        "ru": (
-            "{icon} <b>Cloud Account</b> 🔑\n\n"
-            "<i>Управление вашим аккаунтом появится совсем скоро.</i>\n\n"
-            "🛠️ Уже в разработке"
-        ),
-        "en": (
-            "{icon} <b>Cloud Account</b> 🔑\n\n"
-            "<i>Account management is coming very soon.</i>\n\n"
-            "🛠️ Already in the works"
-        ),
-        "tk": (
-            "{icon} <b>Cloud Account</b> 🔑\n\n"
-            "<i>Hasabyňyzy dolandyrmak ýakyn wagtda goşular.</i>\n\n"
-            "🛠️ Eýýäm işlenilýär"
-        ),
+        "ru": "{icon} <b>Cloud Account</b> 🔑\n\n🛠️ В разработке — скоро появится здесь",
+        "en": "{icon} <b>Cloud Account</b> 🔑\n\n🛠️ In the works — coming soon",
+        "tk": "{icon} <b>Cloud Account</b> 🔑\n\n🛠️ Işlenilýär — ýakynda bu ýerde peýda bolar",
     },
     "crypt_choose_action": {
         "ru": "{icon} <b>Crypt / Decrypt</b>\n\nЧто нужно сделать со ссылкой?",
@@ -247,73 +235,25 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     "btn_crypt_again": {"ru": "🔐 Ещё одна ссылка", "en": "🔐 Another link", "tk": "🔐 Ýene bir baglanyşyk"},
     "section_info": {
-        "ru": (
-            "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
-            "<i>Ваш помощник по управлению VPN — просто, быстро и безопасно.</i>\n\n"
-            "🏷️ Версия <code>0.1.0</code>"
-        ),
-        "en": (
-            "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
-            "<i>Your VPN management companion — simple, fast and secure.</i>\n\n"
-            "🏷️ Version <code>0.1.0</code>"
-        ),
-        "tk": (
-            "{icon} <b>ArsiCloudBot</b> 🖥️\n\n"
-            "<i>VPN dolandyryş kömekçiňiz — ýönekeý, çalt we howpsuz.</i>\n\n"
-            "🏷️ Wersiýa <code>0.1.0</code>"
-        ),
+        "ru": "{icon} <b>ArsiCloudBot</b> 🖥️\n\n🏷️ Версия <code>0.1.0</code>",
+        "en": "{icon} <b>ArsiCloudBot</b> 🖥️\n\n🏷️ Version <code>0.1.0</code>",
+        "tk": "{icon} <b>ArsiCloudBot</b> 🖥️\n\n🏷️ Wersiýa <code>0.1.0</code>",
     },
     "section_sos_contact": {
-        "ru": (
-            "{icon} <b>SOS</b> 🔌\n\n"
-            "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
-            "📩 Напишите нам: {contact}"
-        ),
-        "en": (
-            "{icon} <b>SOS</b> 🔌\n\n"
-            "<i>Something's not working? We're always here.</i>\n\n"
-            "📩 Contact us: {contact}"
-        ),
-        "tk": (
-            "{icon} <b>SOS</b> 🔌\n\n"
-            "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
-            "📩 Bize ýazyň: {contact}"
-        ),
+        "ru": "{icon} <b>SOS</b> 🔌\n\n📩 Что-то не так? Напишите нам: {contact}",
+        "en": "{icon} <b>SOS</b> 🔌\n\n📩 Something wrong? Contact us: {contact}",
+        "tk": "{icon} <b>SOS</b> 🔌\n\n📩 Bir zat nädogrymy? Bize ýazyň: {contact}",
     },
     "section_sos_empty": {
-        "ru": (
-            "{icon} <b>SOS</b> 🔌\n\n"
-            "<i>Что-то пошло не так? Мы всегда на связи.</i>\n\n"
-            "📩 Поддержка появится здесь совсем скоро"
-        ),
-        "en": (
-            "{icon} <b>SOS</b> 🔌\n\n"
-            "<i>Something's not working? We're always here.</i>\n\n"
-            "📩 Support contact is coming very soon"
-        ),
-        "tk": (
-            "{icon} <b>SOS</b> 🔌\n\n"
-            "<i>Bir zat nädogry gitdimi? Biz hemişe ýanyňyzda.</i>\n\n"
-            "📩 Goldaw ýakynda bu ýerde peýda bolar"
-        ),
+        "ru": "{icon} <b>SOS</b> 🔌\n\n📩 Поддержка появится здесь совсем скоро",
+        "en": "{icon} <b>SOS</b> 🔌\n\n📩 Support contact is coming very soon",
+        "tk": "{icon} <b>SOS</b> 🔌\n\n📩 Goldaw ýakynda bu ýerde peýda bolar",
     },
     # --- Language picker ---
     "language_prompt": {
-        "ru": (
-            "{icon} <b>Язык интерфейса</b> 📡\n\n"
-            "<i>Выберите, на каком языке вам удобнее общаться с ботом.</i>\n\n"
-            "👇 Доступные языки"
-        ),
-        "en": (
-            "{icon} <b>Interface language</b> 📡\n\n"
-            "<i>Choose the language you'd like the bot to speak.</i>\n\n"
-            "👇 Available languages"
-        ),
-        "tk": (
-            "{icon} <b>Interfeýsiň dili</b> 📡\n\n"
-            "<i>Bot bilen haýsy dilde gürleşmek isleýändigiňizi saýlaň.</i>\n\n"
-            "👇 Elýeterli diller"
-        ),
+        "ru": "{icon} <b>Язык интерфейса</b> 📡\n\n👇 Выберите язык",
+        "en": "{icon} <b>Interface language</b> 📡\n\n👇 Choose a language",
+        "tk": "{icon} <b>Interfeýsiň dili</b> 📡\n\n👇 Dili saýlaň",
     },
     "language_saved": {
         "ru": "✅ <b>Готово!</b>\n\nИнтерфейс переключён на русский язык 🇷🇺",
