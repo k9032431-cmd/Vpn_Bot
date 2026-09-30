@@ -338,21 +338,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     "title_marzban": {"ru": "Marzban Node", "en": "Marzban Node", "tk": "Marzban Node"},
     "title_pasarguard": {"ru": "PasarGuard", "en": "PasarGuard", "tk": "PasarGuard"},
     "node_menu": {
-        "ru": (
-            "{icon} <b>Node</b> 🖥\n\n"
-            "<i>Разверните VPN-ноду на своём сервере за пару минут — бот сделает всё сам.</i>\n\n"
-            "👇 Выберите платформу"
-        ),
-        "en": (
-            "{icon} <b>Node</b> 🖥\n\n"
-            "<i>Deploy a VPN node on your server in a couple of minutes — the bot handles the rest.</i>\n\n"
-            "👇 Choose a platform"
-        ),
-        "tk": (
-            "{icon} <b>Node</b> 🖥\n\n"
-            "<i>Serweriňizde birnäçe minutda VPN node ornaşdyryň — galanyny bot eder.</i>\n\n"
-            "👇 Platformany saýlaň"
-        ),
+        "ru": "{icon} <b>Node</b> 🖥\n<i>VPN-нода за пару минут.</i>\n\n👇 Выберите платформу",
+        "en": "{icon} <b>Node</b> 🖥\n<i>A VPN node in a couple of minutes.</i>\n\n👇 Choose a platform",
+        "tk": "{icon} <b>Node</b> 🖥\n<i>Birnäçe minutda VPN node.</i>\n\n👇 Platformany saýlaň",
     },
     "node_cancelled": {
         "ru": (
@@ -382,21 +370,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "Bu IP salga ýa-da domene meňzänok. Täzeden synanyşyň — mysal üçin: <code>203.0.113.10</code>",
     },
     "step_ssh_user": {
-        "ru": (
-            "{header}\n<i>Шаг 2 из 3</i>\n\n"
-            "Кто главный на сервере? Напишите имя SSH-пользователя — подойдёт и "
-            "<code>root</code>, и обычный sudo-пользователь, бот сам разберётся с правами."
-        ),
-        "en": (
-            "{header}\n<i>Step 2 of 3</i>\n\n"
-            "Who's in charge on the server? Type the SSH username — <code>root</code> or a "
-            "regular sudo user both work, the bot will handle the privileges."
-        ),
-        "tk": (
-            "{header}\n<i>2-nji ädim / 3</i>\n\n"
-            "Serwerde kim esasy? SSH ulanyjy adyny ýazyň — <code>root</code> hem, adaty sudo "
-            "ulanyjy hem bolýar, bot hukuklary özi çözer."
-        ),
+        "ru": "{header}\n<i>Шаг 2 из 3</i>\n\nИмя SSH-пользователя (<code>root</code> или sudo — оба подойдут):",
+        "en": "{header}\n<i>Step 2 of 3</i>\n\nSSH username (<code>root</code> or sudo — both work):",
+        "tk": "{header}\n<i>2-nji ädim / 3</i>\n\nSSH ulanyjy ady (<code>root</code> ýa-da sudo — ikisi hem bolýar):",
     },
     "invalid_ssh_user": {
         "ru": "Имя пользователя может содержать только буквы, цифры, «_» и «-». Попробуйте ещё раз.",
@@ -406,21 +382,18 @@ _STRINGS: dict[str, dict[str, str]] = {
     "step_password": {
         "ru": (
             "{header}\n<i>Шаг 3 из 3</i>\n\n"
-            "Пароль от <b>{username}</b>, пожалуйста.\n\n"
-            "{icon} <i>Сообщение с паролем удалится сразу после отправки — он нужен только "
-            "для подключения и нигде не сохраняется.</i>"
+            "Пароль от <b>{username}</b>.\n\n"
+            "{icon} <i>Ваше сообщение будет удалено сразу же — пароль нигде не сохраняется.</i>"
         ),
         "en": (
             "{header}\n<i>Step 3 of 3</i>\n\n"
-            "Password for <b>{username}</b>, please.\n\n"
-            "{icon} <i>The message with the password will be deleted right after you send it — "
-            "it's only used to connect and is never stored.</i>"
+            "Password for <b>{username}</b>.\n\n"
+            "{icon} <i>Your message is deleted right away — the password is never stored.</i>"
         ),
         "tk": (
             "{header}\n<i>3-nji ädim / 3</i>\n\n"
-            "<b>{username}</b> üçin parol, haýyş edýäris.\n\n"
-            "{icon} <i>Parol bilen habar iberilenden soň derrew öçüriler — ol diňe birikmek "
-            "üçin gerek we hiç ýerde saklanmaýar.</i>"
+            "<b>{username}</b> üçin parol.\n\n"
+            "{icon} <i>Habaryňyz derrew pozular — parol hiç ýerde saklanmaýar.</i>"
         ),
     },
     "empty_password": {
@@ -429,18 +402,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "Parol boş bolup bilmez. Ony täzeden iberiň.",
     },
     "ask_cert": {
-        "ru": (
-            "{icon} Остался сертификат клиента из панели Marzban (его выдают при добавлении ноды).\n"
-            "<i>Пришлите файлом (.pem / .crt) или просто текстом.</i>"
-        ),
-        "en": (
-            "{icon} Last thing — the client certificate from the Marzban panel (you get it when "
-            "adding a node).\n<i>Send it as a file (.pem / .crt) or as plain text.</i>"
-        ),
-        "tk": (
-            "{icon} Marzban panelinden alynýan müşderi sertifikaty galdy (node goşulanda berilýär).\n"
-            "<i>Faýl (.pem / .crt) ýa-da ýönekeý tekst hökmünde iberiň.</i>"
-        ),
+        "ru": "{icon} Сертификат клиента из панели Marzban (выдаётся при добавлении ноды).\n<i>Файлом (.pem/.crt) или текстом.</i>",
+        "en": "{icon} The client certificate from the Marzban panel (given when adding a node).\n<i>As a file (.pem/.crt) or plain text.</i>",
+        "tk": "{icon} Marzban panelinden müşderi sertifikaty (node goşulanda berilýär).\n<i>Faýl (.pem/.crt) ýa-da tekst hökmünde.</i>",
     },
     "invalid_cert": {
         "ru": (
@@ -494,24 +458,21 @@ _STRINGS: dict[str, dict[str, str]] = {
     "step_ssh_key": {
         "ru": (
             "{header}\n\n"
-            "🔑 Отправьте <b>приватный SSH-ключ</b> пользователя <code>{username}</code> "
+            "🔑 Приватный SSH-ключ пользователя <code>{username}</code> "
             "(начинается с <code>-----BEGIN ... PRIVATE KEY-----</code>).\n\n"
-            "⚠️ Ключ должен быть <b>без пароля (passphrase)</b>. Сообщение с ключом бот "
-            "удалит сразу после получения."
+            "⚠️ Без пароля (passphrase) — сообщение с ключом бот сразу удалит."
         ),
         "en": (
             "{header}\n\n"
-            "🔑 Send the <b>private SSH key</b> for user <code>{username}</code> "
+            "🔑 Private SSH key for user <code>{username}</code> "
             "(starts with <code>-----BEGIN ... PRIVATE KEY-----</code>).\n\n"
-            "⚠️ The key must have <b>no passphrase</b>. The bot deletes the message "
-            "with the key right after receiving it."
+            "⚠️ No passphrase — the bot deletes your message right away."
         ),
         "tk": (
             "{header}\n\n"
-            "🔑 <code>{username}</code> ulanyjysynyň <b>hususy SSH açaryny</b> iberiň "
+            "🔑 <code>{username}</code> ulanyjysynyň hususy SSH açary "
             "(<code>-----BEGIN ... PRIVATE KEY-----</code> bilen başlaýar).\n\n"
-            "⚠️ Açar <b>parolsyz (passphrase-siz)</b> bolmaly. Bot açar bilen habary "
-            "alnandan derrew soň pozar."
+            "⚠️ Parolsyz (passphrase-siz) — bot habaryňyzy derrew pozar."
         ),
     },
     "invalid_ssh_key": {
