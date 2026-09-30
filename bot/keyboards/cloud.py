@@ -29,7 +29,7 @@ def provider_list_keyboard(lang: str) -> InlineKeyboardMarkup:
             text=t(lang, f"btn_cloud_provider_{provider}"), callback_data=f"cprov:{provider}", style="primary",
             icon_custom_emoji_id=button_icon(provider),
         )
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="primary")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
     builder.adjust(*([1] * len(PROVIDERS)), 1)
     return builder.as_markup()
 
@@ -58,7 +58,7 @@ def account_list_keyboard(lang: str, provider: str, accounts: list[dict]) -> Inl
 
 def cloud_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csetup:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csetup:cancel", style="danger")
     return builder.as_markup()
 
 
@@ -161,7 +161,7 @@ def paginated_pick_keyboard(
     if nav_count:
         rows.append(nav_count)
 
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback, style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback, style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -169,7 +169,7 @@ def paginated_pick_keyboard(
 
 def create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel", style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -178,7 +178,7 @@ def create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="ccreate:auth:password", style="primary")
     builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="ccreate:auth:key", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -186,7 +186,7 @@ def create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
 def create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="ccreate:confirm", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="ccreate:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -200,7 +200,7 @@ def create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
 def must_stop_keyboard(lang: str, account_id: str, server_uuid: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"csrv:stop:{account_id}:{server_uuid}", style="primary")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -211,7 +211,7 @@ def back_to_server_keyboard(lang: str, account_id: str, server_uuid: str) -> Inl
     # it would fail with the exact same "not allowed" error — there's
     # nothing to do but wait, so only offer a way back.
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -222,7 +222,7 @@ def back_to_server_keyboard(lang: str, account_id: str, server_uuid: str) -> Inl
 def plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_plan_confirm"), callback_data="cplan:confirm", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="cplan:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="cplan:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -244,7 +244,7 @@ def storage_list_keyboard(lang: str, account_id: str, server_uuid: str, storages
         rows.append(1)
     builder.button(text=t(lang, "btn_cloud_storage_add"), callback_data=f"csto:add:{account_id}:{server_uuid}", style="primary")
     rows.append(1)
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -258,7 +258,7 @@ def storage_detail_keyboard(lang: str, account_id: str, server_uuid: str, index:
     builder.button(text=t(lang, "btn_cloud_storage_backup_create"), callback_data=f"cbak:mk:{tail}", style="primary")
     builder.button(text=t(lang, "btn_cloud_storage_detach"), callback_data=f"csto:dt:{tail}", style="danger")
     builder.button(text=t(lang, "btn_cloud_storage_delete"), callback_data=f"csto:del:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:list:{account_id}:{server_uuid}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:list:{account_id}:{server_uuid}", style="danger")
     builder.adjust(1, 1, 1, 1, 1, 1)
     return builder.as_markup()
 
@@ -267,7 +267,7 @@ def storage_delete_confirm_keyboard(lang: str, account_id: str, server_uuid: str
     tail = f"{account_id}:{server_uuid}:{index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_storage_delete_confirm"), callback_data=f"csto:delc:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:view:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:view:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -276,14 +276,14 @@ def storage_detach_confirm_keyboard(lang: str, account_id: str, server_uuid: str
     tail = f"{account_id}:{server_uuid}:{index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_storage_detach_confirm"), callback_data=f"csto:dtc:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:view:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"csto:view:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
 
 def storage_wizard_cancel_keyboard(lang: str, cancel_callback: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback, style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=cancel_callback, style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -291,7 +291,7 @@ def storage_wizard_cancel_keyboard(lang: str, cancel_callback: str) -> InlineKey
 def storage_attach_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_storage_attach_confirm"), callback_data="csto:confirm_attach", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csto:cancel_attach", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csto:cancel_attach", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -299,7 +299,7 @@ def storage_attach_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
 def storage_resize_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_storage_resize_confirm"), callback_data="csto:confirm_resize", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csto:cancel_resize", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="csto:cancel_resize", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -318,7 +318,7 @@ def backups_list_keyboard(
         rows.append(1)
     builder.button(text=t(lang, "btn_cloud_backup_create_confirm"), callback_data=f"cbak:mk:{tail}", style="success")
     rows.append(1)
-    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"csto:view:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"csto:view:{tail}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -328,7 +328,7 @@ def backup_create_confirm_keyboard(lang: str, account_id: str, server_uuid: str,
     tail = f"{account_id}:{server_uuid}:{storage_index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_backup_create_confirm"), callback_data=f"cbak:mkc:{tail}", style="success")
-    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:list:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:list:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -339,7 +339,7 @@ def backup_detail_keyboard(lang: str, account_id: str, server_uuid: str, storage
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_backup_restore"), callback_data=f"cbak:rs:{tail}", style="danger")
     builder.button(text=t(lang, "btn_cloud_backup_delete"), callback_data=f"cbak:dl:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:list:{list_tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:list:{list_tail}", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -348,7 +348,7 @@ def backup_restore_confirm_keyboard(lang: str, account_id: str, server_uuid: str
     tail = f"{account_id}:{server_uuid}:{storage_index}:{backup_index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_backup_restore_confirm"), callback_data=f"cbak:rsc:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:view:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:view:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -357,7 +357,7 @@ def backup_delete_confirm_keyboard(lang: str, account_id: str, server_uuid: str,
     tail = f"{account_id}:{server_uuid}:{storage_index}:{backup_index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_backup_delete_confirm"), callback_data=f"cbak:dlc:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:view:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_backups_back"), callback_data=f"cbak:view:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -373,7 +373,7 @@ def ips_list_keyboard(lang: str, account_id: str, server_uuid: str, ips: list) -
         rows.append(1)
     builder.button(text=t(lang, "btn_cloud_ip_add"), callback_data=f"cip:add:{account_id}:{server_uuid}", style="primary")
     rows.append(1)
-    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"csrv:view:{account_id}:{server_uuid}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -383,7 +383,7 @@ def ip_add_confirm_keyboard(lang: str, account_id: str, server_uuid: str) -> Inl
     tail = f"{account_id}:{server_uuid}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_ip_add_confirm"), callback_data=f"cip:addc:{tail}", style="success")
-    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -392,7 +392,7 @@ def ip_remove_confirm_keyboard(lang: str, account_id: str, server_uuid: str, ind
     tail = f"{account_id}:{server_uuid}:{index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_ip_remove_confirm"), callback_data=f"cip:rmc:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{account_id}:{server_uuid}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"cip:list:{account_id}:{server_uuid}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -432,7 +432,7 @@ def azure_vm_detail_keyboard(lang: str, account_id: str, vm) -> InlineKeyboardMa
 def azure_vm_reimage_confirm_keyboard(lang: str, account_id: str, vm_name: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_azure_vm_reimage"), callback_data=f"azvm:reimage:{account_id}:{vm_name}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"azvm:view:{account_id}:{vm_name}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"azvm:view:{account_id}:{vm_name}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -448,7 +448,7 @@ def azure_ports_list_keyboard(lang: str, account_id: str, vm_name: str, rules: l
         rows.append(1)
     builder.button(text=t(lang, "btn_azure_port_add"), callback_data=f"azports:add:{account_id}:{vm_name}", style="primary")
     rows.append(1)
-    builder.button(text=t(lang, "btn_azure_ports_back"), callback_data=f"azvm:view:{account_id}:{vm_name}", style="primary")
+    builder.button(text=t(lang, "btn_azure_ports_back"), callback_data=f"azvm:view:{account_id}:{vm_name}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -456,7 +456,7 @@ def azure_ports_list_keyboard(lang: str, account_id: str, vm_name: str, rules: l
 
 def azure_port_cancel_keyboard(lang: str, account_id: str, vm_name: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}", style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -466,7 +466,7 @@ def azure_port_protocol_keyboard(lang: str, account_id: str, vm_name: str) -> In
     builder.button(text=t(lang, "btn_azure_proto_tcp"), callback_data="azports:proto:tcp", style="primary")
     builder.button(text=t(lang, "btn_azure_proto_udp"), callback_data="azports:proto:udp", style="primary")
     builder.button(text=t(lang, "btn_azure_proto_any"), callback_data="azports:proto:any", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azports:cancel:{account_id}:{vm_name}", style="danger")
     builder.adjust(2, 1, 1)
     return builder.as_markup()
 
@@ -476,7 +476,7 @@ def azure_port_delete_confirm_keyboard(lang: str, account_id: str, vm_name: str,
     builder.button(
         text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"azports:del:{account_id}:{vm_name}:{index}"
     , style="danger")
-    builder.button(text=t(lang, "btn_azure_ports_back"), callback_data=f"azports:list:{account_id}:{vm_name}", style="primary")
+    builder.button(text=t(lang, "btn_azure_ports_back"), callback_data=f"azports:list:{account_id}:{vm_name}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -491,7 +491,7 @@ def azure_vm_delete_confirm_keyboard(lang: str, account_id: str, vm_name: str) -
 
 def azure_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -500,7 +500,7 @@ def azure_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="azcreate:auth:password", style="primary")
     builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="azcreate:auth:key", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -509,7 +509,7 @@ def azure_password_mode_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_azure_pw_generate"), callback_data="azcreate:pwmode:generate", style="primary")
     builder.button(text=t(lang, "btn_azure_pw_custom"), callback_data="azcreate:pwmode:custom", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -519,7 +519,7 @@ def azure_zone_keyboard(lang: str, zones: list[str]) -> InlineKeyboardMarkup:
     builder.button(text=azure_zone_label(lang, None), callback_data="azcreate:zone:none", style="primary")
     for zone in zones:
         builder.button(text=azure_zone_label(lang, zone), callback_data=f"azcreate:zone:{zone}", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -527,7 +527,7 @@ def azure_zone_keyboard(lang: str, zones: list[str]) -> InlineKeyboardMarkup:
 def azure_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="azcreate:confirm", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="azcreate:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -590,14 +590,14 @@ def hetzner_server_delete_confirm_keyboard(
 def hetzner_server_rebuild_confirm_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_hetzner_server_rebuild"), callback_data=f"hzsrv:rebuild:{account_id}:{server_id}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
 
 def hetzner_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="danger")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -606,7 +606,7 @@ def hetzner_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="hzcreate:auth:password", style="primary")
     builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="hzcreate:auth:key", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -615,7 +615,7 @@ def hetzner_create_ipv6_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_hetzner_ipv6_on"), callback_data="hzcreate:ipv6:on", style="primary")
     builder.button(text=t(lang, "btn_hetzner_ipv6_off"), callback_data="hzcreate:ipv6:off", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -623,7 +623,7 @@ def hetzner_create_ipv6_keyboard(lang: str) -> InlineKeyboardMarkup:
 def hetzner_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzcreate:confirm", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzcreate:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -636,7 +636,7 @@ def hetzner_ips_list_keyboard(lang: str, account_id: str, server_id: int, ips: l
         rows.append(1)
     builder.button(text=t(lang, "btn_cloud_ip_add"), callback_data=f"hzip:add:{account_id}:{server_id}", style="primary")
     rows.append(1)
-    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -646,7 +646,7 @@ def hetzner_ip_add_confirm_keyboard(lang: str, account_id: str, server_id: int) 
     tail = f"{account_id}:{server_id}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_ip_add_confirm"), callback_data=f"hzip:addc:{tail}", style="success")
-    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzip:list:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzip:list:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -655,7 +655,7 @@ def hetzner_ip_remove_confirm_keyboard(lang: str, account_id: str, server_id: in
     tail = f"{account_id}:{server_id}:{index}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_ip_remove_confirm"), callback_data=f"hzip:rmc:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzip:list:{account_id}:{server_id}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_ips_back"), callback_data=f"hzip:list:{account_id}:{server_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -663,7 +663,7 @@ def hetzner_ip_remove_confirm_keyboard(lang: str, account_id: str, server_id: in
 def hetzner_must_stop_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"hzsrv:stop:{account_id}:{server_id}", style="primary")
-    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"hzsrv:view:{account_id}:{server_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -671,7 +671,7 @@ def hetzner_must_stop_keyboard(lang: str, account_id: str, server_id: int) -> In
 def hetzner_plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_plan_confirm"), callback_data="hzplan:confirm", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzplan:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzplan:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -701,7 +701,7 @@ def hetzner_addresses_list_keyboard(lang: str, account_id: str, kind: str, addre
     buy_prefix = "hzaddr:buyp" if kind == "primary" else "hzaddr:buyf"
     builder.button(text=t(lang, buy_key), callback_data=f"{buy_prefix}:{account_id}", style="primary")
     rows.append(1)
-    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -716,7 +716,7 @@ def hetzner_address_detail_keyboard(lang: str, account_id: str, kind: str, addre
     else:
         builder.button(text=t(lang, "btn_hetzner_address_assign"), callback_data=f"hzaddr:assignask:{tail}", style="primary")
     builder.button(text=t(lang, "btn_hetzner_address_delete"), callback_data=f"hzaddr:delask:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}:{kind_char}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}:{kind_char}", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -725,7 +725,7 @@ def hetzner_address_delete_confirm_keyboard(lang: str, account_id: str, kind: st
     tail = f"{account_id}:{'p' if kind == 'primary' else 'f'}:{address_id}"
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_hetzner_address_delete_confirm"), callback_data=f"hzaddr:del:{tail}", style="danger")
-    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:view:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:view:{tail}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -734,7 +734,7 @@ def hetzner_address_create_type_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="IPv4", callback_data="hzaddrcreate:type:ipv4", style="primary")
     builder.button(text="IPv6", callback_data="hzaddrcreate:type:ipv6", style="primary")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -742,7 +742,7 @@ def hetzner_address_create_type_keyboard(lang: str) -> InlineKeyboardMarkup:
 def hetzner_address_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzaddrcreate:confirm", style="success")
-    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 

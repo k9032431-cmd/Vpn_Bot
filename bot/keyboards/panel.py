@@ -21,7 +21,7 @@ def panel_list_keyboard(lang: str, panels: list[dict]) -> InlineKeyboardMarkup:
         rows.append(1)
     builder.button(text=t(lang, "btn_panel_add"), callback_data="padd:menu", style="primary")
     rows.append(1)
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="primary")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
@@ -32,14 +32,14 @@ def panel_add_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder.button(text=t(lang, "btn_panel_marzban"), callback_data="padd:marzban", style="primary", icon_custom_emoji_id=button_icon("marzban"))
     builder.button(text=t(lang, "btn_panel_pasarguard"), callback_data="padd:pasarguard", style="primary", icon_custom_emoji_id=button_icon("pasarguard"))
     builder.button(text=t(lang, "btn_panel_3xui"), callback_data="padd:3xui", style="primary", icon_custom_emoji_id=button_icon("threexui"))
-    builder.button(text=t(lang, "btn_back"), callback_data="pdash:list", style="primary")
+    builder.button(text=t(lang, "btn_back"), callback_data="pdash:list", style="danger")
     builder.adjust(1, 1, 1, 1)
     return builder.as_markup()
 
 
 def panel_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data="panelsetup:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data="panelsetup:cancel", style="danger")
     return builder.as_markup()
 
 
@@ -104,14 +104,14 @@ def panel_nodes_keyboard(lang: str, panel_id: str, nodes: list) -> InlineKeyboar
 
 def panel_node_cancel_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:cancel:{panel_id}", style="danger")
     return builder.as_markup()
 
 
 def panel_node_create_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_node_create_confirm"), callback_data=f"pnode:createcnf:{panel_id}", style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:cancel:{panel_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -130,7 +130,7 @@ def panel_node_delete_confirm_keyboard(lang: str, panel_id: str, node_id: int) -
     builder.button(
         text=t(lang, "btn_panel_node_delete_confirm"), callback_data=f"pnode:delcnf:{panel_id}:{node_id}"
     , style="danger")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:view:{panel_id}:{node_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pnode:view:{panel_id}:{node_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -155,14 +155,14 @@ def panel_core_back_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
 
 def panel_core_cancel_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pcore:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pcore:cancel:{panel_id}", style="danger")
     return builder.as_markup()
 
 
 def panel_core_edit_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_core_apply"), callback_data=f"pcore:editcnf:{panel_id}", style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pcore:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pcore:cancel:{panel_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -170,7 +170,7 @@ def panel_core_edit_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboard
 def panel_core_restart_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_core_restart_confirm"), callback_data=f"pcore:restartcnf:{panel_id}", style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pdash:core:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pdash:core:{panel_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -191,7 +191,7 @@ def panel_admins_keyboard(lang: str, panel_id: str, admins: list) -> InlineKeybo
 
 def panel_admin_cancel_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:cancel:{panel_id}", style="danger")
     return builder.as_markup()
 
 
@@ -199,7 +199,7 @@ def panel_admin_create_confirm_keyboard(lang: str, panel_id: str) -> InlineKeybo
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_admin_create_normal"), callback_data=f"padmin:createcnf:{panel_id}:0", style="success")
     builder.button(text=t(lang, "btn_panel_admin_create_sudo"), callback_data=f"padmin:createcnf:{panel_id}:1", style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:cancel:{panel_id}", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -219,7 +219,7 @@ def panel_admin_delete_confirm_keyboard(lang: str, panel_id: str, username: str)
     builder.button(
         text=t(lang, "btn_panel_admin_delete_confirm"), callback_data=f"padmin:delcnf:{panel_id}:{username}"
     , style="danger")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:view:{panel_id}:{username}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"padmin:view:{panel_id}:{username}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -269,7 +269,7 @@ def panel_host_detail_keyboard(
 
 def panel_host_cancel_keyboard(lang: str, panel_id: str, tag_index: int, host_index: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}", style="danger")
     return builder.as_markup()
 
 
@@ -280,7 +280,7 @@ def panel_host_edit_confirm_keyboard(
     builder.button(
         text=t(lang, "btn_panel_host_apply"), callback_data=f"phost:editcnf:{panel_id}:{tag_index}:{host_index}"
     , style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -293,14 +293,14 @@ def panel_host_delete_confirm_keyboard(
         text=t(lang, "btn_panel_host_delete_confirm"),
         callback_data=f"phost:delcnf:{panel_id}:{tag_index}:{host_index}", style="danger",
     )
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:view:{panel_id}:{tag_index}:{host_index}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
 
 def panel_host_new_cancel_keyboard(lang: str, panel_id: str, tag_index: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}", style="danger")
     return builder.as_markup()
 
 
@@ -309,7 +309,7 @@ def panel_host_create_confirm_keyboard(lang: str, panel_id: str, tag_index: int)
     builder.button(
         text=t(lang, "btn_panel_host_create_confirm"), callback_data=f"phost:newcnf:{panel_id}:{tag_index}"
     , style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"phost:tag:{panel_id}:{tag_index}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -385,7 +385,7 @@ def panel_client_cancel_keyboard(lang: str, panel_id: str, inbound_id: int, clie
     builder = InlineKeyboardBuilder()
     builder.button(
         text=t(lang, "btn_cancel"), callback_data=f"pclient:view:{panel_id}:{inbound_id}:{client_index}"
-    , style="primary")
+    , style="danger")
     return builder.as_markup()
 
 
@@ -399,7 +399,7 @@ def panel_client_edit_confirm_keyboard(
     )
     builder.button(
         text=t(lang, "btn_cancel"), callback_data=f"pclient:view:{panel_id}:{inbound_id}:{client_index}"
-    , style="primary")
+    , style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -414,14 +414,14 @@ def panel_client_delete_confirm_keyboard(
     )
     builder.button(
         text=t(lang, "btn_cancel"), callback_data=f"pclient:view:{panel_id}:{inbound_id}:{client_index}"
-    , style="primary")
+    , style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
 
 def panel_client_new_cancel_keyboard(lang: str, panel_id: str, inbound_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:clients:{panel_id}:{inbound_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:clients:{panel_id}:{inbound_id}", style="danger")
     return builder.as_markup()
 
 
@@ -430,21 +430,21 @@ def panel_client_create_confirm_keyboard(lang: str, panel_id: str, inbound_id: i
     builder.button(
         text=t(lang, "btn_panel_client_create_confirm"), callback_data=f"pclient:newcnf:{panel_id}:{inbound_id}"
     , style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:clients:{panel_id}:{inbound_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:clients:{panel_id}:{inbound_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
 
 def panel_inbound_cancel_keyboard(lang: str, panel_id: str, inbound_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}", style="danger")
     return builder.as_markup()
 
 
 def panel_inbound_edit_confirm_keyboard(lang: str, panel_id: str, inbound_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_inbound_apply"), callback_data=f"pinb:editcnf:{panel_id}:{inbound_id}", style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -454,7 +454,7 @@ def panel_inbound_delete_confirm_keyboard(lang: str, panel_id: str, inbound_id: 
     builder.button(
         text=t(lang, "btn_panel_inbound_delete_confirm"), callback_data=f"pinb:delcnf:{panel_id}:{inbound_id}"
     , style="danger")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"pinb:view:{panel_id}:{inbound_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -496,14 +496,14 @@ def panel_users_keyboard(
 
 def panel_user_cancel_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"puser:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"puser:cancel:{panel_id}", style="danger")
     return builder.as_markup()
 
 
 def panel_create_user_confirm_keyboard(lang: str, panel_id: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_panel_create_confirm"), callback_data=f"puser:createcnf:{panel_id}", style="success")
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"puser:cancel:{panel_id}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"puser:cancel:{panel_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
@@ -526,6 +526,6 @@ def panel_user_delete_confirm_keyboard(lang: str, panel_id: str, username: str) 
         text=t(lang, "btn_panel_user_delete_confirm"),
         callback_data=f"puser:delcnf:{panel_id}:{username}", style="danger",
     )
-    builder.button(text=t(lang, "btn_cancel"), callback_data=f"puser:view:{panel_id}:{username}", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data=f"puser:view:{panel_id}:{username}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()

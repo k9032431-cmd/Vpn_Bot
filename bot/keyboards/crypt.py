@@ -8,7 +8,7 @@ def crypt_action_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_crypt_encrypt"), callback_data="crypt:action:encrypt", style="primary")
     builder.button(text=t(lang, "btn_crypt_decrypt"), callback_data="crypt:action:decrypt", style="primary")
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="primary")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
 
@@ -16,14 +16,14 @@ def crypt_action_keyboard(lang: str) -> InlineKeyboardMarkup:
 def crypt_vpn_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_crypt_vpn_happ"), callback_data="crypt:vpn:happ", style="primary")
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:crypt", style="primary")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:crypt", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 
 
 def crypt_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data="crypt:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data="crypt:cancel", style="danger")
     return builder.as_markup()
 
 

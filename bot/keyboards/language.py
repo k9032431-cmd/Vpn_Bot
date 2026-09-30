@@ -8,6 +8,6 @@ def language_picker_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for code in LANGUAGES:
         builder.button(text=LANGUAGE_LABELS[code], callback_data=f"lang:{code}", style="primary")
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="primary")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
     builder.adjust(1, 1, 1, 1)
     return builder.as_markup()

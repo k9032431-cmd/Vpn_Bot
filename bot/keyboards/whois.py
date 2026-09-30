@@ -6,7 +6,7 @@ from bot.texts.translations import t
 
 def whois_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_cancel"), callback_data="whois:cancel", style="primary")
+    builder.button(text=t(lang, "btn_cancel"), callback_data="whois:cancel", style="danger")
     return builder.as_markup()
 
 

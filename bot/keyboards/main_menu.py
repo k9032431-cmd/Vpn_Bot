@@ -37,5 +37,5 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
 
 def back_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:back")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
     return builder.as_markup()
