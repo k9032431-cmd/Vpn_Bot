@@ -18,6 +18,7 @@ from bot.services.node_installer import install_marzban_node, install_pasarguard
 from bot.services.ssh_client import NodeInstallError, SSHTarget
 from bot.states.node_setup import NodeSetupStates
 from bot.texts import node as texts
+from bot.utils.messages import show_text
 
 router = Router(name="node")
 
@@ -36,7 +37,7 @@ def _is_valid_host(value: str) -> bool:
 @router.callback_query(F.data == "menu:node")
 async def cb_node_menu(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.edit_text(texts.node_menu_text(lang), reply_markup=node_menu_keyboard(lang))
+    await show_text(callback, texts.node_menu_text(lang), reply_markup=node_menu_keyboard(lang))
     await callback.answer()
 
 

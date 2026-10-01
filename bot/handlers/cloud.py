@@ -174,6 +174,7 @@ from bot.states.cloud_setup import (
 )
 from bot.texts import cloud as texts
 from bot.texts.cloud import ACTIVE_PROVIDERS, PROVIDERS
+from bot.utils.messages import show_text
 
 router = Router(name="cloud")
 
@@ -206,7 +207,7 @@ async def _login(provider: str, username: str, password: str):
 
 
 async def _show_provider_list(callback: CallbackQuery, lang: str) -> None:
-    await callback.message.edit_text(texts.provider_list_text(lang), reply_markup=provider_list_keyboard(lang))
+    await show_text(callback, texts.provider_list_text(lang), reply_markup=provider_list_keyboard(lang))
 
 
 async def _show_account_list(callback: CallbackQuery, lang: str, provider: str) -> None:

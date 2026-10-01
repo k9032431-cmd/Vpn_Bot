@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery
 
 from bot.keyboards.main_menu import back_keyboard, main_menu_keyboard
 from bot.texts.main import WELCOME_BANNER, section_text, welcome_text
+from bot.utils.messages import show_text
 
 router = Router(name="menu")
 
@@ -34,5 +35,5 @@ async def cb_section(callback: CallbackQuery, state: FSMContext, lang: str) -> N
     # (e.g. a pending IP/password prompt), so a stray text message later
     # can't be misread as SSH credentials.
     await state.clear()
-    await callback.message.edit_text(text, reply_markup=back_keyboard(lang))
+    await show_text(callback, text, reply_markup=back_keyboard(lang))
     await callback.answer()

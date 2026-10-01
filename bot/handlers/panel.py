@@ -122,6 +122,7 @@ from bot.states.panel_setup import (
     PanelUserEditStates,
 )
 from bot.texts import panel as texts
+from bot.utils.messages import show_text
 
 router = Router(name="panel")
 
@@ -182,7 +183,8 @@ def parse_limit_and_expire(text: str) -> tuple[int | None, int | None] | None:
 
 async def _show_panel_list(callback: CallbackQuery, lang: str) -> None:
     panels = await panel_store.list(callback.from_user.id)
-    await callback.message.edit_text(
+    await show_text(
+        callback,
         texts.panel_list_header_text(lang, bool(panels)),
         reply_markup=panel_list_keyboard(lang, panels),
     )

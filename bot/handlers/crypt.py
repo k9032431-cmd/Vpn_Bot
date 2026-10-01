@@ -14,6 +14,7 @@ from bot.keyboards.crypt import (
 from bot.services.happ_api import HappAPIError, happ_encrypt_link
 from bot.states.crypt import CryptStates
 from bot.texts import crypt as texts
+from bot.utils.messages import show_text
 
 router = Router(name="crypt")
 
@@ -21,7 +22,7 @@ router = Router(name="crypt")
 @router.callback_query(F.data == "menu:crypt")
 async def cb_crypt_menu(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.edit_text(texts.choose_action_text(lang), reply_markup=crypt_action_keyboard(lang))
+    await show_text(callback, texts.choose_action_text(lang), reply_markup=crypt_action_keyboard(lang))
     await callback.answer()
 
 
