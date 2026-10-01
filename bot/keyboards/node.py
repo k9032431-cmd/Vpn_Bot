@@ -1,13 +1,24 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from bot.texts.premium_emoji import button_icon
 from bot.texts.translations import t
 
 
 def node_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text=t(lang, "btn_marzban"), callback_data="node:marzban", style="primary")
-    builder.button(text=t(lang, "btn_pasarguard"), callback_data="node:pasarguard", style="primary")
+    builder.button(
+        text=t(lang, "btn_marzban"),
+        callback_data="node:marzban",
+        style="primary",
+        icon_custom_emoji_id=button_icon("marzban"),
+    )
+    builder.button(
+        text=t(lang, "btn_pasarguard"),
+        callback_data="node:pasarguard",
+        style="primary",
+        icon_custom_emoji_id=button_icon("pasarguard"),
+    )
     builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
     builder.adjust(1, 1, 1)
     return builder.as_markup()
