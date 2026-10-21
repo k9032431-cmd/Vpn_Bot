@@ -1121,3 +1121,24 @@ def hetzner_address_unassign_ok_text(lang: str) -> str:
 
 def hetzner_address_deleted_text(lang: str) -> str:
     return t(lang, "hetzner_address_deleted", icon=e("success", "✅"))
+
+
+def hetzner_free_ips_confirm_text(lang: str, primary_ips: list, floating_ips: list) -> str:
+    lines = [f"🟩 <code>{ip.ip}</code>" for ip in primary_ips] + [f"🌐 <code>{ip.ip}</code>" for ip in floating_ips]
+    return t(
+        lang, "hetzner_free_ips_confirm",
+        icon=e("warning", "⚠️"), count=len(primary_ips) + len(floating_ips), ip_list="\n".join(lines),
+    )
+
+
+def hetzner_free_ips_empty_text(lang: str) -> str:
+    return t(lang, "hetzner_free_ips_empty")
+
+
+def hetzner_free_ips_deleted_text(lang: str, deleted_count: int, failed_ips: list[str]) -> str:
+    if not failed_ips:
+        return t(lang, "hetzner_free_ips_deleted", icon=e("success", "✅"), count=deleted_count)
+    return t(
+        lang, "hetzner_free_ips_deleted_partial",
+        icon=e("warning", "⚠️"), deleted=deleted_count, failed=", ".join(failed_ips),
+    )

@@ -683,8 +683,23 @@ def hetzner_addresses_menu_keyboard(lang: str, account_id: str) -> InlineKeyboar
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_hetzner_address_category_primary"), callback_data=f"hzaddr:list:{account_id}:p", style="primary")
     builder.button(text=t(lang, "btn_hetzner_address_category_floating"), callback_data=f"hzaddr:list:{account_id}:f", style="primary")
+    builder.button(text=t(lang, "btn_hetzner_address_delete_free"), callback_data=f"hzaddr:freeask:{account_id}", style="danger")
     builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}", style="primary")
-    builder.adjust(1, 1, 1)
+    builder.adjust(1, 1, 1, 1)
+    return builder.as_markup()
+
+
+def hetzner_addresses_menu_back_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}", style="danger")
+    return builder.as_markup()
+
+
+def hetzner_free_ips_confirm_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_hetzner_free_ips_confirm"), callback_data=f"hzaddr:free:{account_id}", style="danger")
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}", style="danger")
+    builder.adjust(1, 1)
     return builder.as_markup()
 
 

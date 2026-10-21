@@ -42,11 +42,13 @@ from bot.keyboards.cloud import (
     hetzner_address_delete_confirm_keyboard,
     hetzner_address_detail_keyboard,
     hetzner_addresses_list_keyboard,
+    hetzner_addresses_menu_back_keyboard,
     hetzner_addresses_menu_keyboard,
     hetzner_create_auth_method_keyboard,
     hetzner_create_cancel_keyboard,
     hetzner_create_confirm_keyboard,
     hetzner_create_ipv6_keyboard,
+    hetzner_free_ips_confirm_keyboard,
     hetzner_ip_add_confirm_keyboard,
     hetzner_ip_remove_confirm_keyboard,
     hetzner_ips_list_keyboard,
@@ -3330,6 +3332,72 @@ async def cb_hetzner_addresses_list(callback: CallbackQuery, state: FSMContext, 
     await callback.answer()
     kind = "primary" if kind_char == "p" else "floating"
     await _show_hetzner_address_list(callback, lang, account, account_id, kind)
+
+
+async def _hetzner_free_ips(creds: HetznerCredentials) -> tuple[list, list]:
+    primary_ips = [ip for ip in await hetzner_list_primary_ips(creds) if ip.server_id is None]
+    floating_ips = [ip for ip in await hetzner_list_all_floating_ips(creds) if ip.server_id is None]
+    return primary_ips, floating_ips
+
+
+@router.callback_query(F.data.startswith("hzaddr:freeask:"))
+async def cb_hetzner_free_ips_ask(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    creds = _hetzner_creds(account)
+    try:
+        primary_ips, floating_ips = await _hetzner_free_ips(creds)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    if not primary_ips and not floating_ips:
+        await callback.message.edit_text(
+            texts.hetzner_free_ips_empty_text(lang),
+            reply_markup=hetzner_addresses_menu_back_keyboard(lang, account_id),
+        )
+        return
+    await callback.message.edit_text(
+        texts.hetzner_free_ips_confirm_text(lang, primary_ips, floating_ips),
+        reply_markup=hetzner_free_ips_confirm_keyboard(lang, account_id),
+    )
+
+
+@router.callback_query(F.data.startswith("hzaddr:free:"))
+async def cb_hetzner_free_ips_delete(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    creds = _hetzner_creds(account)
+    try:
+        primary_ips, floating_ips = await _hetzner_free_ips(creds)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    deleted = 0
+    failed: list[str] = []
+    for ip in primary_ips:
+        try:
+            await hetzner_delete_primary_ip(creds, ip.id)
+            deleted += 1
+        except HetznerAPIError:
+            failed.append(ip.ip)
+    for ip in floating_ips:
+        try:
+            await hetzner_remove_floating_ip(creds, ip.id)
+            deleted += 1
+        except HetznerAPIError:
+            failed.append(ip.ip)
+    await callback.message.edit_text(
+        texts.hetzner_free_ips_deleted_text(lang, deleted, failed),
+        reply_markup=hetzner_addresses_menu_back_keyboard(lang, account_id),
+    )
 
 
 async def _get_hetzner_address(creds: HetznerCredentials, kind: str, address_id: int):

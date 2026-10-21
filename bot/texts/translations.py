@@ -2937,6 +2937,36 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🌐 Floating IP",
         "tk": "🌐 Floating IP",
     },
+    "btn_hetzner_address_delete_free": {
+        "ru": "🗑 Удалить все свободные IP",
+        "en": "🗑 Delete all free IPs",
+        "tk": "🗑 Ähli boş IP-leri poz",
+    },
+    "hetzner_free_ips_confirm": {
+        "ru": "{icon} Удалить все свободные IP ({count}), не привязанные ни к одному серверу? Это необратимо.\n\n{ip_list}",
+        "en": "{icon} Delete all {count} free IPs not assigned to any server? This is irreversible.\n\n{ip_list}",
+        "tk": "{icon} Hiç bir servere baglanmadyk ähli boş IP-leri ({count}) pozmalymy? Bu yzyna gaýtarylmaz.\n\n{ip_list}",
+    },
+    "hetzner_free_ips_empty": {
+        "ru": "<i>Свободных IP (не привязанных к серверу) сейчас нет.</i>",
+        "en": "<i>There are currently no free IPs (not assigned to a server).</i>",
+        "tk": "<i>Häzir serwere baglanmadyk boş IP ýok.</i>",
+    },
+    "hetzner_free_ips_deleted": {
+        "ru": "{icon} Удалено свободных IP: {count}.",
+        "en": "{icon} Deleted {count} free IPs.",
+        "tk": "{icon} {count} sany boş IP pozuldy.",
+    },
+    "hetzner_free_ips_deleted_partial": {
+        "ru": "{icon} Удалено: {deleted}. Не получилось удалить: {failed}. Удалите их вручную.",
+        "en": "{icon} Deleted: {deleted}. Couldn't delete: {failed}. Remove them manually.",
+        "tk": "{icon} Pozuldy: {deleted}. Pozup bolmady: {failed}. Olary elde pozuň.",
+    },
+    "btn_hetzner_free_ips_confirm": {
+        "ru": "🗑 Да, удалить все",
+        "en": "🗑 Yes, delete all",
+        "tk": "🗑 Hawa, ählisini poz",
+    },
 }
 
 
