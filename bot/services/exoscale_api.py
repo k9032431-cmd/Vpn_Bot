@@ -270,16 +270,26 @@ async def _ensure_ssh_key(creds: ExoscaleCredentials, zone: str, public_key: str
 # --- Servers (compute instances) ---
 
 
+def _ref_id(value: object) -> str:
+    """Exoscale's own API reference is inconsistent about whether a
+    reference field (instance-type, template) comes back as {"id": "..."}
+    or a bare id string in list-instances responses -- handles either
+    shape instead of assuming one and raising on the other."""
+    if isinstance(value, dict):
+        return value.get("id", "")
+    if isinstance(value, str):
+        return value
+    return ""
+
+
 def _server_from_payload(item: dict, zone: str) -> ServerInfo:
-    instance_type = item.get("instance-type") or {}
-    template = item.get("template") or {}
     return ServerInfo(
         id=item.get("id", ""),
         name=item.get("name", ""),
         state=item.get("state", "unknown"),
         zone=zone,
-        instance_type_id=instance_type.get("id", ""),
-        template_id=template.get("id", ""),
+        instance_type_id=_ref_id(item.get("instance-type")),
+        template_id=_ref_id(item.get("template")),
         public_ip=item.get("public-ip"),
     )
 

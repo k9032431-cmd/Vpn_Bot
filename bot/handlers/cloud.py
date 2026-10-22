@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from types import SimpleNamespace
 
@@ -726,18 +727,22 @@ async def _show_exoscale_servers(callback: CallbackQuery, lang: str, account: di
         *(exoscale_list_servers(creds, zone) for zone, _ in EXOSCALE_ZONES), return_exceptions=True
     )
     servers: list = []
-    last_error: ExoscaleAPIError | None = None
+    last_error: BaseException | None = None
     ok_count = 0
-    for result in results:
-        if isinstance(result, ExoscaleAPIError):
+    for zone_tuple, result in zip(EXOSCALE_ZONES, results):
+        if isinstance(result, BaseException):
+            # One zone failing (unreachable, bad data, a parsing bug) must
+            # not blank out servers the other zones returned fine -- only
+            # a total failure across every zone (e.g. bad credentials,
+            # which fails identically everywhere) is worth surfacing.
+            logging.getLogger(__name__).warning("Exoscale list-servers failed for zone %s: %r", zone_tuple[0], result)
             last_error = result
             continue
-        if isinstance(result, BaseException):
-            raise result
         ok_count += 1
         servers.extend(result)
     if ok_count == 0 and last_error is not None:
-        await callback.message.edit_text(texts.action_error_text(lang, str(last_error)), reply_markup=cloud_error_keyboard(lang))
+        reason = str(last_error) if isinstance(last_error, ExoscaleAPIError) else "bad_response"
+        await callback.message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
         return
     await callback.message.edit_text(
         texts.exoscale_servers_header_text(lang, account, bool(servers)),
