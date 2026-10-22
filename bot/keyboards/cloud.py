@@ -9,6 +9,7 @@ from bot.texts.cloud import (
     azure_vm_list_label,
     azure_zone_label,
     backup_list_label,
+    exoscale_server_list_label,
     hetzner_address_list_label,
     hetzner_ip_list_label,
     hetzner_server_list_label,
@@ -758,6 +759,74 @@ def hetzner_address_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzaddrcreate:confirm", style="success")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Exoscale ---
+
+
+def exoscale_servers_list_keyboard(lang: str, account_id: str, servers: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for server in servers:
+        builder.button(
+            text=exoscale_server_list_label(server),
+            callback_data=f"exsrv:view:{account_id}:{server.zone}:{server.id}",
+            style="primary",
+        )
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_server_add"), callback_data=f"exsrv:add:{account_id}", style="primary")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}", style="primary")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def exoscale_server_detail_keyboard(lang: str, account_id: str, server) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server.zone}:{server.id}"
+    builder = InlineKeyboardBuilder()
+    if server.state == "stopped":
+        builder.button(text=t(lang, "btn_cloud_server_start"), callback_data=f"exsrv:start:{tail}", style="primary")
+    else:
+        builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"exsrv:stop:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_server_restart"), callback_data=f"exsrv:restart:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_server_delete"), callback_data=f"exsrv:delask:{tail}", style="danger")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"exsrv:list:{account_id}", style="primary")
+    builder.adjust(2, 1, 1)
+    return builder.as_markup()
+
+
+def exoscale_server_delete_confirm_keyboard(lang: str, account_id: str, zone: str, instance_id: str) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{zone}:{instance_id}"
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"exsrv:del:{tail}", style="danger")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"exsrv:list:{account_id}", style="primary")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def exoscale_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="excreate:cancel", style="danger")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def exoscale_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="excreate:auth:password", style="primary")
+    builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="excreate:auth:key", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="excreate:cancel", style="danger")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def exoscale_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="excreate:confirm", style="success")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="excreate:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 

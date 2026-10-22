@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from types import SimpleNamespace
 
@@ -37,6 +38,12 @@ from bot.keyboards.cloud import (
     create_auth_method_keyboard,
     create_cancel_keyboard,
     create_confirm_keyboard,
+    exoscale_create_auth_method_keyboard,
+    exoscale_create_cancel_keyboard,
+    exoscale_create_confirm_keyboard,
+    exoscale_server_delete_confirm_keyboard,
+    exoscale_server_detail_keyboard,
+    exoscale_servers_list_keyboard,
     hetzner_address_create_confirm_keyboard,
     hetzner_address_create_type_keyboard,
     hetzner_address_delete_confirm_keyboard,
@@ -103,6 +110,21 @@ from bot.services.azure_api import (
     is_valid_azure_username,
 )
 from bot.services.cloud_store import cloud_store
+from bot.services.exoscale_api import (
+    ExoscaleAPIError,
+    ExoscaleCredentials,
+    ZONES as EXOSCALE_ZONES,
+    exoscale_create_server,
+    exoscale_delete_server,
+    exoscale_get_server,
+    exoscale_list_instance_types,
+    exoscale_list_servers,
+    exoscale_list_templates,
+    exoscale_login,
+    exoscale_reboot_server,
+    exoscale_start_server,
+    exoscale_stop_server,
+)
 from bot.services.hetzner_api import (
     HetznerAPIError,
     HetznerCredentials,
@@ -168,6 +190,8 @@ from bot.states.cloud_setup import (
     CloudPlanChangeStates,
     CloudServerCreateStates,
     CloudSetupStates,
+    ExoscaleSetupStates,
+    ExoscaleVMCreateStates,
     HetznerIPAssignStates,
     HetznerIPCreateStates,
     HetznerPlanChangeStates,
@@ -200,6 +224,10 @@ def _azure_creds(account: dict) -> AzureCredentials:
 
 def _hetzner_creds(account: dict) -> HetznerCredentials:
     return HetznerCredentials(token=account["token"])
+
+
+def _exoscale_creds(account: dict) -> ExoscaleCredentials:
+    return ExoscaleCredentials(key=account["key"], secret=account["secret"])
 
 
 async def _login(provider: str, username: str, password: str):
@@ -311,6 +339,13 @@ async def cb_add_account(callback: CallbackQuery, state: FSMContext, lang: str) 
         await state.set_state(HetznerSetupStates.waiting_token)
         await callback.message.edit_text(
             texts.hetzner_step_token_text(lang), reply_markup=cloud_cancel_keyboard(lang)
+        )
+        await callback.answer()
+        return
+    if provider == "exoscale":
+        await state.set_state(ExoscaleSetupStates.waiting_key)
+        await callback.message.edit_text(
+            texts.exoscale_step_key_text(lang), reply_markup=cloud_cancel_keyboard(lang)
         )
         await callback.answer()
         return
@@ -452,6 +487,56 @@ async def process_hetzner_token(message: Message, state: FSMContext, lang: str) 
     )
 
 
+@router.message(ExoscaleSetupStates.waiting_key)
+async def process_exoscale_key(message: Message, state: FSMContext, lang: str) -> None:
+    value = message.text.strip() if message.text else ""
+    if not value:
+        await message.answer(texts.exoscale_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        return
+    await state.update_data(key=value)
+    await state.set_state(ExoscaleSetupStates.waiting_secret)
+    await message.answer(texts.exoscale_step_secret_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+
+
+@router.message(ExoscaleSetupStates.waiting_secret)
+async def process_exoscale_secret(message: Message, state: FSMContext, lang: str) -> None:
+    value = message.text or ""
+    try:
+        await message.delete()
+    except Exception:
+        pass
+    if not value:
+        await message.answer(texts.exoscale_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        return
+
+    data = await state.update_data(secret=value)
+    await state.set_state(ExoscaleSetupStates.connecting)
+    status_message = await message.answer(texts.connecting_text(lang))
+
+    creds = ExoscaleCredentials(key=data["key"], secret=value)
+    try:
+        await exoscale_login(creds)
+    except ExoscaleAPIError as exc:
+        await state.clear()
+        await status_message.edit_text(
+            texts.login_error_text(lang, str(exc), "exoscale"), reply_markup=cloud_error_keyboard(lang)
+        )
+        return
+    except Exception:  # noqa: BLE001 - surface unexpected errors to the user
+        await state.clear()
+        await status_message.edit_text(
+            texts.login_error_text(lang, "bad_response", "exoscale"), reply_markup=cloud_error_keyboard(lang)
+        )
+        return
+
+    account_id = await cloud_store.add(message.from_user.id, "exoscale", key=data["key"], secret=value)
+    await state.clear()
+    await status_message.edit_text(
+        texts.connected_text(lang, "exoscale"),
+        reply_markup=account_dashboard_keyboard(lang, account_id, "exoscale"),
+    )
+
+
 @router.message(CloudSetupStates.waiting_username)
 async def process_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
@@ -539,6 +624,17 @@ async def cb_view_account(callback: CallbackQuery, state: FSMContext, lang: str)
             reply_markup=account_dashboard_keyboard(lang, account_id, "hetzner"),
         )
         return
+    if account["provider"] == "exoscale":
+        try:
+            await exoscale_login(_exoscale_creds(account))
+        except ExoscaleAPIError as exc:
+            await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+            return
+        await callback.message.edit_text(
+            texts.exoscale_account_dashboard_text(lang, account),
+            reply_markup=account_dashboard_keyboard(lang, account_id, "exoscale"),
+        )
+        return
     try:
         info = await upcloud_get_account(account["username"], account["password"])
     except UpCloudAPIError as exc:
@@ -589,6 +685,9 @@ async def cb_account_servers(callback: CallbackQuery, state: FSMContext, lang: s
     if account["provider"] == "hetzner":
         await _show_hetzner_servers(callback, lang, account, account_id)
         return
+    if account["provider"] == "exoscale":
+        await _show_exoscale_servers(callback, lang, account, account_id)
+        return
     await _show_servers(callback, lang, account)
 
 
@@ -613,6 +712,36 @@ async def _show_hetzner_servers(callback: CallbackQuery, lang: str, account: dic
     await callback.message.edit_text(
         texts.hetzner_servers_header_text(lang, account, bool(servers)),
         reply_markup=hetzner_servers_list_keyboard(lang, account_id, servers),
+    )
+
+
+async def _show_exoscale_servers(callback: CallbackQuery, lang: str, account: dict, account_id: str) -> None:
+    """Exoscale has no global "list all my instances" call -- each zone is
+    its own API host, so this fans out to every zone in parallel and merges
+    the results. A single zone being unreachable doesn't fail the whole
+    listing (its servers just won't show); only a total failure (e.g. bad
+    credentials, which fails identically in every zone) surfaces an error."""
+    creds = _exoscale_creds(account)
+    results = await asyncio.gather(
+        *(exoscale_list_servers(creds, zone) for zone, _ in EXOSCALE_ZONES), return_exceptions=True
+    )
+    servers: list = []
+    last_error: ExoscaleAPIError | None = None
+    ok_count = 0
+    for result in results:
+        if isinstance(result, ExoscaleAPIError):
+            last_error = result
+            continue
+        if isinstance(result, BaseException):
+            raise result
+        ok_count += 1
+        servers.extend(result)
+    if ok_count == 0 and last_error is not None:
+        await callback.message.edit_text(texts.action_error_text(lang, str(last_error)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.exoscale_servers_header_text(lang, account, bool(servers)),
+        reply_markup=exoscale_servers_list_keyboard(lang, account_id, servers),
     )
 
 
@@ -3730,4 +3859,367 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
     await callback.message.edit_text(
         texts.hetzner_address_create_success_text(lang, kind_full, address),
         reply_markup=hetzner_address_detail_keyboard(lang, data["account_id"], kind_full, address),
+    )
+
+
+# --- Exoscale: server list, detail, lifecycle actions ---
+
+
+@router.callback_query(F.data.startswith("exsrv:list:"))
+async def cb_exoscale_server_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_exoscale_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("exsrv:view:"))
+async def cb_exoscale_server_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, zone, instance_id = callback.data.split(":", 4)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        server = await exoscale_get_server(_exoscale_creds(account), zone, instance_id)
+    except ExoscaleAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, server.id)
+    await callback.message.edit_text(
+        texts.exoscale_server_detail_text(lang, server, stored_password),
+        reply_markup=exoscale_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+async def _run_exoscale_server_action(
+    callback: CallbackQuery, lang: str, action, account_id: str, zone: str, instance_id: str
+) -> None:
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer(texts.server_action_ok_text(lang))
+    creds = _exoscale_creds(account)
+    try:
+        await action(creds, zone, instance_id)
+        server = await exoscale_get_server(creds, zone, instance_id)
+    except ExoscaleAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, server.id)
+    await callback.message.edit_text(
+        texts.exoscale_server_detail_text(lang, server, stored_password),
+        reply_markup=exoscale_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+@router.callback_query(F.data.startswith("exsrv:start:"))
+async def cb_exoscale_server_start(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, zone, instance_id = callback.data.split(":", 4)
+    await _run_exoscale_server_action(callback, lang, exoscale_start_server, account_id, zone, instance_id)
+
+
+@router.callback_query(F.data.startswith("exsrv:stop:"))
+async def cb_exoscale_server_stop(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, zone, instance_id = callback.data.split(":", 4)
+    await _run_exoscale_server_action(callback, lang, exoscale_stop_server, account_id, zone, instance_id)
+
+
+@router.callback_query(F.data.startswith("exsrv:restart:"))
+async def cb_exoscale_server_restart(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, zone, instance_id = callback.data.split(":", 4)
+    await _run_exoscale_server_action(callback, lang, exoscale_reboot_server, account_id, zone, instance_id)
+
+
+@router.callback_query(F.data.startswith("exsrv:delask:"))
+async def cb_exoscale_server_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, zone, instance_id = callback.data.split(":", 4)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await exoscale_get_server(_exoscale_creds(account), zone, instance_id)
+    except ExoscaleAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.exoscale_server_delete_confirm_text(lang, server),
+        reply_markup=exoscale_server_delete_confirm_keyboard(lang, account_id, zone, instance_id),
+    )
+
+
+@router.callback_query(F.data.startswith("exsrv:del:"))
+async def cb_exoscale_server_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, zone, instance_id = callback.data.split(":", 4)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        await exoscale_delete_server(_exoscale_creds(account), zone, instance_id)
+    except ExoscaleAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await cloud_store.remove_vm_secret(callback.from_user.id, account_id, instance_id)
+    await callback.message.edit_text(texts.server_deleted_text(lang), reply_markup=None)
+    await _show_exoscale_servers(callback, lang, account, account_id)
+
+
+# --- Exoscale: server creation ---
+#
+# Zone first (a static list -- Exoscale has no "list zones" endpoint, each
+# zone is just a different API host), then only that zone's own instance
+# types and templates, hostname, and auth method, before confirmation.
+
+
+def _exoscale_zone_options() -> list[tuple[str, str]]:
+    return [(texts.exoscale_zone_display(zone_id), f"excreate:zone:{i}") for i, (zone_id, _) in enumerate(EXOSCALE_ZONES)]
+
+
+def _exoscale_type_options(types_: list[dict]) -> list[tuple[str, str]]:
+    return [
+        (f"{t['family']}.{t['size']} ({t['cpus']} CPU / {texts.exoscale_memory_display(t['memory'])})", f"excreate:type:{i}")
+        for i, t in enumerate(types_)
+    ]
+
+
+def _exoscale_template_options(templates: list[dict]) -> list[tuple[str, str]]:
+    return [(tpl["name"], f"excreate:tmpl:{i}") for i, tpl in enumerate(templates)]
+
+
+@router.callback_query(F.data.startswith("exsrv:add:"))
+async def cb_exoscale_server_add(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await state.clear()
+    await state.update_data(account_id=account_id)
+    await state.set_state(ExoscaleVMCreateStates.choosing_zone)
+    await _render_create_page(
+        callback, lang, texts.exoscale_create_choose_zone_text, _exoscale_zone_options(), 0, "excreate:zonepage", "excreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("excreate:zonepage:"), ExoscaleVMCreateStates.choosing_zone)
+async def cb_exoscale_create_zone_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.exoscale_create_choose_zone_text, _exoscale_zone_options(), page, "excreate:zonepage", "excreate:cancel",
+    )
+
+
+@router.callback_query(F.data == "excreate:cancel", StateFilter(ExoscaleVMCreateStates))
+async def cb_exoscale_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account_id = data.get("account_id")
+    await state.clear()
+    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
+    await callback.answer()
+    if not account:
+        await _show_provider_list(callback, lang)
+        return
+    await _show_exoscale_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("excreate:zone:"), ExoscaleVMCreateStates.choosing_zone)
+async def cb_exoscale_create_pick_zone(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    zone_id, _ = EXOSCALE_ZONES[index]
+    data = await state.get_data()
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        types_ = await exoscale_list_instance_types(_exoscale_creds(account), zone_id)
+    except ExoscaleAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    type_dicts = [{"id": t.id, "family": t.family, "size": t.size, "cpus": t.cpus, "memory": t.memory} for t in types_]
+    await state.update_data(zone=zone_id, zone_display=texts.exoscale_zone_display(zone_id), types=type_dicts)
+    await state.set_state(ExoscaleVMCreateStates.choosing_type)
+    await _render_create_page(
+        callback, lang, texts.exoscale_create_choose_type_text, _exoscale_type_options(type_dicts), 0, "excreate:typepage", "excreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("excreate:typepage:"), ExoscaleVMCreateStates.choosing_type)
+async def cb_exoscale_create_type_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.exoscale_create_choose_type_text, _exoscale_type_options(data["types"]), page, "excreate:typepage", "excreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("excreate:type:"), ExoscaleVMCreateStates.choosing_type)
+async def cb_exoscale_create_pick_type(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    type_ = data["types"][index]
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        templates = await exoscale_list_templates(_exoscale_creds(account), data["zone"])
+    except ExoscaleAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    template_dicts = [{"id": tpl.id, "name": tpl.name} for tpl in templates]
+    await state.update_data(
+        instance_type_id=type_["id"],
+        instance_type_label=f"{type_['family']}.{type_['size']}",
+        templates=template_dicts,
+    )
+    await state.set_state(ExoscaleVMCreateStates.choosing_template)
+    await _render_create_page(
+        callback, lang, texts.exoscale_create_choose_template_text, _exoscale_template_options(template_dicts),
+        0, "excreate:tmplpage", "excreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("excreate:tmplpage:"), ExoscaleVMCreateStates.choosing_template)
+async def cb_exoscale_create_template_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, lang, texts.exoscale_create_choose_template_text, _exoscale_template_options(data["templates"]),
+        page, "excreate:tmplpage", "excreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("excreate:tmpl:"), ExoscaleVMCreateStates.choosing_template)
+async def cb_exoscale_create_pick_template(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    template = data["templates"][index]
+    await state.update_data(template_id=template["id"], template_label=template["name"])
+    await state.set_state(ExoscaleVMCreateStates.waiting_hostname)
+    await callback.message.edit_text(
+        texts.exoscale_create_waiting_hostname_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.message(ExoscaleVMCreateStates.waiting_hostname)
+async def process_exoscale_hostname(message: Message, state: FSMContext, lang: str) -> None:
+    hostname = message.text.strip() if message.text else ""
+    if not hostname or not HOSTNAME_RE.match(hostname) or len(hostname) > 63:
+        await message.answer(
+            texts.exoscale_create_invalid_hostname_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
+        )
+        return
+
+    await state.update_data(hostname=hostname)
+    await state.set_state(ExoscaleVMCreateStates.choosing_auth_method)
+    await message.answer(
+        texts.exoscale_create_choose_auth_method_text(lang), reply_markup=exoscale_create_auth_method_keyboard(lang)
+    )
+
+
+async def _show_exoscale_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.set_state(ExoscaleVMCreateStates.confirming)
+    auth_method = "key" if data.get("ssh_public_key") else "password"
+    await target_message.answer(
+        texts.exoscale_create_confirm_text(
+            lang, data["hostname"], data["zone_display"], data["instance_type_label"], data["template_label"], auth_method,
+        ),
+        reply_markup=exoscale_create_confirm_keyboard(lang),
+    )
+
+
+@router.callback_query(F.data == "excreate:auth:password", ExoscaleVMCreateStates.choosing_auth_method)
+async def cb_exoscale_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.update_data(ssh_public_key=None)
+    await _show_exoscale_create_confirmation(callback.message, state, lang)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "excreate:auth:key", ExoscaleVMCreateStates.choosing_auth_method)
+async def cb_exoscale_create_choose_key_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.set_state(ExoscaleVMCreateStates.waiting_ssh_key)
+    await callback.message.edit_text(
+        texts.exoscale_create_waiting_ssh_key_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.message(ExoscaleVMCreateStates.waiting_ssh_key)
+async def process_exoscale_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
+    public_key = message.text.strip() if message.text else ""
+    if not _is_valid_ssh_public_key(public_key):
+        await message.answer(
+            texts.exoscale_create_invalid_ssh_key_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
+        )
+        return
+    await state.update_data(ssh_public_key=public_key)
+    await _show_exoscale_create_confirmation(message, state, lang)
+
+
+@router.callback_query(F.data == "excreate:confirm", ExoscaleVMCreateStates.confirming)
+async def cb_exoscale_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+
+    status_message = callback.message
+    await status_message.edit_text(texts.exoscale_progress_text(lang, "server"))
+
+    async def progress(step: str) -> None:
+        try:
+            await status_message.edit_text(texts.exoscale_progress_text(lang, step))
+        except Exception:
+            pass
+
+    ssh_public_key = data.get("ssh_public_key")
+    try:
+        server = await exoscale_create_server(
+            _exoscale_creds(account),
+            data["zone"],
+            name=data["hostname"],
+            instance_type_id=data["instance_type_id"],
+            template_id=data["template_id"],
+            ssh_public_key=ssh_public_key,
+            progress=progress,
+        )
+    except ExoscaleAPIError as exc:
+        await state.clear()
+        await status_message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    if server.password:
+        # Exoscale's revealed password is only available for ~24h, so keep
+        # our own copy to let the user look it up again later.
+        await cloud_store.set_vm_secret(callback.from_user.id, data["account_id"], server.id, server.password)
+
+    await state.clear()
+    await status_message.edit_text(
+        texts.exoscale_create_success_text(lang, server, ssh_key_used=bool(ssh_public_key)),
+        reply_markup=exoscale_server_detail_keyboard(lang, data["account_id"], server),
     )

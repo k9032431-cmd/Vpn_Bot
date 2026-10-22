@@ -6,8 +6,8 @@ import re
 from .premium_emoji import e
 from .translations import t
 
-PROVIDERS = ("upcloud", "aws", "azure", "hetzner", "linode", "kamatera")
-ACTIVE_PROVIDERS = ("upcloud", "azure", "hetzner")
+PROVIDERS = ("upcloud", "aws", "azure", "hetzner", "exoscale", "linode", "kamatera")
+ACTIVE_PROVIDERS = ("upcloud", "azure", "hetzner", "exoscale")
 
 _STATE_EMOJI = {
     "started": "🟢",
@@ -26,7 +26,8 @@ _CLOUD_ERR_KEYS = {
 
 
 _PROVIDER_TITLES = {
-    "upcloud": "UpCloud", "aws": "AWS", "azure": "Azure", "hetzner": "Hetzner", "linode": "Linode", "kamatera": "Kamatera",
+    "upcloud": "UpCloud", "aws": "AWS", "azure": "Azure", "hetzner": "Hetzner", "exoscale": "Exoscale",
+    "linode": "Linode", "kamatera": "Kamatera",
 }
 
 # UpCloud zone ids follow "<country>-<city><n>" (e.g. "us-nyc1") — the city
@@ -105,9 +106,13 @@ def account_list_text(lang: str, provider: str, accounts: list[dict]) -> str:
 
 def account_display_name(account: dict) -> str:
     """UpCloud accounts are identified by username; Azure accounts have no
-    single "login" — the subscription id is the closest equivalent."""
+    single "login" — the subscription id is the closest equivalent; Hetzner
+    and Exoscale are token/key-based — the API key (not the secret) is the
+    closest equivalent, same idea as a username."""
     if account["provider"] == "azure":
         return account.get("subscription_id", "")
+    if account["provider"] == "exoscale":
+        return account.get("key", "")
     return account.get("username", "")
 
 
@@ -1141,4 +1146,163 @@ def hetzner_free_ips_deleted_text(lang: str, deleted_count: int, failed_ips: lis
     return t(
         lang, "hetzner_free_ips_deleted_partial",
         icon=e("warning", "⚠️"), deleted=deleted_count, failed=", ".join(failed_ips),
+    )
+
+
+# --- Exoscale ---
+
+_EXOSCALE_STATUS_EMOJI = {
+    "running": "🟢",
+    "stopped": "🔴",
+    "starting": "🚧",
+    "stopping": "🚧",
+    "rebooting": "🚧",
+    "migrating": "🚧",
+    "destroying": "🚧",
+}
+
+_EXOSCALE_ZONE_CITY_NAMES = {
+    "ch-gva-2": "Geneva",
+    "ch-dk-2": "Zurich",
+    "de-fra-1": "Frankfurt",
+    "de-muc-1": "Munich",
+    "at-vie-1": "Vienna",
+    "at-vie-2": "Vienna",
+    "bg-sof-1": "Sofia",
+    "hr-zag-1": "Zagreb",
+}
+
+
+def exoscale_memory_display(memory: int) -> str:
+    # Exoscale's own API reference doesn't document the "memory" field's
+    # unit -- treated as MB here, the same convention UpCloud's API uses,
+    # since Exoscale's docs give no reason to assume otherwise.
+    return _format_memory(memory)
+
+
+def exoscale_zone_display(zone_id: str) -> str:
+    country_code = zone_id.split("-", 1)[0] if "-" in zone_id else ""
+    flag = _flag_emoji(country_code)
+    city = _EXOSCALE_ZONE_CITY_NAMES.get(zone_id, zone_id)
+    return f"{flag} {city} ({zone_id})"
+
+
+def exoscale_step_key_text(lang: str) -> str:
+    return t(lang, "exoscale_step_key")
+
+
+def exoscale_step_secret_text(lang: str) -> str:
+    return t(lang, "exoscale_step_secret")
+
+
+def exoscale_empty_field_text(lang: str) -> str:
+    return t(lang, "exoscale_empty_field")
+
+
+def exoscale_account_dashboard_text(lang: str, account: dict) -> str:
+    return t(lang, "exoscale_account_dashboard", icon=e("exoscale", "🟧"))
+
+
+def exoscale_servers_header_text(lang: str, account: dict, has_servers: bool) -> str:
+    body_key = "cloud_servers_hint" if has_servers else "cloud_servers_empty"
+    return t(lang, "exoscale_servers_header", body=t(lang, body_key))
+
+
+def exoscale_server_list_label(server) -> str:
+    icon = _EXOSCALE_STATUS_EMOJI.get(server.state, "⚪️")
+    return f"{icon} {server.name}"
+
+
+def exoscale_server_detail_text(lang: str, server, stored_password: str | None = None) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
+    password_line = (
+        t(lang, "exoscale_server_detail_password_line", password=html.escape(stored_password))
+        if stored_password else ""
+    )
+    return t(
+        lang,
+        "exoscale_server_detail",
+        name=html.escape(server.name),
+        state=f"{_EXOSCALE_STATUS_EMOJI.get(server.state, '⚪️')} {server.state}",
+        zone=exoscale_zone_display(server.zone),
+        instance_type=server.instance_type_label or server.instance_type_id,
+        template=server.template_label or server.template_id,
+        ipv4=server.public_ip or no_ip,
+        password_line=password_line,
+    )
+
+
+def exoscale_server_delete_confirm_text(lang: str, server) -> str:
+    return t(lang, "exoscale_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
+
+
+def exoscale_create_choose_zone_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "exoscale_create_choose_zone", icon=e("exoscale", "🟧")) + _page_suffix(lang, page, total_pages)
+
+
+def exoscale_create_choose_type_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "exoscale_create_choose_type") + _page_suffix(lang, page, total_pages)
+
+
+def exoscale_create_choose_template_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "exoscale_create_choose_template") + _page_suffix(lang, page, total_pages)
+
+
+def exoscale_create_waiting_hostname_text(lang: str) -> str:
+    return t(lang, "exoscale_create_waiting_hostname")
+
+
+def exoscale_create_invalid_hostname_text(lang: str) -> str:
+    return t(lang, "exoscale_create_invalid_hostname")
+
+
+def exoscale_create_choose_auth_method_text(lang: str) -> str:
+    return t(lang, "exoscale_create_choose_auth_method")
+
+
+def exoscale_create_waiting_ssh_key_text(lang: str) -> str:
+    return t(lang, "exoscale_create_waiting_ssh_key")
+
+
+def exoscale_create_invalid_ssh_key_text(lang: str) -> str:
+    return t(lang, "exoscale_create_invalid_ssh_key")
+
+
+def exoscale_create_confirm_text(
+    lang: str, hostname: str, zone: str, type_label: str, template_label: str, auth_method: str
+) -> str:
+    auth_label = t(lang, "auth_method_key" if auth_method == "key" else "auth_method_password")
+    return t(
+        lang,
+        "exoscale_create_confirm",
+        hostname=html.escape(hostname),
+        zone=zone,
+        instance_type=type_label,
+        template=template_label,
+        auth_method=auth_label,
+    )
+
+
+def exoscale_progress_text(lang: str, step: str) -> str:
+    key = {
+        "ssh_key": "exoscale_progress_ssh_key",
+        "server": "exoscale_progress_server",
+        "provisioning": "exoscale_progress_provisioning",
+    }.get(step, "exoscale_progress_server")
+    return t(lang, key)
+
+
+def exoscale_create_success_text(lang: str, server, ssh_key_used: bool = False) -> str:
+    password_line = (
+        t(lang, "exoscale_server_detail_password_line", password=html.escape(server.password))
+        if server.password and not ssh_key_used else ""
+    )
+    return t(
+        lang,
+        "exoscale_create_success",
+        icon=e("success", "✅"),
+        name=html.escape(server.name),
+        zone=exoscale_zone_display(server.zone),
+        ip=server.public_ip or t(lang, "cloud_server_no_ip"),
+        password_line=password_line,
     )

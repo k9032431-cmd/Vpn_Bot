@@ -86,3 +86,19 @@ class HetznerIPCreateStates(StatesGroup):
 
 class HetznerIPAssignStates(StatesGroup):
     choosing_server = State()
+
+
+class ExoscaleSetupStates(StatesGroup):
+    waiting_key = State()
+    waiting_secret = State()
+    connecting = State()
+
+
+class ExoscaleVMCreateStates(StatesGroup):
+    choosing_zone = State()
+    choosing_type = State()
+    choosing_template = State()
+    waiting_hostname = State()
+    choosing_auth_method = State()
+    waiting_ssh_key = State()
+    confirming = State()

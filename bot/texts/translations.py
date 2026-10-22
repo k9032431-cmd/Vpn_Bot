@@ -1590,6 +1590,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_provider_aws": {"ru": "🟧 AWS (скоро)", "en": "🟧 AWS (soon)", "tk": "🟧 AWS (ýakynda)"},
     "btn_cloud_provider_azure": {"ru": "Azure", "en": "Azure", "tk": "Azure"},
     "btn_cloud_provider_hetzner": {"ru": "Hetzner", "en": "Hetzner", "tk": "Hetzner"},
+    "btn_cloud_provider_exoscale": {"ru": "Exoscale", "en": "Exoscale", "tk": "Exoscale"},
     "btn_cloud_provider_linode": {"ru": "🟩 Linode (скоро)", "en": "🟩 Linode (soon)", "tk": "🟩 Linode (ýakynda)"},
     "btn_cloud_provider_kamatera": {
         "ru": "🟪 Kamatera (скоро)",
@@ -2966,6 +2967,192 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": "🗑 Да, удалить все",
         "en": "🗑 Yes, delete all",
         "tk": "🗑 Hawa, ählisini poz",
+    },
+
+    # --- Exoscale ---
+
+    "exoscale_step_key": {
+        "ru": (
+            "🔑 <b>Подключение Exoscale</b>\n\n"
+            "Введите <b>API Key</b> — его можно создать в портале Exoscale: "
+            "IAM → API Keys → Add key."
+        ),
+        "en": (
+            "🔑 <b>Connect Exoscale</b>\n\n"
+            "Enter your <b>API Key</b> — create one in the Exoscale portal: "
+            "IAM → API Keys → Add key."
+        ),
+        "tk": (
+            "🔑 <b>Exoscale birikdirmek</b>\n\n"
+            "<b>API Key</b> giriziň — ony Exoscale portalynda döredip bolar: "
+            "IAM → API Keys → Add key."
+        ),
+    },
+    "exoscale_step_secret": {
+        "ru": "🔒 Теперь введите <b>Secret Key</b>, который был показан вместе с этим ключом (сообщение удалится сразу после отправки):",
+        "en": "🔒 Now enter the <b>Secret Key</b> shown together with that key (the message is deleted right after you send it):",
+        "tk": "🔒 Indi şol açar bilen görkezilen <b>Secret Key</b>-ni giriziň (habar iberilenden soň derrew pozulýar):",
+    },
+    "exoscale_empty_field": {
+        "ru": "Значение не может быть пустым. Попробуйте ещё раз:",
+        "en": "The value can't be empty. Try again:",
+        "tk": "Baha boş bolup bilmez. Gaýtadan synanyň:",
+    },
+    "exoscale_account_dashboard": {
+        "ru": "{icon} <b>Exoscale</b>",
+        "en": "{icon} <b>Exoscale</b>",
+        "tk": "{icon} <b>Exoscale</b>",
+    },
+    "exoscale_servers_header": {
+        "ru": "🖥 <b>Серверы Exoscale</b>\n\n{body}",
+        "en": "🖥 <b>Exoscale servers</b>\n\n{body}",
+        "tk": "🖥 <b>Exoscale serwerleri</b>\n\n{body}",
+    },
+    "exoscale_server_detail": {
+        "ru": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Статус: {state}\n"
+            "📍 Зона: {zone}\n"
+            "⚙️ Тип: {instance_type}\n"
+            "💿 Образ: {template}\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+        "en": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 State: {state}\n"
+            "📍 Zone: {zone}\n"
+            "⚙️ Type: {instance_type}\n"
+            "💿 Template: {template}\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+        "tk": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Ýagdaýy: {state}\n"
+            "📍 Zolak: {zone}\n"
+            "⚙️ Görnüşi: {instance_type}\n"
+            "💿 Şekili: {template}\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+    },
+    "exoscale_server_detail_password_line": {
+        "ru": "\n🔑 <b>Пароль:</b> <code>{password}</code>",
+        "en": "\n🔑 <b>Password:</b> <code>{password}</code>",
+        "tk": "\n🔑 <b>Parol:</b> <code>{password}</code>",
+    },
+    "exoscale_server_delete_confirm": {
+        "ru": "{icon} Удалить сервер <b>{name}</b>? Это необратимо — диск тоже будет удалён.",
+        "en": "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.",
+        "tk": "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.",
+    },
+    "exoscale_create_choose_zone": {
+        "ru": "{icon} <b>Новый сервер — шаг 1/5</b>\n\nВыберите зону:",
+        "en": "{icon} <b>New server — step 1/5</b>\n\nChoose a zone:",
+        "tk": "{icon} <b>Täze serwer — 1/5 ädim</b>\n\nZolagy saýlaň:",
+    },
+    "exoscale_create_choose_type": {
+        "ru": "⚙️ <b>Новый сервер — шаг 2/5</b>\n\nВыберите тарифный план (тип инстанса):",
+        "en": "⚙️ <b>New server — step 2/5</b>\n\nChoose a plan (instance type):",
+        "tk": "⚙️ <b>Täze serwer — 2/5 ädim</b>\n\nTarif meýilnamasyny (instans görnüşini) saýlaň:",
+    },
+    "exoscale_create_choose_template": {
+        "ru": "💿 <b>Новый сервер — шаг 3/5</b>\n\nВыберите операционную систему:",
+        "en": "💿 <b>New server — step 3/5</b>\n\nChoose an OS template:",
+        "tk": "💿 <b>Täze serwer — 3/5 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+    },
+    "exoscale_create_waiting_hostname": {
+        "ru": "✏️ <b>Новый сервер — шаг 4/5</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New server — step 4/5</b>\n\nEnter the server's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze serwer — 4/5 ädim</b>\n\nServeriň adyny giriziň (latyn harplary, sanlar, defisler):",
+    },
+    "exoscale_create_invalid_hostname": {
+        "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 63 символов). Попробуйте ещё раз:",
+        "en": "Invalid name. Use only Latin letters, digits and hyphens (up to 63 characters). Try again:",
+        "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (63 alamatdan köp däl). Gaýtadan synanyň:",
+    },
+    "exoscale_create_choose_auth_method": {
+        "ru": "🔐 <b>Новый сервер — шаг 5/5</b>\n\nКак вы будете заходить на сервер?",
+        "en": "🔐 <b>New server — step 5/5</b>\n\nHow will you log into the server?",
+        "tk": "🔐 <b>Täze serwer — 5/5 ädim</b>\n\nServere nädip girersiňiz?",
+    },
+    "exoscale_create_waiting_ssh_key": {
+        "ru": "🔑 Отправьте публичный SSH-ключ (строка, начинающаяся с <code>ssh-ed25519</code> или <code>ssh-rsa</code>):",
+        "en": "🔑 Send the public SSH key (a string starting with <code>ssh-ed25519</code> or <code>ssh-rsa</code>):",
+        "tk": "🔑 Public SSH açaryny iberiň (<code>ssh-ed25519</code> ýa-da <code>ssh-rsa</code> bilen başlanýan setir):",
+    },
+    "exoscale_create_invalid_ssh_key": {
+        "ru": "Это не похоже на публичный SSH-ключ. Попробуйте ещё раз:",
+        "en": "This doesn't look like a public SSH key. Try again:",
+        "tk": "Bu public SSH açaryna meňzänok. Gaýtadan synanyň:",
+    },
+    "exoscale_create_confirm": {
+        "ru": (
+            "✅ <b>Проверьте параметры сервера</b>\n\n"
+            "🖥 Имя: <code>{hostname}</code>\n"
+            "📍 Зона: {zone}\n"
+            "⚙️ Тип: {instance_type}\n"
+            "💿 ОС: {template}\n"
+            "🔐 Вход: {auth_method}\n\n"
+            "💰 Это создаст платный ресурс в Exoscale. Создать?"
+        ),
+        "en": (
+            "✅ <b>Review server parameters</b>\n\n"
+            "🖥 Name: <code>{hostname}</code>\n"
+            "📍 Zone: {zone}\n"
+            "⚙️ Type: {instance_type}\n"
+            "💿 OS: {template}\n"
+            "🔐 Login via: {auth_method}\n\n"
+            "💰 This will create a billable resource in Exoscale. Create it?"
+        ),
+        "tk": (
+            "✅ <b>Serweriň parametrlerini barlaň</b>\n\n"
+            "🖥 Ady: <code>{hostname}</code>\n"
+            "📍 Zolak: {zone}\n"
+            "⚙️ Görnüşi: {instance_type}\n"
+            "💿 OS: {template}\n"
+            "🔐 Giriş: {auth_method}\n\n"
+            "💰 Bu Exoscale-de tölegli resurs dörediler. Döredilsinmi?"
+        ),
+    },
+    "exoscale_progress_ssh_key": {
+        "ru": "⏳ Регистрируем SSH-ключ...",
+        "en": "⏳ Registering the SSH key...",
+        "tk": "⏳ SSH açary hasaba alynýar...",
+    },
+    "exoscale_progress_server": {
+        "ru": "⏳ Создаём сервер...",
+        "en": "⏳ Creating the server...",
+        "tk": "⏳ Serwer döredilýär...",
+    },
+    "exoscale_progress_provisioning": {
+        "ru": "⏳ Разворачиваем сервер...",
+        "en": "⏳ Provisioning the server...",
+        "tk": "⏳ Serwer taýýarlanylýar...",
+    },
+    "exoscale_create_success": {
+        "ru": (
+            "{icon} <b>Сервер создан!</b>\n\n"
+            "🖥 <b>Имя:</b> {name}\n"
+            "📍 <b>Зона:</b> {zone}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>"
+            "{password_line}"
+        ),
+        "en": (
+            "{icon} <b>Server created!</b>\n\n"
+            "🖥 <b>Name:</b> {name}\n"
+            "📍 <b>Zone:</b> {zone}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>"
+            "{password_line}"
+        ),
+        "tk": (
+            "{icon} <b>Serwer döredildi!</b>\n\n"
+            "🖥 <b>Ady:</b> {name}\n"
+            "📍 <b>Zolak:</b> {zone}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>"
+            "{password_line}"
+        ),
     },
 }
 
