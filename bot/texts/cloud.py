@@ -1203,9 +1203,15 @@ def exoscale_account_dashboard_text(lang: str, account: dict) -> str:
     return t(lang, "exoscale_account_dashboard", icon=e("exoscale", "🟧"))
 
 
-def exoscale_servers_header_text(lang: str, account: dict, has_servers: bool) -> str:
+def exoscale_servers_header_text(
+    lang: str, account: dict, has_servers: bool, failed_zones: list[tuple[str, str]] | None = None
+) -> str:
     body_key = "cloud_servers_hint" if has_servers else "cloud_servers_empty"
-    return t(lang, "exoscale_servers_header", body=t(lang, body_key))
+    body = t(lang, body_key)
+    if failed_zones:
+        lines = "\n".join(f"• {zone}: {_error_reason(lang, reason)}" for zone, reason in failed_zones)
+        body += "\n\n" + t(lang, "exoscale_zones_failed", icon=e("warning", "⚠️"), zones=lines)
+    return t(lang, "exoscale_servers_header", body=body)
 
 
 def exoscale_server_list_label(server) -> str:

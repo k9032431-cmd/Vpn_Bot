@@ -3008,6 +3008,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "🖥 <b>Exoscale servers</b>\n\n{body}",
         "tk": "🖥 <b>Exoscale serwerleri</b>\n\n{body}",
     },
+    "exoscale_zones_failed": {
+        "ru": "{icon} Не удалось получить список из части зон (серверы оттуда сейчас не показаны):\n{zones}",
+        "en": "{icon} Couldn't fetch the list from some zones (their servers aren't shown right now):\n{zones}",
+        "tk": "{icon} Käbir zolaklardan sanaw alynmady (olardaky serwerler häzir görkezilenok):\n{zones}",
+    },
     "exoscale_server_detail": {
         "ru": (
             "🖥 <b>{name}</b>\n\n"

@@ -728,15 +728,21 @@ async def _show_exoscale_servers(callback: CallbackQuery, lang: str, account: di
     )
     servers: list = []
     last_error: BaseException | None = None
+    failed_zones: list[tuple[str, str]] = []
     ok_count = 0
     for zone_tuple, result in zip(EXOSCALE_ZONES, results):
         if isinstance(result, BaseException):
             # One zone failing (unreachable, bad data, a parsing bug) must
             # not blank out servers the other zones returned fine -- only
             # a total failure across every zone (e.g. bad credentials,
-            # which fails identically everywhere) is worth surfacing.
+            # which fails identically everywhere) is worth surfacing as a
+            # hard error; a partial failure is shown inline instead, so the
+            # user (and we, from a screenshot) can see it without needing
+            # server-side log access.
+            reason = str(result) if isinstance(result, ExoscaleAPIError) else "bad_response"
             logging.getLogger(__name__).warning("Exoscale list-servers failed for zone %s: %r", zone_tuple[0], result)
             last_error = result
+            failed_zones.append((zone_tuple[0], reason))
             continue
         ok_count += 1
         servers.extend(result)
@@ -745,7 +751,7 @@ async def _show_exoscale_servers(callback: CallbackQuery, lang: str, account: di
         await callback.message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
         return
     await callback.message.edit_text(
-        texts.exoscale_servers_header_text(lang, account, bool(servers)),
+        texts.exoscale_servers_header_text(lang, account, bool(servers), failed_zones or None),
         reply_markup=exoscale_servers_list_keyboard(lang, account_id, servers),
     )
 
