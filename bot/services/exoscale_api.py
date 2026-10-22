@@ -7,7 +7,7 @@ import json as json_module
 import time
 from base64 import standard_b64encode
 from dataclasses import dataclass
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import aiohttp
 
@@ -130,8 +130,13 @@ async def _request(
     url = f"{base}{path}"
     if params:
         url += "?" + urlencode(params)
+    # The signed path is the request URL's actual path -- which includes
+    # the "/v2" base prefix -- not just the endpoint-relative `path` above;
+    # signing the wrong one produces a signature the real API rejects with
+    # a 401 even for correct credentials.
+    signed_path = urlparse(url).path
     headers = {
-        "Authorization": _sign_request(creds, method, path, params, body),
+        "Authorization": _sign_request(creds, method, signed_path, params, body),
         "Content-Type": "application/json",
     }
     try:
