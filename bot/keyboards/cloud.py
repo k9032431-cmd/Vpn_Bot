@@ -789,6 +789,13 @@ def hetzner_address_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def hetzner_buying_progress_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_hetzner_buying_stop"), callback_data="hzaddrcreate:stop", style="danger")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 # --- Hetzner: "bad" IP prefixes ---
 
 

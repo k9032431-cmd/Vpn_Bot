@@ -57,6 +57,7 @@ from bot.keyboards.cloud import (
     hetzner_addresses_menu_keyboard,
     hetzner_bad_prefix_cancel_keyboard,
     hetzner_bad_prefixes_keyboard,
+    hetzner_buying_progress_keyboard,
     hetzner_create_auth_method_keyboard,
     hetzner_create_cancel_keyboard,
     hetzner_create_confirm_keyboard,
@@ -4109,32 +4110,41 @@ async def process_hetzner_address_quantity(message: Message, state: FSMContext, 
     )
 
 
+_hetzner_buy_cancel_flags: set[int] = set()
+
+
 async def _hetzner_buy_filtered(
     creds: HetznerCredentials, create_fn, delete_fn, ip_type: str, location: str, quantity: int, bad_prefixes: list[str],
-    progress=None,
-) -> tuple[list, int, int]:
+    progress=None, cancel_check=None,
+) -> tuple[list, int, int, bool]:
     """Buys Primary/Floating IPs one at a time until `quantity` pass the
-    bad-prefix blocklist (or a generous attempt cap is hit, so an entirely
-    bad location can't loop forever) -- any purchase that lands on a
-    blocked prefix is deleted right away rather than left sitting there.
-    Each buy round-trip (plus a delete for a blocked one) takes a real
-    couple of seconds against Hetzner's API, and a heavily-filtered batch
-    can need many of them -- `progress`, if given, is awaited after every
-    attempt so the caller can show that it's still working rather than
-    looking frozen for however long that takes."""
+    bad-prefix blocklist -- any purchase that lands on a blocked prefix is
+    deleted right away rather than left sitting there. There is no attempt
+    cap: a heavily-filtered location is searched indefinitely, since only
+    the caller (via `cancel_check`, polled before every attempt) knows
+    when to give up. Each buy round-trip (plus a delete for a blocked one)
+    takes a real couple of seconds against Hetzner's API, and a heavily-
+    filtered batch can need many of them -- `progress`, if given, is
+    awaited after every attempt so the caller can show that it's still
+    working rather than looking frozen for however long that takes."""
     addresses: list = []
     failed_count = 0
     skipped_bad = 0
-    max_attempts = quantity + max(10, quantity * 3)
     attempts = 0
-    while len(addresses) < quantity and attempts < max_attempts:
+    cancelled = False
+    while len(addresses) < quantity:
+        if cancel_check and cancel_check():
+            cancelled = True
+            if progress:
+                await progress(len(addresses), quantity, skipped_bad, attempts, final=True)
+            break
         attempts += 1
         try:
             address = await create_fn(creds, ip_type, location)
         except HetznerAPIError:
             failed_count += 1
             if progress:
-                await progress(len(addresses), quantity, skipped_bad, attempts, max_attempts)
+                await progress(len(addresses), quantity, skipped_bad, attempts, final=False)
             continue
         if bad_prefixes and texts.ip_matches_any_prefix(address.ip, bad_prefixes):
             skipped_bad += 1
@@ -4143,12 +4153,12 @@ async def _hetzner_buy_filtered(
             except HetznerAPIError:
                 pass
             if progress:
-                await progress(len(addresses), quantity, skipped_bad, attempts, max_attempts)
+                await progress(len(addresses), quantity, skipped_bad, attempts, final=False)
             continue
         addresses.append(address)
         if progress:
-            await progress(len(addresses), quantity, skipped_bad, attempts, max_attempts)
-    return addresses, failed_count, skipped_bad
+            await progress(len(addresses), quantity, skipped_bad, attempts, final=len(addresses) >= quantity)
+    return addresses, failed_count, skipped_bad, cancelled
 
 
 @router.callback_query(F.data == "hzaddrcreate:confirm", HetznerIPCreateStates.confirming)
@@ -4169,10 +4179,14 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
     bad_prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, data["account_id"])
 
     status_message = callback.message
-    await status_message.edit_text(texts.hetzner_buying_progress_text(lang, 0, quantity, 0))
+    user_id = callback.from_user.id
+    _hetzner_buy_cancel_flags.discard(user_id)
+    await status_message.edit_text(
+        texts.hetzner_buying_progress_text(lang, 0, quantity, 0), reply_markup=hetzner_buying_progress_keyboard(lang)
+    )
     last_update = time.monotonic()
 
-    async def progress(done: int, total: int, skipped: int, attempt: int, max_attempts: int) -> None:
+    async def progress(done: int, total: int, skipped: int, attempt: int, final: bool = False) -> None:
         nonlocal last_update
         # A buy (+ a delete when it lands on a blocked prefix) is a real
         # API round-trip -- this can take a while for a heavily-filtered
@@ -4180,21 +4194,33 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
         # attempt count, to stay well clear of Telegram's edit rate limit
         # regardless of how fast or slow Hetzner is responding.
         now = time.monotonic()
-        if now - last_update < 1.5 and done < total and attempt < max_attempts:
+        if now - last_update < 1.5 and not final:
             return
         last_update = now
         try:
-            await status_message.edit_text(texts.hetzner_buying_progress_text(lang, done, total, skipped))
+            await status_message.edit_text(
+                texts.hetzner_buying_progress_text(lang, done, total, skipped),
+                reply_markup=hetzner_buying_progress_keyboard(lang),
+            )
         except Exception:
             pass
 
-    addresses, _attempt_failures, skipped_bad = await _hetzner_buy_filtered(
-        creds, create, delete_fn, data["ip_type"], data["location"], quantity, bad_prefixes, progress=progress
+    def cancel_check() -> bool:
+        return user_id in _hetzner_buy_cancel_flags
+
+    addresses, _attempt_failures, skipped_bad, cancelled = await _hetzner_buy_filtered(
+        creds, create, delete_fn, data["ip_type"], data["location"], quantity, bad_prefixes,
+        progress=progress, cancel_check=cancel_check,
     )
+    _hetzner_buy_cancel_flags.discard(user_id)
     await state.clear()
     kind_full = "primary" if kind == "p" else "floating"
     if not addresses:
-        if skipped_bad:
+        if cancelled:
+            await callback.message.edit_text(
+                texts.hetzner_buying_cancelled_text(lang, quantity, skipped_bad), reply_markup=cloud_error_keyboard(lang)
+            )
+        elif skipped_bad:
             await callback.message.edit_text(
                 texts.hetzner_buying_exhausted_text(lang, quantity, skipped_bad), reply_markup=cloud_error_keyboard(lang)
             )
@@ -4212,9 +4238,17 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
     # retried past isn't worth reporting as a failure.
     shortfall = max(0, quantity - len(addresses))
     await callback.message.edit_text(
-        texts.hetzner_address_bulk_created_text(lang, kind_full, addresses, shortfall, skipped_bad_count=skipped_bad),
+        texts.hetzner_address_bulk_created_text(
+            lang, kind_full, addresses, shortfall, skipped_bad_count=skipped_bad, cancelled=cancelled
+        ),
         reply_markup=hetzner_address_bulk_created_keyboard(lang, data["account_id"], kind_full),
     )
+
+
+@router.callback_query(F.data == "hzaddrcreate:stop")
+async def cb_hetzner_address_create_stop(callback: CallbackQuery, lang: str) -> None:
+    _hetzner_buy_cancel_flags.add(callback.from_user.id)
+    await callback.answer(texts.hetzner_buying_stop_requested_text(lang))
 
 
 # --- Exoscale: server list, detail, lifecycle actions ---

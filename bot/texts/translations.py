@@ -2941,6 +2941,26 @@ _STRINGS: dict[str, dict[str, str]] = {
             "Sanawdan käbir prefiksleri aýyryp ýa-da başga ýerleşişi saýlap görüň."
         ),
     },
+    "btn_hetzner_buying_stop": {
+        "ru": "⛔ Остановить поиск",
+        "en": "⛔ Stop searching",
+        "tk": "⛔ Gözlegi duruzmak",
+    },
+    "hetzner_buying_stop_requested": {
+        "ru": "Останавливаю... завершу текущую попытку и покажу итог.",
+        "en": "Stopping... finishing the current attempt and showing the result.",
+        "tk": "Duruzylýar... häzirki synanyşyk tamamlanyp, netije görkeziler.",
+    },
+    "hetzner_buying_cancelled_empty": {
+        "ru": "{icon} Поиск остановлен — ничего не куплено (пропущено плохих: {skipped}). Запрошено: {quantity} шт.",
+        "en": "{icon} Search stopped — nothing purchased (skipped {skipped} bad ones). Requested: {quantity}.",
+        "tk": "{icon} Gözleg duruzyldy — hiç zat satyn alynmady ({skipped} sany erbet geçirildi). Soralan: {quantity} sany.",
+    },
+    "hetzner_buying_stopped_note": {
+        "ru": "\n\n{icon} Поиск остановлен вручную, до запрошенного количества не докуплено.",
+        "en": "\n\n{icon} Search was stopped manually, short of the requested quantity.",
+        "tk": "\n\n{icon} Gözleg elde duruzyldy, soralan sana ýetilmedi.",
+    },
     "btn_hetzner_bad_prefixes": {
         "ru": "⚙️ Плохие префиксы",
         "en": "⚙️ Bad prefixes",

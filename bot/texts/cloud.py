@@ -1137,6 +1137,18 @@ def hetzner_buying_exhausted_text(lang: str, quantity: int, skipped_bad: int) ->
     return t(lang, "hetzner_buying_exhausted", icon=e("warning", "⚠️"), quantity=quantity, skipped=skipped_bad)
 
 
+def hetzner_buying_cancelled_text(lang: str, quantity: int, skipped_bad: int) -> str:
+    return t(lang, "hetzner_buying_cancelled_empty", icon=e("warning", "⚠️"), quantity=quantity, skipped=skipped_bad)
+
+
+def hetzner_buying_stopped_note(lang: str) -> str:
+    return t(lang, "hetzner_buying_stopped_note", icon=e("warning", "⚠️"))
+
+
+def hetzner_buying_stop_requested_text(lang: str) -> str:
+    return t(lang, "hetzner_buying_stop_requested")
+
+
 def hetzner_address_create_success_text(lang: str, kind: str, address, skipped_bad_count: int = 0) -> str:
     return t(
         lang,
@@ -1148,7 +1160,7 @@ def hetzner_address_create_success_text(lang: str, kind: str, address, skipped_b
 
 
 def hetzner_address_bulk_created_text(
-    lang: str, kind: str, addresses: list, failed_count: int, skipped_bad_count: int = 0
+    lang: str, kind: str, addresses: list, failed_count: int, skipped_bad_count: int = 0, cancelled: bool = False
 ) -> str:
     ip_list = "\n".join(f"<code>{addr.ip}</code>" for addr in addresses)
     if failed_count:
@@ -1170,7 +1182,8 @@ def hetzner_address_bulk_created_text(
             count=len(addresses),
             ip_list=ip_list,
         )
-    return text + hetzner_skipped_bad_note(lang, skipped_bad_count)
+    note = hetzner_buying_stopped_note(lang) if cancelled else ""
+    return text + hetzner_skipped_bad_note(lang, skipped_bad_count) + note
 
 
 def hetzner_address_assign_choose_server_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
