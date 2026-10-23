@@ -18,7 +18,7 @@ from bot.services.node_installer import install_marzban_node, install_pasarguard
 from bot.services.ssh_client import NodeInstallError, SSHTarget
 from bot.states.node_setup import NodeSetupStates
 from bot.texts import node as texts
-from bot.utils.messages import show_text
+from bot.utils.messages import advance_screen, show_text, track_prompt
 
 router = Router(name="node")
 
@@ -50,6 +50,7 @@ async def cb_node_choose_type(callback: CallbackQuery, state: FSMContext, lang: 
     await callback.message.edit_text(
         texts.step_ip_text(lang, node_type), reply_markup=cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -66,13 +67,13 @@ async def cb_cancel_setup(callback: CallbackQuery, state: FSMContext, lang: str)
 async def process_ip(message: Message, state: FSMContext, lang: str) -> None:
     host = message.text.strip() if message.text else ""
     if not _is_valid_host(host):
-        await message.answer(texts.invalid_host_text(lang), reply_markup=cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_host_text(lang), reply_markup=cancel_keyboard(lang))
         return
 
     data = await state.update_data(host=host)
     await state.set_state(NodeSetupStates.waiting_ssh_user)
-    await message.answer(
-        texts.step_ssh_user_text(lang, data["node_type"]), reply_markup=cancel_keyboard(lang)
+    await advance_screen(
+        message, state, texts.step_ssh_user_text(lang, data["node_type"]), reply_markup=cancel_keyboard(lang)
     )
 
 
@@ -80,7 +81,7 @@ async def process_ip(message: Message, state: FSMContext, lang: str) -> None:
 async def process_ssh_user(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
     if not SSH_USER_RE.match(username):
-        await message.answer(texts.invalid_ssh_user_text(lang), reply_markup=cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_ssh_user_text(lang), reply_markup=cancel_keyboard(lang))
         return
     await _ask_auth_method(message, state, lang, username)
 
@@ -88,14 +89,14 @@ async def process_ssh_user(message: Message, state: FSMContext, lang: str) -> No
 async def _ask_auth_method(target_message: Message, state: FSMContext, lang: str, username: str) -> None:
     data = await state.update_data(ssh_user=username)
     await state.set_state(NodeSetupStates.choosing_auth_method)
-    await target_message.answer(
-        texts.step_auth_method_text(lang, data["node_type"]), reply_markup=auth_method_keyboard(lang)
+    await advance_screen(
+        target_message, state, texts.step_auth_method_text(lang, data["node_type"]), reply_markup=auth_method_keyboard(lang)
     )
 
 
 @router.callback_query(NodeSetupStates.choosing_auth_method, F.data == "nodeauth:password")
 async def cb_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    await _ask_password(callback.message, state, lang)
+    await _ask_password(callback, state, lang)
     await callback.answer()
 
 
@@ -107,28 +108,25 @@ async def cb_choose_key_auth(callback: CallbackQuery, state: FSMContext, lang: s
         texts.step_ssh_key_text(lang, data["node_type"], data["ssh_user"]),
         reply_markup=cancel_keyboard(lang),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
-async def _ask_password(target_message: Message, state: FSMContext, lang: str) -> None:
+async def _ask_password(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.set_state(NodeSetupStates.waiting_ssh_password)
-    await target_message.answer(
+    await callback.message.edit_text(
         texts.step_password_text(lang, data["node_type"], data["ssh_user"]),
         reply_markup=cancel_keyboard(lang),
     )
+    await track_prompt(callback, state)
 
 
 @router.message(NodeSetupStates.waiting_ssh_password)
 async def process_ssh_password(message: Message, state: FSMContext, lang: str) -> None:
     password = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     if not password:
-        await message.answer(texts.empty_password_text(lang), reply_markup=cancel_keyboard(lang))
+        await advance_screen(message, state, texts.empty_password_text(lang), reply_markup=cancel_keyboard(lang))
         return
 
     await state.update_data(ssh_password=password)
@@ -138,13 +136,8 @@ async def process_ssh_password(message: Message, state: FSMContext, lang: str) -
 @router.message(NodeSetupStates.waiting_ssh_key)
 async def process_ssh_key(message: Message, state: FSMContext, lang: str) -> None:
     key = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     if "PRIVATE KEY" not in key:
-        await message.answer(texts.invalid_ssh_key_text(lang), reply_markup=cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_ssh_key_text(lang), reply_markup=cancel_keyboard(lang))
         return
 
     await state.update_data(ssh_key=key.strip())
@@ -155,7 +148,7 @@ async def _after_secret_collected(message: Message, state: FSMContext, lang: str
     data = await state.get_data()
     if data["node_type"] == "marzban":
         await state.set_state(NodeSetupStates.waiting_cert)
-        await message.answer(texts.ask_cert_text(lang), reply_markup=cancel_keyboard(lang))
+        await advance_screen(message, state, texts.ask_cert_text(lang), reply_markup=cancel_keyboard(lang))
     else:
         await _show_confirmation(message, state, lang)
 
@@ -176,7 +169,7 @@ async def process_cert_text(message: Message, state: FSMContext, lang: str) -> N
 async def _handle_cert_content(message: Message, state: FSMContext, lang: str, content: str) -> None:
     content = content.strip()
     if "BEGIN CERTIFICATE" not in content:
-        await message.answer(texts.invalid_cert_text(lang), reply_markup=cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_cert_text(lang), reply_markup=cancel_keyboard(lang))
         return
     await state.update_data(cert_pem=content)
     await _show_confirmation(message, state, lang)
@@ -186,7 +179,8 @@ async def _show_confirmation(message: Message, state: FSMContext, lang: str) -> 
     data = await state.get_data()
     await state.set_state(NodeSetupStates.confirming)
     auth_method = "key" if data.get("ssh_key") else "password"
-    await message.answer(
+    await advance_screen(
+        message, state,
         texts.confirmation_text(lang, data["node_type"], data["host"], data["ssh_user"], auth_method),
         reply_markup=confirm_install_keyboard(lang),
     )

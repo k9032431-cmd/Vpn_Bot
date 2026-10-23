@@ -203,7 +203,7 @@ from bot.states.cloud_setup import (
 )
 from bot.texts import cloud as texts
 from bot.texts.cloud import ACTIVE_PROVIDERS, PROVIDERS
-from bot.utils.messages import show_text
+from bot.utils.messages import advance_screen, show_screen, show_text, track_prompt
 
 router = Router(name="cloud")
 
@@ -336,6 +336,7 @@ async def cb_add_account(callback: CallbackQuery, state: FSMContext, lang: str) 
         await callback.message.edit_text(
             texts.azure_step_tenant_text(lang), reply_markup=cloud_cancel_keyboard(lang)
         )
+        await track_prompt(callback, state)
         await callback.answer()
         return
     if provider == "hetzner":
@@ -343,6 +344,7 @@ async def cb_add_account(callback: CallbackQuery, state: FSMContext, lang: str) 
         await callback.message.edit_text(
             texts.hetzner_step_token_text(lang), reply_markup=cloud_cancel_keyboard(lang)
         )
+        await track_prompt(callback, state)
         await callback.answer()
         return
     if provider == "exoscale":
@@ -350,12 +352,14 @@ async def cb_add_account(callback: CallbackQuery, state: FSMContext, lang: str) 
         await callback.message.edit_text(
             texts.exoscale_step_key_text(lang), reply_markup=cloud_cancel_keyboard(lang)
         )
+        await track_prompt(callback, state)
         await callback.answer()
         return
     await state.set_state(CloudSetupStates.waiting_username)
     await callback.message.edit_text(
         texts.step_username_text(lang, provider), reply_markup=cloud_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -372,49 +376,45 @@ async def cb_cancel_setup(callback: CallbackQuery, state: FSMContext, lang: str)
 async def process_azure_tenant(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text.strip() if message.text else ""
     if not value:
-        await message.answer(texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
     await state.update_data(tenant_id=value)
     await state.set_state(AzureSetupStates.waiting_client_id)
-    await message.answer(texts.azure_step_client_id_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+    await advance_screen(message, state, texts.azure_step_client_id_text(lang), reply_markup=cloud_cancel_keyboard(lang))
 
 
 @router.message(AzureSetupStates.waiting_client_id)
 async def process_azure_client_id(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text.strip() if message.text else ""
     if not value:
-        await message.answer(texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
     await state.update_data(client_id=value)
     await state.set_state(AzureSetupStates.waiting_client_secret)
-    await message.answer(texts.azure_step_client_secret_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+    await advance_screen(message, state, texts.azure_step_client_secret_text(lang), reply_markup=cloud_cancel_keyboard(lang))
 
 
 @router.message(AzureSetupStates.waiting_client_secret)
 async def process_azure_client_secret(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
     if not value:
-        await message.answer(texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
     await state.update_data(client_secret=value)
     await state.set_state(AzureSetupStates.waiting_subscription_id)
-    await message.answer(texts.azure_step_subscription_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+    await advance_screen(message, state, texts.azure_step_subscription_text(lang), reply_markup=cloud_cancel_keyboard(lang))
 
 
 @router.message(AzureSetupStates.waiting_subscription_id)
 async def process_azure_subscription(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text.strip() if message.text else ""
     if not value:
-        await message.answer(texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
 
     data = await state.update_data(subscription_id=value)
     await state.set_state(AzureSetupStates.connecting)
-    status_message = await message.answer(texts.connecting_text(lang))
+    status_message = await advance_screen(message, state, texts.connecting_text(lang))
 
     creds = AzureCredentials(
         tenant_id=data["tenant_id"],
@@ -455,16 +455,12 @@ async def process_azure_subscription(message: Message, state: FSMContext, lang: 
 @router.message(HetznerSetupStates.waiting_token)
 async def process_hetzner_token(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text.strip() if message.text else ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
     if not value:
-        await message.answer(texts.hetzner_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.hetzner_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
 
     await state.set_state(HetznerSetupStates.connecting)
-    status_message = await message.answer(texts.connecting_text(lang))
+    status_message = await advance_screen(message, state, texts.connecting_text(lang))
 
     creds = HetznerCredentials(token=value)
     try:
@@ -494,27 +490,23 @@ async def process_hetzner_token(message: Message, state: FSMContext, lang: str) 
 async def process_exoscale_key(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text.strip() if message.text else ""
     if not value:
-        await message.answer(texts.exoscale_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.exoscale_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
     await state.update_data(key=value)
     await state.set_state(ExoscaleSetupStates.waiting_secret)
-    await message.answer(texts.exoscale_step_secret_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+    await advance_screen(message, state, texts.exoscale_step_secret_text(lang), reply_markup=cloud_cancel_keyboard(lang))
 
 
 @router.message(ExoscaleSetupStates.waiting_secret)
 async def process_exoscale_secret(message: Message, state: FSMContext, lang: str) -> None:
     value = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
     if not value:
-        await message.answer(texts.exoscale_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.exoscale_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
 
     data = await state.update_data(secret=value)
     await state.set_state(ExoscaleSetupStates.connecting)
-    status_message = await message.answer(texts.connecting_text(lang))
+    status_message = await advance_screen(message, state, texts.connecting_text(lang))
 
     creds = ExoscaleCredentials(key=data["key"], secret=value)
     try:
@@ -544,28 +536,26 @@ async def process_exoscale_secret(message: Message, state: FSMContext, lang: str
 async def process_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
     if not username:
-        await message.answer(texts.step_username_text(lang, (await state.get_data())["provider"]))
+        await advance_screen(
+            message, state, texts.step_username_text(lang, (await state.get_data())["provider"]),
+            reply_markup=cloud_cancel_keyboard(lang),
+        )
         return
     await state.update_data(username=username)
     await state.set_state(CloudSetupStates.waiting_password)
-    await message.answer(texts.step_password_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+    await advance_screen(message, state, texts.step_password_text(lang), reply_markup=cloud_cancel_keyboard(lang))
 
 
 @router.message(CloudSetupStates.waiting_password)
 async def process_password(message: Message, state: FSMContext, lang: str) -> None:
     password = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     if not password:
-        await message.answer(texts.empty_password_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.empty_password_text(lang), reply_markup=cloud_cancel_keyboard(lang))
         return
 
     data = await state.update_data(password=password)
     await state.set_state(CloudSetupStates.connecting)
-    status_message = await message.answer(texts.connecting_text(lang))
+    status_message = await advance_screen(message, state, texts.connecting_text(lang))
 
     try:
         await _login(data["provider"], data["username"], password)
@@ -888,6 +878,7 @@ def _template_options(templates: list[dict]) -> list[tuple[str, str]]:
 
 async def _render_create_page(
     callback: CallbackQuery,
+    state: FSMContext,
     lang: str,
     header_fn,
     options: list[tuple[str, str]],
@@ -901,6 +892,11 @@ async def _render_create_page(
         header_fn(lang, page, total_pages),
         reply_markup=paginated_pick_keyboard(lang, options, page, nav_prefix, cancel_callback),
     )
+    # Every create wizard eventually hands off to a typed step (hostname,
+    # at minimum) -- tracking this here on every call (not just the first)
+    # means whichever step turns out to be the last callback-only one
+    # before that handoff doesn't need to remember to track it itself.
+    await track_prompt(callback, state)
 
 
 @router.callback_query(F.data.startswith("csrv:add:"))
@@ -922,7 +918,7 @@ async def cb_server_add(callback: CallbackQuery, state: FSMContext, lang: str) -
     zone_dicts = [{"id": z.id, "description": z.description} for z in zones]
     await state.update_data(account_id=account_id, zones=zone_dicts)
     await state.set_state(CloudServerCreateStates.choosing_zone)
-    await _render_create_page(callback, lang, texts.create_choose_zone_text, _zone_options(zone_dicts), 0, "ccreate:zonepage")
+    await _render_create_page(callback, state, lang, texts.create_choose_zone_text, _zone_options(zone_dicts), 0, "ccreate:zonepage")
 
 
 @router.callback_query(F.data.startswith("ccreate:zonepage:"), CloudServerCreateStates.choosing_zone)
@@ -930,7 +926,7 @@ async def cb_create_zone_page(callback: CallbackQuery, state: FSMContext, lang: 
     page = int(callback.data.split(":", 2)[2])
     data = await state.get_data()
     await callback.answer()
-    await _render_create_page(callback, lang, texts.create_choose_zone_text, _zone_options(data["zones"]), page, "ccreate:zonepage")
+    await _render_create_page(callback, state, lang, texts.create_choose_zone_text, _zone_options(data["zones"]), page, "ccreate:zonepage")
 
 
 @router.callback_query(F.data == "ccreate:cancel", StateFilter(CloudServerCreateStates))
@@ -967,7 +963,7 @@ async def cb_create_pick_zone(callback: CallbackQuery, state: FSMContext, lang: 
     plan_dicts = [{"name": p.name, "core_number": p.core_number, "memory_amount": p.memory_amount} for p in plans]
     await state.update_data(zone=zone["id"], plans=plan_dicts)
     await state.set_state(CloudServerCreateStates.choosing_plan)
-    await _render_create_page(callback, lang, texts.create_choose_plan_text, _plan_options(plan_dicts), 0, "ccreate:planpage")
+    await _render_create_page(callback, state, lang, texts.create_choose_plan_text, _plan_options(plan_dicts), 0, "ccreate:planpage")
 
 
 @router.callback_query(F.data.startswith("ccreate:planpage:"), CloudServerCreateStates.choosing_plan)
@@ -975,7 +971,7 @@ async def cb_create_plan_page(callback: CallbackQuery, state: FSMContext, lang: 
     page = int(callback.data.split(":", 2)[2])
     data = await state.get_data()
     await callback.answer()
-    await _render_create_page(callback, lang, texts.create_choose_plan_text, _plan_options(data["plans"]), page, "ccreate:planpage")
+    await _render_create_page(callback, state, lang, texts.create_choose_plan_text, _plan_options(data["plans"]), page, "ccreate:planpage")
 
 
 @router.callback_query(F.data.startswith("ccreate:plan:"), CloudServerCreateStates.choosing_plan)
@@ -1000,7 +996,7 @@ async def cb_create_pick_plan(callback: CallbackQuery, state: FSMContext, lang: 
     await state.update_data(plan=plan["name"], templates=template_dicts)
     await state.set_state(CloudServerCreateStates.choosing_template)
     await _render_create_page(
-        callback, lang, texts.create_choose_template_text, _template_options(template_dicts), 0, "ccreate:tmplpage"
+        callback, state, lang, texts.create_choose_template_text, _template_options(template_dicts), 0, "ccreate:tmplpage"
     )
 
 
@@ -1010,7 +1006,7 @@ async def cb_create_template_page(callback: CallbackQuery, state: FSMContext, la
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.create_choose_template_text, _template_options(data["templates"]), page, "ccreate:tmplpage"
+        callback, state, lang, texts.create_choose_template_text, _template_options(data["templates"]), page, "ccreate:tmplpage"
     )
 
 
@@ -1022,6 +1018,7 @@ async def cb_create_pick_template(callback: CallbackQuery, state: FSMContext, la
     await state.update_data(template_uuid=template["uuid"], template_title=template["title"])
     await state.set_state(CloudServerCreateStates.waiting_hostname)
     await callback.message.edit_text(texts.create_waiting_hostname_text(lang), reply_markup=create_cancel_keyboard(lang))
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1029,20 +1026,20 @@ async def cb_create_pick_template(callback: CallbackQuery, state: FSMContext, la
 async def process_hostname(message: Message, state: FSMContext, lang: str) -> None:
     hostname = message.text.strip() if message.text else ""
     if not hostname or not HOSTNAME_RE.match(hostname) or len(hostname) > 253:
-        await message.answer(texts.create_invalid_hostname_text(lang), reply_markup=create_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.create_invalid_hostname_text(lang), reply_markup=create_cancel_keyboard(lang))
         return
 
     await state.update_data(hostname=hostname)
     await state.set_state(CloudServerCreateStates.choosing_auth_method)
-    await message.answer(
-        texts.create_choose_auth_method_text(lang), reply_markup=create_auth_method_keyboard(lang)
+    await advance_screen(
+        message, state, texts.create_choose_auth_method_text(lang), reply_markup=create_auth_method_keyboard(lang)
     )
 
 
 @router.callback_query(F.data == "ccreate:auth:password", CloudServerCreateStates.choosing_auth_method)
 async def cb_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(ssh_public_key=None)
-    await _show_create_confirmation(callback.message, state, lang)
+    await _show_create_confirmation(callback, state, lang)
     await callback.answer()
 
 
@@ -1052,6 +1049,7 @@ async def cb_create_choose_key_auth(callback: CallbackQuery, state: FSMContext, 
     await callback.message.edit_text(
         texts.create_waiting_ssh_key_text(lang), reply_markup=create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1059,18 +1057,19 @@ async def cb_create_choose_key_auth(callback: CallbackQuery, state: FSMContext, 
 async def process_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
     public_key = message.text.strip() if message.text else ""
     if not _is_valid_ssh_public_key(public_key):
-        await message.answer(texts.create_invalid_ssh_key_text(lang), reply_markup=create_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.create_invalid_ssh_key_text(lang), reply_markup=create_cancel_keyboard(lang))
         return
 
     await state.update_data(ssh_public_key=public_key)
     await _show_create_confirmation(message, state, lang)
 
 
-async def _show_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+async def _show_create_confirmation(source, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.set_state(CloudServerCreateStates.confirming)
     auth_method = "key" if data.get("ssh_public_key") else "password"
-    await target_message.answer(
+    await show_screen(
+        source, state,
         texts.create_confirm_text(lang, data["hostname"], data["zone"], data["plan"], data["template_title"], auth_method),
         reply_markup=create_confirm_keyboard(lang),
     )
@@ -1149,7 +1148,7 @@ async def cb_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -
     options = [(name, f"cplan:pick:{i}") for i, name in enumerate(plan_names)]
     await _render_create_page(
         callback,
-        lang,
+        state, lang,
         lambda plan_lang, page, total: texts.plan_choose_text(plan_lang, server.plan, page, total),
         options,
         0,
@@ -1166,7 +1165,7 @@ async def cb_plan_page(callback: CallbackQuery, state: FSMContext, lang: str) ->
     options = [(name, f"cplan:pick:{i}") for i, name in enumerate(data["plans"])]
     await _render_create_page(
         callback,
-        lang,
+        state, lang,
         lambda plan_lang, p, total: texts.plan_choose_text(plan_lang, data["current_plan"], p, total),
         options,
         page,
@@ -1307,6 +1306,7 @@ async def cb_storage_add(callback: CallbackQuery, state: FSMContext, lang: str) 
     await callback.message.edit_text(
         texts.storage_waiting_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_attach")
     )
+    await track_prompt(callback, state)
 
 
 @router.callback_query(F.data == "csto:cancel_attach", StateFilter(CloudDiskStates))
@@ -1324,13 +1324,16 @@ async def cb_storage_add_cancel(callback: CallbackQuery, state: FSMContext, lang
 async def process_disk_size(message: Message, state: FSMContext, lang: str) -> None:
     raw = message.text.strip() if message.text else ""
     if not raw.isdigit() or not (10 <= int(raw) <= 4096):
-        await message.answer(
-            texts.storage_invalid_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_attach")
+        await advance_screen(
+            message, state,
+            texts.storage_invalid_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_attach"),
         )
         return
     await state.update_data(size=int(raw))
     await state.set_state(CloudDiskStates.confirming_attach)
-    await message.answer(texts.storage_confirm_attach_text(lang, int(raw)), reply_markup=storage_attach_confirm_keyboard(lang))
+    await advance_screen(
+        message, state, texts.storage_confirm_attach_text(lang, int(raw)), reply_markup=storage_attach_confirm_keyboard(lang)
+    )
 
 
 @router.callback_query(F.data == "csto:confirm_attach", CloudDiskStates.confirming_attach)
@@ -1389,6 +1392,7 @@ async def cb_storage_resize_ask(callback: CallbackQuery, state: FSMContext, lang
     )
     await state.set_state(CloudDiskStates.waiting_resize_size)
     await callback.answer()
+    await track_prompt(callback, state)
     await callback.message.edit_text(
         texts.storage_waiting_resize_text(lang, storage.size),
         reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_resize"),
@@ -1421,13 +1425,15 @@ async def process_disk_resize(message: Message, state: FSMContext, lang: str) ->
     data = await state.get_data()
     raw = message.text.strip() if message.text else ""
     if not raw.isdigit() or not (data["current_size"] < int(raw) <= 10240):
-        await message.answer(
-            texts.storage_invalid_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_resize")
+        await advance_screen(
+            message, state,
+            texts.storage_invalid_size_text(lang), reply_markup=storage_wizard_cancel_keyboard(lang, "csto:cancel_resize"),
         )
         return
     await state.update_data(new_size=int(raw))
     await state.set_state(CloudDiskStates.confirming_resize)
-    await message.answer(
+    await advance_screen(
+        message, state,
         texts.storage_confirm_resize_text(lang, data["storage_title"], data["current_size"], int(raw)),
         reply_markup=storage_resize_confirm_keyboard(lang),
     )
@@ -2061,7 +2067,7 @@ async def cb_azure_vm_add(callback: CallbackQuery, state: FSMContext, lang: str)
     await state.update_data(account_id=account_id, locations=location_dicts)
     await state.set_state(AzureVMCreateStates.choosing_location)
     await _render_create_page(
-        callback, lang, texts.azure_create_choose_location_text, _azure_location_options(location_dicts),
+        callback, state, lang, texts.azure_create_choose_location_text, _azure_location_options(location_dicts),
         0, "azcreate:locpage", "azcreate:cancel",
     )
 
@@ -2072,7 +2078,7 @@ async def cb_azure_create_location_page(callback: CallbackQuery, state: FSMConte
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.azure_create_choose_location_text, _azure_location_options(data["locations"]),
+        callback, state, lang, texts.azure_create_choose_location_text, _azure_location_options(data["locations"]),
         page, "azcreate:locpage", "azcreate:cancel",
     )
 
@@ -2115,7 +2121,7 @@ async def cb_azure_create_pick_location(callback: CallbackQuery, state: FSMConte
     await state.update_data(location=location["name"], location_display=location["display_name"], sizes=size_dicts)
     await state.set_state(AzureVMCreateStates.choosing_size)
     await _render_create_page(
-        callback, lang, texts.azure_create_choose_size_text, _azure_size_options(size_dicts),
+        callback, state, lang, texts.azure_create_choose_size_text, _azure_size_options(size_dicts),
         0, "azcreate:sizepage", "azcreate:cancel",
     )
 
@@ -2126,7 +2132,7 @@ async def cb_azure_create_size_page(callback: CallbackQuery, state: FSMContext, 
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.azure_create_choose_size_text, _azure_size_options(data["sizes"]),
+        callback, state, lang, texts.azure_create_choose_size_text, _azure_size_options(data["sizes"]),
         page, "azcreate:sizepage", "azcreate:cancel",
     )
 
@@ -2140,7 +2146,7 @@ async def _show_azure_image_step(callback: CallbackQuery, state: FSMContext, lan
     await state.update_data(images=image_dicts)
     await state.set_state(AzureVMCreateStates.choosing_image)
     await _render_create_page(
-        callback, lang, texts.azure_create_choose_image_text, _azure_image_options(image_dicts),
+        callback, state, lang, texts.azure_create_choose_image_text, _azure_image_options(image_dicts),
         0, "azcreate:imgpage", "azcreate:cancel",
     )
 
@@ -2184,7 +2190,7 @@ async def cb_azure_create_image_page(callback: CallbackQuery, state: FSMContext,
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.azure_create_choose_image_text, _azure_image_options(data["images"]),
+        callback, state, lang, texts.azure_create_choose_image_text, _azure_image_options(data["images"]),
         page, "azcreate:imgpage", "azcreate:cancel",
     )
 
@@ -2199,6 +2205,7 @@ async def cb_azure_create_pick_image(callback: CallbackQuery, state: FSMContext,
     await callback.message.edit_text(
         texts.azure_create_waiting_hostname_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -2206,13 +2213,13 @@ async def cb_azure_create_pick_image(callback: CallbackQuery, state: FSMContext,
 async def process_azure_hostname(message: Message, state: FSMContext, lang: str) -> None:
     hostname = message.text.strip() if message.text else ""
     if not hostname or not AZURE_VM_NAME_RE.match(hostname) or len(hostname) > 64:
-        await message.answer(texts.azure_create_invalid_hostname_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_create_invalid_hostname_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
         return
 
     await state.update_data(hostname=hostname)
     await state.set_state(AzureVMCreateStates.waiting_username)
-    await message.answer(
-        texts.azure_create_waiting_username_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
+    await advance_screen(
+        message, state, texts.azure_create_waiting_username_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
     )
 
 
@@ -2220,13 +2227,13 @@ async def process_azure_hostname(message: Message, state: FSMContext, lang: str)
 async def process_azure_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
     if not is_valid_azure_username(username):
-        await message.answer(texts.azure_create_invalid_username_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_create_invalid_username_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
         return
 
     await state.update_data(admin_username=username)
     await state.set_state(AzureVMCreateStates.choosing_auth_method)
-    await message.answer(
-        texts.azure_create_choose_auth_method_text(lang), reply_markup=azure_create_auth_method_keyboard(lang)
+    await advance_screen(
+        message, state, texts.azure_create_choose_auth_method_text(lang), reply_markup=azure_create_auth_method_keyboard(lang)
     )
 
 
@@ -2243,7 +2250,7 @@ async def cb_azure_create_choose_password_auth(callback: CallbackQuery, state: F
 @router.callback_query(F.data == "azcreate:pwmode:generate", AzureVMCreateStates.choosing_password_mode)
 async def cb_azure_create_password_generate(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(custom_password=None)
-    await _show_azure_create_confirmation(callback.message, state, lang)
+    await _show_azure_create_confirmation(callback, state, lang)
     await callback.answer()
 
 
@@ -2253,20 +2260,17 @@ async def cb_azure_create_password_custom(callback: CallbackQuery, state: FSMCon
     await callback.message.edit_text(
         texts.azure_create_waiting_custom_password_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
 @router.message(AzureVMCreateStates.waiting_custom_password)
 async def process_azure_custom_password(message: Message, state: FSMContext, lang: str) -> None:
     password = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     if not (12 <= len(password) <= 72):
-        await message.answer(
-            texts.azure_create_invalid_custom_password_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
+        await advance_screen(
+            message, state,
+            texts.azure_create_invalid_custom_password_text(lang), reply_markup=azure_create_cancel_keyboard(lang),
         )
         return
 
@@ -2280,6 +2284,7 @@ async def cb_azure_create_choose_key_auth(callback: CallbackQuery, state: FSMCon
     await callback.message.edit_text(
         texts.azure_create_waiting_ssh_key_text(lang), reply_markup=azure_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -2287,19 +2292,20 @@ async def cb_azure_create_choose_key_auth(callback: CallbackQuery, state: FSMCon
 async def process_azure_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
     public_key = message.text.strip() if message.text else ""
     if not _is_valid_ssh_public_key(public_key):
-        await message.answer(texts.azure_create_invalid_ssh_key_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.azure_create_invalid_ssh_key_text(lang), reply_markup=azure_create_cancel_keyboard(lang))
         return
 
     await state.update_data(ssh_public_key=public_key)
     await _show_azure_create_confirmation(message, state, lang)
 
 
-async def _show_azure_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+async def _show_azure_create_confirmation(source, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.set_state(AzureVMCreateStates.confirming)
     image = next(img for img in data["images"] if img["key"] == data["image_key"])
     auth_method = "key" if data.get("ssh_public_key") else "password"
-    await target_message.answer(
+    await show_screen(
+        source, state,
         texts.azure_create_confirm_text(
             lang, data["hostname"], data["location_display"], data["vm_size"], image["title"],
             data["admin_username"], auth_method, zone=data.get("zone"),
@@ -2362,7 +2368,7 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
             failed_size = failed_skus[0]
             await _render_create_page(
                 callback,
-                lang,
+                state, lang,
                 lambda l, p, tp, _size=failed_size: texts.azure_create_size_capacity_error_text(l, _size, p, tp),
                 _azure_size_options(remaining_sizes),
                 0, "azcreate:sizepage", "azcreate:cancel",
@@ -2467,6 +2473,7 @@ async def cb_azure_port_add_ask(callback: CallbackQuery, state: FSMContext, lang
     await callback.message.edit_text(
         texts.azure_step_port_number_text(lang), reply_markup=azure_port_cancel_keyboard(lang, account_id, vm_name)
     )
+    await track_prompt(callback, state)
 
 
 @router.callback_query(F.data.startswith("azports:cancel:"), StateFilter(AzurePortStates))
@@ -2488,14 +2495,16 @@ async def process_azure_port_number(message: Message, state: FSMContext, lang: s
     # port range field in the Azure Portal's Add inbound rule dialog.
     valid = raw == "*" or (raw.isdigit() and 1 <= int(raw) <= 65535)
     if not valid:
-        await message.answer(
+        await advance_screen(
+            message, state,
             texts.azure_invalid_port_number_text(lang),
             reply_markup=azure_port_cancel_keyboard(lang, data["account_id"], data["vm_name"]),
         )
         return
     await state.update_data(port=raw)
     await state.set_state(AzurePortStates.choosing_protocol)
-    await message.answer(
+    await advance_screen(
+        message, state,
         texts.azure_choose_protocol_text(lang, raw),
         reply_markup=azure_port_protocol_keyboard(lang, data["account_id"], data["vm_name"]),
     )
@@ -2804,7 +2813,7 @@ async def cb_hetzner_server_add(callback: CallbackQuery, state: FSMContext, lang
     await state.update_data(account_id=account_id, types=type_dicts)
     await state.set_state(HetznerVMCreateStates.choosing_type)
     await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(type_dicts),
+        callback, state, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(type_dicts),
         0, "hzcreate:typepage", "hzcreate:cancel",
     )
 
@@ -2815,7 +2824,7 @@ async def cb_hetzner_create_type_page(callback: CallbackQuery, state: FSMContext
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(data["types"]),
+        callback, state, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(data["types"]),
         page, "hzcreate:typepage", "hzcreate:cancel",
     )
 
@@ -2834,10 +2843,10 @@ async def cb_hetzner_create_cancel(callback: CallbackQuery, state: FSMContext, l
 
 
 async def _render_hetzner_location_step(
-    callback: CallbackQuery, lang: str, locations: list[dict], header_fn, page: int = 0
+    callback: CallbackQuery, state: FSMContext, lang: str, locations: list[dict], header_fn, page: int = 0
 ) -> None:
     await _render_create_page(
-        callback, lang, header_fn, _hetzner_location_options(locations), page, "hzcreate:locpage", "hzcreate:cancel",
+        callback, state, lang, header_fn, _hetzner_location_options(locations), page, "hzcreate:locpage", "hzcreate:cancel",
     )
 
 
@@ -2867,7 +2876,7 @@ async def cb_hetzner_create_pick_type(callback: CallbackQuery, state: FSMContext
     ]
     await state.update_data(server_type=server_type["name"], locations=location_dicts)
     await state.set_state(HetznerVMCreateStates.choosing_location)
-    await _render_hetzner_location_step(callback, lang, location_dicts, texts.hetzner_create_choose_location_text)
+    await _render_hetzner_location_step(callback, state, lang, location_dicts, texts.hetzner_create_choose_location_text)
 
 
 @router.callback_query(F.data.startswith("hzcreate:locpage:"), HetznerVMCreateStates.choosing_location)
@@ -2875,7 +2884,7 @@ async def cb_hetzner_create_location_page(callback: CallbackQuery, state: FSMCon
     page = int(callback.data.split(":", 2)[2])
     data = await state.get_data()
     await callback.answer()
-    await _render_hetzner_location_step(callback, lang, data["locations"], texts.hetzner_create_choose_location_text, page)
+    await _render_hetzner_location_step(callback, state, lang, data["locations"], texts.hetzner_create_choose_location_text, page)
 
 
 @router.callback_query(F.data.startswith("hzcreate:loc:"), HetznerVMCreateStates.choosing_location)
@@ -2904,7 +2913,7 @@ async def cb_hetzner_create_pick_location(callback: CallbackQuery, state: FSMCon
     )
     await state.set_state(HetznerVMCreateStates.choosing_image)
     await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(image_dicts),
+        callback, state, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(image_dicts),
         0, "hzcreate:imgpage", "hzcreate:cancel",
     )
 
@@ -2915,7 +2924,7 @@ async def cb_hetzner_create_image_page(callback: CallbackQuery, state: FSMContex
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(data["images"]),
+        callback, state, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(data["images"]),
         page, "hzcreate:imgpage", "hzcreate:cancel",
     )
 
@@ -2930,6 +2939,7 @@ async def cb_hetzner_create_pick_image(callback: CallbackQuery, state: FSMContex
     await callback.message.edit_text(
         texts.hetzner_create_waiting_hostname_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -2937,14 +2947,14 @@ async def cb_hetzner_create_pick_image(callback: CallbackQuery, state: FSMContex
 async def process_hetzner_hostname(message: Message, state: FSMContext, lang: str) -> None:
     hostname = message.text.strip() if message.text else ""
     if not hostname or not HOSTNAME_RE.match(hostname) or len(hostname) > 63:
-        await message.answer(
-            texts.hetzner_create_invalid_hostname_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
+        await advance_screen(
+            message, state, texts.hetzner_create_invalid_hostname_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
         )
         return
 
     await state.update_data(hostname=hostname)
     await state.set_state(HetznerVMCreateStates.choosing_ipv6)
-    await message.answer(texts.hetzner_create_choose_ipv6_text(lang), reply_markup=hetzner_create_ipv6_keyboard(lang))
+    await advance_screen(message, state, texts.hetzner_create_choose_ipv6_text(lang), reply_markup=hetzner_create_ipv6_keyboard(lang))
 
 
 @router.callback_query(F.data.startswith("hzcreate:ipv6:"), HetznerVMCreateStates.choosing_ipv6)
@@ -2961,7 +2971,7 @@ async def cb_hetzner_create_pick_ipv6(callback: CallbackQuery, state: FSMContext
 @router.callback_query(F.data == "hzcreate:auth:password", HetznerVMCreateStates.choosing_auth_method)
 async def cb_hetzner_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(ssh_public_key=None)
-    await _hetzner_create_offer_primary_ip(callback.message, state, lang, callback.from_user.id)
+    await _hetzner_create_offer_primary_ip(callback, state, lang, callback.from_user.id)
     await callback.answer()
 
 
@@ -2971,6 +2981,7 @@ async def cb_hetzner_create_choose_key_auth(callback: CallbackQuery, state: FSMC
     await callback.message.edit_text(
         texts.hetzner_create_waiting_ssh_key_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -2978,8 +2989,8 @@ async def cb_hetzner_create_choose_key_auth(callback: CallbackQuery, state: FSMC
 async def process_hetzner_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
     public_key = message.text.strip() if message.text else ""
     if not _is_valid_ssh_public_key(public_key):
-        await message.answer(
-            texts.hetzner_create_invalid_ssh_key_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
+        await advance_screen(
+            message, state, texts.hetzner_create_invalid_ssh_key_text(lang), reply_markup=hetzner_create_cancel_keyboard(lang)
         )
         return
 
@@ -2987,28 +2998,29 @@ async def process_hetzner_ssh_public_key(message: Message, state: FSMContext, la
     await _hetzner_create_offer_primary_ip(message, state, lang, message.from_user.id)
 
 
-async def _render_create_page_on_message(
-    target_message: Message, lang: str, header_fn, options: list[tuple[str, str]], page: int, nav_prefix: str,
+async def _render_create_page_from(
+    source, state: FSMContext, lang: str, header_fn, options: list[tuple[str, str]], page: int, nav_prefix: str,
     cancel_callback: str = "hzcreate:cancel",
 ) -> None:
-    """Same rendering as _render_create_page, but for a step that can be
-    entered from a plain text-message handler (not just a callback), where
-    there's no existing bot message to edit in place -- sends a new one."""
+    """Same rendering as _render_create_page, but for a step reachable
+    from either a callback or a plain text-message handler -- picks
+    edit-in-place or advance_screen's tracked-message edit from the type
+    of `source`, same dispatch as show_screen."""
     total_pages = max(1, -(-len(options) // PAGE_SIZE))
     page = max(0, min(page, total_pages - 1))
-    await target_message.answer(
-        header_fn(lang, page, total_pages),
-        reply_markup=paginated_pick_keyboard(lang, options, page, nav_prefix, cancel_callback),
-    )
+    text = header_fn(lang, page, total_pages)
+    markup = paginated_pick_keyboard(lang, options, page, nav_prefix, cancel_callback)
+    await show_screen(source, state, text, reply_markup=markup)
 
 
-async def _hetzner_create_offer_primary_ip(target_message: Message, state: FSMContext, lang: str, user_id: int) -> None:
+async def _hetzner_create_offer_primary_ip(source, state: FSMContext, lang: str, user_id: int) -> None:
     """Offers to reuse an already-purchased, unassigned Primary IPv4 from
     this same location instead of Hetzner auto-generating a new one --
     matching the "SELECT EXISTING IP" option on Hetzner's own create-server
     page. Skipped entirely (straight to confirmation) when there's nothing
     to offer, same "don't show what isn't available" principle as the
-    type/location filtering."""
+    type/location filtering. `source` is whatever step reached this one --
+    a CallbackQuery (password auth) or a Message (a typed SSH key)."""
     data = await state.get_data()
     account = await cloud_store.get(user_id, data["account_id"])
     if not account:
@@ -3021,7 +3033,7 @@ async def _hetzner_create_offer_primary_ip(target_message: Message, state: FSMCo
 
     reusable = [ip for ip in primary_ips if ip.server_id is None and ip.ip_type == "ipv4" and ip.location == data["location"]]
     if not reusable:
-        await _show_hetzner_create_confirmation(target_message, state, lang)
+        await _show_hetzner_create_confirmation(source, state, lang)
         return
 
     ip_dicts = [{"id": ip.id, "ip": ip.ip} for ip in reusable]
@@ -3030,8 +3042,8 @@ async def _hetzner_create_offer_primary_ip(target_message: Message, state: FSMCo
     options = [(texts.hetzner_primary_ip_auto_label(lang), "hzcreate:primaryip:auto")] + [
         (ip["ip"], f"hzcreate:primaryip:{i}") for i, ip in enumerate(ip_dicts)
     ]
-    await _render_create_page_on_message(
-        target_message, lang, texts.hetzner_create_choose_primary_ip_text, options, 0, "hzcreate:primaryippage",
+    await _render_create_page_from(
+        source, state, lang, texts.hetzner_create_choose_primary_ip_text, options, 0, "hzcreate:primaryippage",
     )
 
 
@@ -3044,14 +3056,14 @@ async def cb_hetzner_create_primary_ip_page(callback: CallbackQuery, state: FSMC
         (ip["ip"], f"hzcreate:primaryip:{i}") for i, ip in enumerate(data["reusable_primary_ips"])
     ]
     await _render_create_page(
-        callback, lang, texts.hetzner_create_choose_primary_ip_text, options, page, "hzcreate:primaryippage", "hzcreate:cancel",
+        callback, state, lang, texts.hetzner_create_choose_primary_ip_text, options, page, "hzcreate:primaryippage", "hzcreate:cancel",
     )
 
 
 @router.callback_query(F.data == "hzcreate:primaryip:auto", HetznerVMCreateStates.choosing_primary_ip)
 async def cb_hetzner_create_primary_ip_auto(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(primary_ipv4_id=None, primary_ipv4_address=None)
-    await _show_hetzner_create_confirmation(callback.message, state, lang)
+    await _show_hetzner_create_confirmation(callback, state, lang)
     await callback.answer()
 
 
@@ -3061,15 +3073,16 @@ async def cb_hetzner_create_primary_ip_pick(callback: CallbackQuery, state: FSMC
     data = await state.get_data()
     ip = data["reusable_primary_ips"][index]
     await state.update_data(primary_ipv4_id=ip["id"], primary_ipv4_address=ip["ip"])
-    await _show_hetzner_create_confirmation(callback.message, state, lang)
+    await _show_hetzner_create_confirmation(callback, state, lang)
     await callback.answer()
 
 
-async def _show_hetzner_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+async def _show_hetzner_create_confirmation(source, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.set_state(HetznerVMCreateStates.confirming)
     auth_method = "key" if data.get("ssh_public_key") else "password"
-    await target_message.answer(
+    await show_screen(
+        source, state,
         texts.hetzner_create_confirm_text(
             lang, data["hostname"], data["location_display"], data["server_type"], data["image_title"], auth_method,
             ipv6_enabled=data.get("ipv6_enabled", True), primary_ip=data.get("primary_ipv4_address"),
@@ -3122,7 +3135,7 @@ async def cb_hetzner_create_confirm(callback: CallbackQuery, state: FSMContext, 
                 await state.set_state(HetznerVMCreateStates.choosing_location)
                 await _render_create_page(
                     callback,
-                    lang,
+                    state, lang,
                     lambda l, p, tp, _loc=failed_location: texts.hetzner_create_location_unavailable_text(l, _loc, p, tp),
                     _hetzner_location_options(remaining_locations),
                     0, "hzcreate:locpage", "hzcreate:cancel",
@@ -3225,7 +3238,7 @@ async def cb_hetzner_plan_start(callback: CallbackQuery, state: FSMContext, lang
     options = [(name, f"hzplan:pick:{i}") for i, name in enumerate(type_names)]
     await _render_create_page(
         callback,
-        lang,
+        state, lang,
         lambda plan_lang, page, total: texts.plan_choose_text(plan_lang, server.server_type, page, total),
         options,
         0,
@@ -3242,7 +3255,7 @@ async def cb_hetzner_plan_page(callback: CallbackQuery, state: FSMContext, lang:
     options = [(name, f"hzplan:pick:{i}") for i, name in enumerate(data["types"])]
     await _render_create_page(
         callback,
-        lang,
+        state, lang,
         lambda plan_lang, p, total: texts.plan_choose_text(plan_lang, data["current_type"], p, total),
         options,
         page,
@@ -3684,7 +3697,7 @@ async def cb_hetzner_address_assign_ask(callback: CallbackQuery, state: FSMConte
     await state.set_state(HetznerIPAssignStates.choosing_server)
     options = [(name, f"hzaddrassign:pick:{i}") for i, name in enumerate(server_names)]
     await _render_create_page(
-        callback, lang, texts.hetzner_address_assign_choose_server_text, options,
+        callback, state, lang, texts.hetzner_address_assign_choose_server_text, options,
         0, "hzaddrassign:page", f"hzaddr:view:{account_id}:{kind}:{address_id}",
     )
 
@@ -3696,7 +3709,7 @@ async def cb_hetzner_address_assign_page(callback: CallbackQuery, state: FSMCont
     await callback.answer()
     options = [(name, f"hzaddrassign:pick:{i}") for i, name in enumerate(data["server_names"])]
     await _render_create_page(
-        callback, lang, texts.hetzner_address_assign_choose_server_text, options,
+        callback, state, lang, texts.hetzner_address_assign_choose_server_text, options,
         page, "hzaddrassign:page", f"hzaddr:view:{data['account_id']}:{data['kind']}:{data['address_id']}",
     )
 
@@ -3815,7 +3828,7 @@ async def cb_hetzner_address_create_pick_type(callback: CallbackQuery, state: FS
     await state.update_data(ip_type=ip_type, locations=location_dicts)
     await state.set_state(HetznerIPCreateStates.choosing_location)
     await _render_create_page(
-        callback, lang, texts.hetzner_address_create_choose_location_text, _hetzner_address_location_options(location_dicts),
+        callback, state, lang, texts.hetzner_address_create_choose_location_text, _hetzner_address_location_options(location_dicts),
         0, "hzaddrcreate:locpage", "hzaddrcreate:cancel",
     )
 
@@ -3826,7 +3839,7 @@ async def cb_hetzner_address_create_location_page(callback: CallbackQuery, state
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.hetzner_address_create_choose_location_text, _hetzner_address_location_options(data["locations"]),
+        callback, state, lang, texts.hetzner_address_create_choose_location_text, _hetzner_address_location_options(data["locations"]),
         page, "hzaddrcreate:locpage", "hzaddrcreate:cancel",
     )
 
@@ -3841,6 +3854,7 @@ async def cb_hetzner_address_create_pick_location(callback: CallbackQuery, state
     await callback.message.edit_text(
         texts.hetzner_address_create_waiting_quantity_text(lang), reply_markup=hetzner_address_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -3848,15 +3862,17 @@ async def cb_hetzner_address_create_pick_location(callback: CallbackQuery, state
 async def process_hetzner_address_quantity(message: Message, state: FSMContext, lang: str) -> None:
     raw = message.text.strip() if message.text else ""
     if not raw.isdigit() or not (1 <= int(raw) <= texts.HETZNER_ADDRESS_BULK_MAX):
-        await message.answer(
-            texts.hetzner_address_create_invalid_quantity_text(lang), reply_markup=hetzner_address_create_cancel_keyboard(lang)
+        await advance_screen(
+            message, state, texts.hetzner_address_create_invalid_quantity_text(lang),
+            reply_markup=hetzner_address_create_cancel_keyboard(lang),
         )
         return
 
     data = await state.update_data(quantity=int(raw))
     await state.set_state(HetznerIPCreateStates.confirming)
     kind_full = "primary" if data["kind"] == "p" else "floating"
-    await message.answer(
+    await advance_screen(
+        message, state,
         texts.hetzner_address_create_confirm_text(lang, kind_full, data["ip_type"], data["location_display"], int(raw)),
         reply_markup=hetzner_address_create_confirm_keyboard(lang),
     )
@@ -4055,7 +4071,7 @@ async def cb_exoscale_server_add(callback: CallbackQuery, state: FSMContext, lan
     await state.update_data(account_id=account_id)
     await state.set_state(ExoscaleVMCreateStates.choosing_zone)
     await _render_create_page(
-        callback, lang, texts.exoscale_create_choose_zone_text, _exoscale_zone_options(), 0, "excreate:zonepage", "excreate:cancel",
+        callback, state, lang, texts.exoscale_create_choose_zone_text, _exoscale_zone_options(), 0, "excreate:zonepage", "excreate:cancel",
     )
 
 
@@ -4064,7 +4080,7 @@ async def cb_exoscale_create_zone_page(callback: CallbackQuery, state: FSMContex
     page = int(callback.data.split(":", 2)[2])
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.exoscale_create_choose_zone_text, _exoscale_zone_options(), page, "excreate:zonepage", "excreate:cancel",
+        callback, state, lang, texts.exoscale_create_choose_zone_text, _exoscale_zone_options(), page, "excreate:zonepage", "excreate:cancel",
     )
 
 
@@ -4103,7 +4119,7 @@ async def cb_exoscale_create_pick_zone(callback: CallbackQuery, state: FSMContex
     await state.update_data(zone=zone_id, zone_display=texts.exoscale_zone_display(zone_id), types=type_dicts)
     await state.set_state(ExoscaleVMCreateStates.choosing_type)
     await _render_create_page(
-        callback, lang, texts.exoscale_create_choose_type_text, _exoscale_type_options(type_dicts), 0, "excreate:typepage", "excreate:cancel",
+        callback, state, lang, texts.exoscale_create_choose_type_text, _exoscale_type_options(type_dicts), 0, "excreate:typepage", "excreate:cancel",
     )
 
 
@@ -4113,7 +4129,7 @@ async def cb_exoscale_create_type_page(callback: CallbackQuery, state: FSMContex
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.exoscale_create_choose_type_text, _exoscale_type_options(data["types"]), page, "excreate:typepage", "excreate:cancel",
+        callback, state, lang, texts.exoscale_create_choose_type_text, _exoscale_type_options(data["types"]), page, "excreate:typepage", "excreate:cancel",
     )
 
 
@@ -4143,7 +4159,7 @@ async def cb_exoscale_create_pick_type(callback: CallbackQuery, state: FSMContex
     )
     await state.set_state(ExoscaleVMCreateStates.choosing_template)
     await _render_create_page(
-        callback, lang, texts.exoscale_create_choose_template_text, _exoscale_template_options(template_dicts),
+        callback, state, lang, texts.exoscale_create_choose_template_text, _exoscale_template_options(template_dicts),
         0, "excreate:tmplpage", "excreate:cancel",
     )
 
@@ -4154,7 +4170,7 @@ async def cb_exoscale_create_template_page(callback: CallbackQuery, state: FSMCo
     data = await state.get_data()
     await callback.answer()
     await _render_create_page(
-        callback, lang, texts.exoscale_create_choose_template_text, _exoscale_template_options(data["templates"]),
+        callback, state, lang, texts.exoscale_create_choose_template_text, _exoscale_template_options(data["templates"]),
         page, "excreate:tmplpage", "excreate:cancel",
     )
 
@@ -4169,6 +4185,7 @@ async def cb_exoscale_create_pick_template(callback: CallbackQuery, state: FSMCo
     await callback.message.edit_text(
         texts.exoscale_create_waiting_hostname_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -4176,23 +4193,24 @@ async def cb_exoscale_create_pick_template(callback: CallbackQuery, state: FSMCo
 async def process_exoscale_hostname(message: Message, state: FSMContext, lang: str) -> None:
     hostname = message.text.strip() if message.text else ""
     if not hostname or not HOSTNAME_RE.match(hostname) or len(hostname) > 63:
-        await message.answer(
-            texts.exoscale_create_invalid_hostname_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
+        await advance_screen(
+            message, state, texts.exoscale_create_invalid_hostname_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
         )
         return
 
     await state.update_data(hostname=hostname)
     await state.set_state(ExoscaleVMCreateStates.choosing_auth_method)
-    await message.answer(
-        texts.exoscale_create_choose_auth_method_text(lang), reply_markup=exoscale_create_auth_method_keyboard(lang)
+    await advance_screen(
+        message, state, texts.exoscale_create_choose_auth_method_text(lang), reply_markup=exoscale_create_auth_method_keyboard(lang)
     )
 
 
-async def _show_exoscale_create_confirmation(target_message: Message, state: FSMContext, lang: str) -> None:
+async def _show_exoscale_create_confirmation(source, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     await state.set_state(ExoscaleVMCreateStates.confirming)
     auth_method = "key" if data.get("ssh_public_key") else "password"
-    await target_message.answer(
+    await show_screen(
+        source, state,
         texts.exoscale_create_confirm_text(
             lang, data["hostname"], data["zone_display"], data["instance_type_label"], data["template_label"], auth_method,
         ),
@@ -4203,7 +4221,7 @@ async def _show_exoscale_create_confirmation(target_message: Message, state: FSM
 @router.callback_query(F.data == "excreate:auth:password", ExoscaleVMCreateStates.choosing_auth_method)
 async def cb_exoscale_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.update_data(ssh_public_key=None)
-    await _show_exoscale_create_confirmation(callback.message, state, lang)
+    await _show_exoscale_create_confirmation(callback, state, lang)
     await callback.answer()
 
 
@@ -4213,6 +4231,7 @@ async def cb_exoscale_create_choose_key_auth(callback: CallbackQuery, state: FSM
     await callback.message.edit_text(
         texts.exoscale_create_waiting_ssh_key_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -4220,8 +4239,8 @@ async def cb_exoscale_create_choose_key_auth(callback: CallbackQuery, state: FSM
 async def process_exoscale_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
     public_key = message.text.strip() if message.text else ""
     if not _is_valid_ssh_public_key(public_key):
-        await message.answer(
-            texts.exoscale_create_invalid_ssh_key_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
+        await advance_screen(
+            message, state, texts.exoscale_create_invalid_ssh_key_text(lang), reply_markup=exoscale_create_cancel_keyboard(lang)
         )
         return
     await state.update_data(ssh_public_key=public_key)

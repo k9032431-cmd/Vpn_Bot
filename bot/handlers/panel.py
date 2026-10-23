@@ -122,7 +122,7 @@ from bot.states.panel_setup import (
     PanelUserEditStates,
 )
 from bot.texts import panel as texts
-from bot.utils.messages import show_text
+from bot.utils.messages import advance_screen, show_screen, show_text, track_prompt
 
 router = Router(name="panel")
 
@@ -223,6 +223,7 @@ async def cb_panel_choose_type(callback: CallbackQuery, state: FSMContext, lang:
     await callback.message.edit_text(
         texts.step_url_text(lang, panel_type), reply_markup=panel_cancel_keyboard(lang)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -238,13 +239,13 @@ async def process_url(message: Message, state: FSMContext, lang: str) -> None:
     raw = message.text.strip() if message.text else ""
     url = normalize_panel_url(raw) if raw else ""
     if not raw or not is_valid_panel_url(url):
-        await message.answer(texts.invalid_url_text(lang), reply_markup=panel_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_url_text(lang), reply_markup=panel_cancel_keyboard(lang))
         return
 
     data = await state.update_data(url=url)
     await state.set_state(PanelSetupStates.waiting_username)
-    await message.answer(
-        texts.step_username_text(lang, data["panel_type"]), reply_markup=panel_cancel_keyboard(lang)
+    await advance_screen(
+        message, state, texts.step_username_text(lang, data["panel_type"]), reply_markup=panel_cancel_keyboard(lang)
     )
 
 
@@ -252,32 +253,27 @@ async def process_url(message: Message, state: FSMContext, lang: str) -> None:
 async def process_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
     if not username:
-        await message.answer(texts.invalid_username_text(lang), reply_markup=panel_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_username_text(lang), reply_markup=panel_cancel_keyboard(lang))
         return
 
     data = await state.update_data(username=username)
     await state.set_state(PanelSetupStates.waiting_password)
-    await message.answer(
-        texts.step_password_text(lang, data["panel_type"], username), reply_markup=panel_cancel_keyboard(lang)
+    await advance_screen(
+        message, state, texts.step_password_text(lang, data["panel_type"], username), reply_markup=panel_cancel_keyboard(lang)
     )
 
 
 @router.message(PanelSetupStates.waiting_password)
 async def process_password(message: Message, state: FSMContext, lang: str, bot: Bot) -> None:
     password = message.text or ""
-    try:
-        await message.delete()
-    except Exception:
-        pass
-
     if not password:
-        await message.answer(texts.empty_password_text(lang), reply_markup=panel_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.empty_password_text(lang), reply_markup=panel_cancel_keyboard(lang))
         return
 
     data = await state.update_data(password=password)
     await state.set_state(PanelSetupStates.connecting)
 
-    status_message = await message.answer(texts.connecting_text(lang))
+    status_message = await advance_screen(message, state, texts.connecting_text(lang))
 
     try:
         await _login(data["panel_type"], data["url"], data["username"], password)
@@ -458,6 +454,7 @@ async def cb_create_user_start(callback: CallbackQuery, state: FSMContext, lang:
         texts.create_user_step_username_text(lang, panel),
         reply_markup=panel_user_cancel_keyboard(lang, panel_id),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -467,8 +464,8 @@ async def process_new_username(message: Message, state: FSMContext, lang: str) -
     data = await state.get_data()
     panel_id = data.get("panel_id", "")
     if not NEW_USERNAME_RE.match(username):
-        await message.answer(
-            texts.invalid_new_username_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_new_username_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -479,8 +476,8 @@ async def process_new_username(message: Message, state: FSMContext, lang: str) -
 
     await state.update_data(new_username=username)
     await state.set_state(PanelUserCreateStates.waiting_limits)
-    await message.answer(
-        texts.create_user_step_limits_text(lang, panel, username),
+    await advance_screen(
+        message, state, texts.create_user_step_limits_text(lang, panel, username),
         reply_markup=panel_user_cancel_keyboard(lang, panel_id),
     )
 
@@ -491,8 +488,8 @@ async def process_new_user_limits(message: Message, state: FSMContext, lang: str
     panel_id = data.get("panel_id", "")
     parsed = parse_limit_and_expire(message.text or "")
     if parsed is None:
-        await message.answer(
-            texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -504,8 +501,8 @@ async def process_new_user_limits(message: Message, state: FSMContext, lang: str
     data_limit, expire = parsed
     data = await state.update_data(data_limit=data_limit, expire=expire)
     await state.set_state(PanelUserCreateStates.confirming)
-    await message.answer(
-        texts.create_user_confirm_text(lang, panel, data["new_username"], data_limit, expire),
+    await advance_screen(
+        message, state, texts.create_user_confirm_text(lang, panel, data["new_username"], data_limit, expire),
         reply_markup=panel_create_user_confirm_keyboard(lang, panel_id),
     )
 
@@ -638,6 +635,7 @@ async def cb_user_edit_start(callback: CallbackQuery, state: FSMContext, lang: s
         texts.edit_user_prompt_text(lang, panel, username),
         reply_markup=panel_user_cancel_keyboard(lang, panel_id),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -647,15 +645,15 @@ async def process_edit_user_limits(message: Message, state: FSMContext, lang: st
     panel_id = data.get("panel_id", "")
     parsed = parse_limit_and_expire(message.text or "")
     if parsed is None:
-        await message.answer(
-            texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_limits_text(lang), reply_markup=panel_user_cancel_keyboard(lang, panel_id)
         )
         return
 
     username = data.get("edit_username")
     panel = await panel_store.get(message.from_user.id, panel_id)
-    await state.clear()
     if not panel or not username:
+        await state.clear()
         return
 
     data_limit, expire = parsed
@@ -663,14 +661,16 @@ async def process_edit_user_limits(message: Message, state: FSMContext, lang: st
         token = await marzban_login(panel["url"], panel["username"], panel["password"])
         await marzban_modify_user(panel["url"], token, username, data_limit=data_limit, expire=expire)
     except PanelAPIError as exc:
-        await message.answer(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
+        await state.clear()
         return
 
-    await message.answer(
-        texts.edit_user_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+    await advance_screen(
+        message, state, texts.edit_user_success_text(lang, username), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
     )
+    await state.clear()
 
 
 @router.callback_query(F.data.startswith("puser:delask:"))
@@ -788,6 +788,7 @@ async def cb_node_new(callback: CallbackQuery, state: FSMContext, lang: str) -> 
     await callback.message.edit_text(
         texts.create_node_step_name_text(lang, panel), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -797,8 +798,8 @@ async def process_node_name(message: Message, state: FSMContext, lang: str) -> N
     data = await state.get_data()
     panel_id = data.get("panel_id", "")
     if not name:
-        await message.answer(
-            texts.invalid_node_name_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_node_name_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -809,8 +810,8 @@ async def process_node_name(message: Message, state: FSMContext, lang: str) -> N
 
     await state.update_data(node_name=name)
     await state.set_state(PanelNodeCreateStates.waiting_address)
-    await message.answer(
-        texts.create_node_step_address_text(lang, panel, name),
+    await advance_screen(
+        message, state, texts.create_node_step_address_text(lang, panel, name),
         reply_markup=panel_node_cancel_keyboard(lang, panel_id),
     )
 
@@ -821,8 +822,8 @@ async def process_node_address(message: Message, state: FSMContext, lang: str) -
     data = await state.get_data()
     panel_id = data.get("panel_id", "")
     if not address or " " in address or not NODE_ADDRESS_RE.match(address):
-        await message.answer(
-            texts.invalid_node_address_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_node_address_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -833,8 +834,8 @@ async def process_node_address(message: Message, state: FSMContext, lang: str) -
 
     await state.update_data(node_address=address)
     await state.set_state(PanelNodeCreateStates.waiting_port)
-    await message.answer(
-        texts.create_node_step_port_text(lang, panel), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+    await advance_screen(
+        message, state, texts.create_node_step_port_text(lang, panel), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
     )
 
 
@@ -851,8 +852,8 @@ async def process_node_port(message: Message, state: FSMContext, lang: str) -> N
         if not (0 < port < 65536 and 0 < api_port < 65536):
             raise ValueError
     except ValueError:
-        await message.answer(
-            texts.invalid_node_port_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_node_port_text(lang), reply_markup=panel_node_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -863,8 +864,8 @@ async def process_node_port(message: Message, state: FSMContext, lang: str) -> N
 
     data = await state.update_data(node_port=port, node_api_port=api_port)
     await state.set_state(PanelNodeCreateStates.confirming)
-    await message.answer(
-        texts.create_node_confirm_text(lang, panel, data["node_name"], data["node_address"], port, api_port),
+    await advance_screen(
+        message, state, texts.create_node_confirm_text(lang, panel, data["node_name"], data["node_address"], port, api_port),
         reply_markup=panel_node_create_confirm_keyboard(lang, panel_id),
     )
 
@@ -1052,6 +1053,7 @@ async def cb_core_edit_start(callback: CallbackQuery, state: FSMContext, lang: s
     await callback.message.edit_text(
         texts.core_edit_prompt_text(lang, panel), reply_markup=panel_core_cancel_keyboard(lang, panel_id)
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1073,8 +1075,8 @@ async def process_core_config(message: Message, state: FSMContext, lang: str, bo
     try:
         config = parse_core_config_input(raw)
     except CoreConfigError as exc:
-        await message.answer(
-            texts.core_config_error_text(lang, str(exc)), reply_markup=panel_core_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.core_config_error_text(lang, str(exc)), reply_markup=panel_core_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -1082,7 +1084,8 @@ async def process_core_config(message: Message, state: FSMContext, lang: str, bo
     await state.set_state(PanelCoreEditStates.confirming)
     inbounds = config.get("inbounds")
     outbounds = config.get("outbounds")
-    await message.answer(
+    await advance_screen(
+        message, state,
         texts.core_edit_confirm_text(
             lang, panel, len(inbounds) if isinstance(inbounds, list) else 0,
             len(outbounds) if isinstance(outbounds, list) else 0,
@@ -1208,6 +1211,7 @@ async def cb_admin_new(callback: CallbackQuery, state: FSMContext, lang: str) ->
         texts.create_admin_step_username_text(lang, panel),
         reply_markup=panel_admin_cancel_keyboard(lang, panel_id),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1217,8 +1221,8 @@ async def process_admin_username(message: Message, state: FSMContext, lang: str)
     data = await state.get_data()
     panel_id = data.get("panel_id", "")
     if not NEW_USERNAME_RE.match(username):
-        await message.answer(
-            texts.invalid_new_admin_username_text(lang), reply_markup=panel_admin_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.invalid_new_admin_username_text(lang), reply_markup=panel_admin_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -1229,8 +1233,8 @@ async def process_admin_username(message: Message, state: FSMContext, lang: str)
 
     await state.update_data(admin_username=username)
     await state.set_state(PanelAdminCreateStates.waiting_password)
-    await message.answer(
-        texts.create_admin_step_password_text(lang, panel, username),
+    await advance_screen(
+        message, state, texts.create_admin_step_password_text(lang, panel, username),
         reply_markup=panel_admin_cancel_keyboard(lang, panel_id),
     )
 
@@ -1241,8 +1245,8 @@ async def process_admin_password(message: Message, state: FSMContext, lang: str)
     data = await state.get_data()
     panel_id = data.get("panel_id", "")
     if not password:
-        await message.answer(
-            texts.empty_admin_password_text(lang), reply_markup=panel_admin_cancel_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.empty_admin_password_text(lang), reply_markup=panel_admin_cancel_keyboard(lang, panel_id)
         )
         return
 
@@ -1253,8 +1257,8 @@ async def process_admin_password(message: Message, state: FSMContext, lang: str)
 
     data = await state.update_data(admin_password=password)
     await state.set_state(PanelAdminCreateStates.confirming)
-    await message.answer(
-        texts.create_admin_confirm_text(lang, panel, data["admin_username"]),
+    await advance_screen(
+        message, state, texts.create_admin_confirm_text(lang, panel, data["admin_username"]),
         reply_markup=panel_admin_create_confirm_keyboard(lang, panel_id),
     )
 
@@ -1504,6 +1508,7 @@ async def cb_host_edit_start(callback: CallbackQuery, state: FSMContext, lang: s
         texts.host_edit_prompt_text(lang, panel),
         reply_markup=panel_host_cancel_keyboard(lang, panel_id, tag_index, host_index),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1519,8 +1524,8 @@ async def process_host_fields(message: Message, state: FSMContext, lang: str) ->
     try:
         updates = parse_host_fields_input(message.text or "")
     except HostFieldsError as exc:
-        await message.answer(
-            texts.host_fields_error_text(lang, str(exc)),
+        await advance_screen(
+            message, state, texts.host_fields_error_text(lang, str(exc)),
             reply_markup=panel_host_cancel_keyboard(lang, panel_id, tag_index, host_index),
         )
         return
@@ -1531,18 +1536,18 @@ async def process_host_fields(message: Message, state: FSMContext, lang: str) ->
         tag = sorted(hosts_map.keys())[tag_index]
         host = dict(hosts_map[tag][host_index])
     except (PanelAPIError, IndexError) as exc:
-        await state.clear()
         reason = str(exc) if isinstance(exc, PanelAPIError) else "bad_response"
-        await message.answer(
-            texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.action_error_text(lang, reason), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
+        await state.clear()
         return
     host.update(updates)
 
     await state.update_data(pending_updates=updates)
     await state.set_state(PanelHostEditStates.confirming)
-    await message.answer(
-        texts.host_edit_confirm_text(lang, panel, host),
+    await advance_screen(
+        message, state, texts.host_edit_confirm_text(lang, panel, host),
         reply_markup=panel_host_edit_confirm_keyboard(lang, panel_id, tag_index, host_index),
     )
 
@@ -1698,6 +1703,7 @@ async def cb_host_new(callback: CallbackQuery, state: FSMContext, lang: str) -> 
         texts.create_host_step_remark_text(lang, panel, tag),
         reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1707,8 +1713,8 @@ async def process_host_remark(message: Message, state: FSMContext, lang: str) ->
     data = await state.get_data()
     panel_id, tag_index = data["panel_id"], data["tag_index"]
     if not remark:
-        await message.answer(
-            texts.invalid_new_host_remark_text(lang),
+        await advance_screen(
+            message, state, texts.invalid_new_host_remark_text(lang),
             reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
         )
         return
@@ -1720,8 +1726,8 @@ async def process_host_remark(message: Message, state: FSMContext, lang: str) ->
 
     await state.update_data(host_remark=remark)
     await state.set_state(PanelHostCreateStates.waiting_address)
-    await message.answer(
-        texts.create_host_step_address_text(lang, panel),
+    await advance_screen(
+        message, state, texts.create_host_step_address_text(lang, panel),
         reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
     )
 
@@ -1732,8 +1738,8 @@ async def process_host_address(message: Message, state: FSMContext, lang: str) -
     data = await state.get_data()
     panel_id, tag_index = data["panel_id"], data["tag_index"]
     if not address or " " in address or not NODE_ADDRESS_RE.match(address):
-        await message.answer(
-            texts.invalid_new_host_address_text(lang),
+        await advance_screen(
+            message, state, texts.invalid_new_host_address_text(lang),
             reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
         )
         return
@@ -1745,8 +1751,8 @@ async def process_host_address(message: Message, state: FSMContext, lang: str) -
 
     await state.update_data(host_address=address)
     await state.set_state(PanelHostCreateStates.waiting_port)
-    await message.answer(
-        texts.create_host_step_port_text(lang, panel),
+    await advance_screen(
+        message, state, texts.create_host_step_port_text(lang, panel),
         reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
     )
 
@@ -1764,8 +1770,8 @@ async def process_host_port(message: Message, state: FSMContext, lang: str) -> N
             if not (0 < port < 65536):
                 raise ValueError
         except ValueError:
-            await message.answer(
-                texts.host_fields_error_text(lang, "bad_port"),
+            await advance_screen(
+                message, state, texts.host_fields_error_text(lang, "bad_port"),
                 reply_markup=panel_host_new_cancel_keyboard(lang, panel_id, tag_index),
             )
             return
@@ -1777,7 +1783,8 @@ async def process_host_port(message: Message, state: FSMContext, lang: str) -> N
 
     data = await state.update_data(host_port=port)
     await state.set_state(PanelHostCreateStates.confirming)
-    await message.answer(
+    await advance_screen(
+        message, state,
         texts.create_host_confirm_text(lang, panel, data["tag"], data["host_remark"], data["host_address"], port),
         reply_markup=panel_host_create_confirm_keyboard(lang, panel_id, tag_index),
     )
@@ -1909,6 +1916,7 @@ async def cb_inbound_edit_start(callback: CallbackQuery, state: FSMContext, lang
         texts.inbound_edit_prompt_text(lang, panel),
         reply_markup=panel_inbound_cancel_keyboard(lang, panel_id, inbound_id),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -1924,8 +1932,8 @@ async def process_inbound_fields(message: Message, state: FSMContext, lang: str)
     try:
         updates = parse_inbound_fields_input(message.text or "")
     except InboundFieldsError as exc:
-        await message.answer(
-            texts.inbound_fields_error_text(lang, str(exc)),
+        await advance_screen(
+            message, state, texts.inbound_fields_error_text(lang, str(exc)),
             reply_markup=panel_inbound_cancel_keyboard(lang, panel_id, inbound_id),
         )
         return
@@ -1934,27 +1942,27 @@ async def process_inbound_fields(message: Message, state: FSMContext, lang: str)
         cookies = await threexui_login(panel["url"], panel["username"], panel["password"])
         inbounds = await threexui_get_inbounds(panel["url"], cookies)
     except PanelAPIError as exc:
-        await state.clear()
-        await message.answer(
-            texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
+        await advance_screen(
+            message, state, texts.action_error_text(lang, str(exc)), reply_markup=panel_dashboard_back_keyboard(lang, panel_id)
         )
+        await state.clear()
         return
 
     inbound = _find_inbound(inbounds, inbound_id)
     if not inbound:
-        await state.clear()
-        await message.answer(
-            texts.action_error_text(lang, "bad_response"),
+        await advance_screen(
+            message, state, texts.action_error_text(lang, "bad_response"),
             reply_markup=panel_dashboard_back_keyboard(lang, panel_id),
         )
+        await state.clear()
         return
     inbound = dict(inbound)
     inbound.update(updates)
 
     await state.update_data(pending_updates=updates)
     await state.set_state(PanelInboundEditStates.confirming)
-    await message.answer(
-        texts.inbound_edit_confirm_text(lang, panel, inbound),
+    await advance_screen(
+        message, state, texts.inbound_edit_confirm_text(lang, panel, inbound),
         reply_markup=panel_inbound_edit_confirm_keyboard(lang, panel_id, inbound_id),
     )
 
@@ -2178,6 +2186,7 @@ async def cb_client_edit_start(callback: CallbackQuery, state: FSMContext, lang:
         texts.client_step_limits_text(lang, panel),
         reply_markup=panel_client_cancel_keyboard(lang, panel_id, inbound_id, client_index),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -2193,16 +2202,16 @@ async def process_client_edit_limits(message: Message, state: FSMContext, lang: 
     try:
         total_gb, expiry_ms = parse_client_limits_input(message.text or "")
     except ClientFieldsError as exc:
-        await message.answer(
-            texts.client_limits_error_text(lang, str(exc)),
+        await advance_screen(
+            message, state, texts.client_limits_error_text(lang, str(exc)),
             reply_markup=panel_client_cancel_keyboard(lang, panel_id, inbound_id, client_index),
         )
         return
 
     await state.update_data(pending_total_gb=total_gb, pending_expiry_ms=expiry_ms)
     await state.set_state(PanelClientEditStates.confirming)
-    await message.answer(
-        texts.client_edit_confirm_text(lang, panel, total_gb, expiry_ms),
+    await advance_screen(
+        message, state, texts.client_edit_confirm_text(lang, panel, total_gb, expiry_ms),
         reply_markup=panel_client_edit_confirm_keyboard(lang, panel_id, inbound_id, client_index),
     )
 
@@ -2378,6 +2387,7 @@ async def cb_client_new(callback: CallbackQuery, state: FSMContext, lang: str) -
         texts.create_client_step_email_text(lang, panel, remark),
         reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
     )
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -2387,8 +2397,8 @@ async def process_client_email(message: Message, state: FSMContext, lang: str) -
     data = await state.get_data()
     panel_id, inbound_id = data["panel_id"], data["inbound_id"]
     if not email:
-        await message.answer(
-            texts.invalid_new_client_email_text(lang),
+        await advance_screen(
+            message, state, texts.invalid_new_client_email_text(lang),
             reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
         )
         return
@@ -2400,8 +2410,8 @@ async def process_client_email(message: Message, state: FSMContext, lang: str) -
 
     await state.update_data(client_email=email)
     await state.set_state(PanelClientCreateStates.waiting_limits)
-    await message.answer(
-        texts.client_step_limits_text(lang, panel),
+    await advance_screen(
+        message, state, texts.client_step_limits_text(lang, panel),
         reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
     )
 
@@ -2418,16 +2428,16 @@ async def process_client_create_limits(message: Message, state: FSMContext, lang
     try:
         total_gb, expiry_ms = parse_client_limits_input(message.text or "")
     except ClientFieldsError as exc:
-        await message.answer(
-            texts.client_limits_error_text(lang, str(exc)),
+        await advance_screen(
+            message, state, texts.client_limits_error_text(lang, str(exc)),
             reply_markup=panel_client_new_cancel_keyboard(lang, panel_id, inbound_id),
         )
         return
 
     data = await state.update_data(pending_total_gb=total_gb, pending_expiry_ms=expiry_ms)
     await state.set_state(PanelClientCreateStates.confirming)
-    await message.answer(
-        texts.create_client_confirm_text(lang, panel, data["remark"], data["client_email"], total_gb, expiry_ms),
+    await advance_screen(
+        message, state, texts.create_client_confirm_text(lang, panel, data["remark"], data["client_email"], total_gb, expiry_ms),
         reply_markup=panel_client_create_confirm_keyboard(lang, panel_id, inbound_id),
     )
 

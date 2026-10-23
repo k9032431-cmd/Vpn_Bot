@@ -14,7 +14,7 @@ from bot.keyboards.crypt import (
 from bot.services.happ_api import HappAPIError, happ_encrypt_link
 from bot.states.crypt import CryptStates
 from bot.texts import crypt as texts
-from bot.utils.messages import show_text
+from bot.utils.messages import advance_screen, show_text, track_prompt
 
 router = Router(name="crypt")
 
@@ -43,6 +43,7 @@ async def cb_crypt_encrypt(callback: CallbackQuery, state: FSMContext, lang: str
 async def cb_crypt_vpn_happ(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.set_state(CryptStates.waiting_subscription_url)
     await callback.message.edit_text(texts.waiting_url_text(lang), reply_markup=crypt_cancel_keyboard(lang))
+    await track_prompt(callback, state)
     await callback.answer()
 
 
@@ -57,15 +58,15 @@ async def cb_crypt_cancel(callback: CallbackQuery, state: FSMContext, lang: str)
 async def process_crypt_subscription_url(message: Message, state: FSMContext, lang: str) -> None:
     url = message.text.strip() if message.text else ""
     if not (url.startswith("http://") or url.startswith("https://")):
-        await message.answer(texts.invalid_url_text(lang), reply_markup=crypt_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.invalid_url_text(lang), reply_markup=crypt_cancel_keyboard(lang))
         return
 
     await message.bot.send_chat_action(message.chat.id, "typing")
     try:
         link = await happ_encrypt_link(url)
     except HappAPIError as exc:
-        await message.answer(texts.error_text(lang, str(exc)), reply_markup=crypt_cancel_keyboard(lang))
+        await advance_screen(message, state, texts.error_text(lang, str(exc)), reply_markup=crypt_cancel_keyboard(lang))
         return
 
+    await advance_screen(message, state, texts.result_text(lang, link), reply_markup=crypt_result_keyboard(lang))
     await state.clear()
-    await message.answer(texts.result_text(lang, link), reply_markup=crypt_result_keyboard(lang))
