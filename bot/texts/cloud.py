@@ -1092,7 +1092,13 @@ def hetzner_address_create_choose_location_text(lang: str, page: int = 0, total_
     return t(lang, "hetzner_address_create_choose_location") + _page_suffix(lang, page, total_pages)
 
 
-HETZNER_ADDRESS_BULK_MAX = 20
+# Not truly unbounded -- Hetzner itself caps how many Primary/Floating IPs a
+# project can hold (this project's limit is 100), and any value typed here
+# still has to go through that many sequential API calls one at a time, so
+# an unbounded field is just a typo away from hanging the bot for a very
+# long time. 100 matches the account's real ceiling; Hetzner's own API
+# rejects anything past the account's actual limit regardless.
+HETZNER_ADDRESS_BULK_MAX = 100
 
 
 def hetzner_address_create_waiting_quantity_text(lang: str) -> str:
