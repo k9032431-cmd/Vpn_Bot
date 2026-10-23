@@ -1127,6 +1127,16 @@ def hetzner_skipped_bad_note(lang: str, skipped_count: int) -> str:
     return "\n\n" + t(lang, "hetzner_skipped_bad_ips", icon=e("warning", "⚠️"), count=skipped_count)
 
 
+def hetzner_buying_progress_text(lang: str, done: int, quantity: int, skipped_bad: int) -> str:
+    if skipped_bad:
+        return t(lang, "hetzner_buying_progress_skipping", done=done, quantity=quantity, skipped=skipped_bad)
+    return t(lang, "hetzner_buying_progress", done=done, quantity=quantity)
+
+
+def hetzner_buying_exhausted_text(lang: str, quantity: int, skipped_bad: int) -> str:
+    return t(lang, "hetzner_buying_exhausted", icon=e("warning", "⚠️"), quantity=quantity, skipped=skipped_bad)
+
+
 def hetzner_address_create_success_text(lang: str, kind: str, address, skipped_bad_count: int = 0) -> str:
     return t(
         lang,

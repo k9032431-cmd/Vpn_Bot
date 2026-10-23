@@ -2917,6 +2917,30 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} {count} more matched a blocked prefix — bought and deleted right away, not counted above.",
         "tk": "{icon} Ýene {count} sany gara sanawdaky prefikse düşdi — satyn alnyp, derrew pozuldy, ýokardaky sana girenok.",
     },
+    "hetzner_buying_progress": {
+        "ru": "⏳ Покупаем IP... готово {done}/{quantity}",
+        "en": "⏳ Buying IPs... {done}/{quantity} done",
+        "tk": "⏳ IP satyn alynýar... {done}/{quantity} taýyn",
+    },
+    "hetzner_buying_progress_skipping": {
+        "ru": "⏳ Покупаем IP... готово {done}/{quantity} (пропущено плохих: {skipped})",
+        "en": "⏳ Buying IPs... {done}/{quantity} done (skipped {skipped} bad ones)",
+        "tk": "⏳ IP satyn alynýar... {done}/{quantity} taýyn ({skipped} sany erbet geçirildi)",
+    },
+    "hetzner_buying_exhausted": {
+        "ru": (
+            "{icon} Не удалось найти ни одного IP, не попадающего под плохие префиксы "
+            "(пропущено {skipped} шт.). Попробуйте убрать часть префиксов из списка или выбрать другую локацию."
+        ),
+        "en": (
+            "{icon} Couldn't find any IP that didn't match the bad prefixes "
+            "({skipped} skipped). Try removing some prefixes from the list or picking a different location."
+        ),
+        "tk": (
+            "{icon} Erbet prefikslere düşmeýän hiç bir IP tapylmady ({skipped} sany geçirildi). "
+            "Sanawdan käbir prefiksleri aýyryp ýa-da başga ýerleşişi saýlap görüň."
+        ),
+    },
     "btn_hetzner_bad_prefixes": {
         "ru": "⚙️ Плохие префиксы",
         "en": "⚙️ Bad prefixes",

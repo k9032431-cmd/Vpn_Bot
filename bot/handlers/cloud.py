@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import time
 from types import SimpleNamespace
 
 from aiogram import F, Router
@@ -4110,12 +4111,18 @@ async def process_hetzner_address_quantity(message: Message, state: FSMContext, 
 
 @router.callback_query(F.data == "hzaddrcreate:confirm", HetznerIPCreateStates.confirming)
 async def _hetzner_buy_filtered(
-    creds: HetznerCredentials, create_fn, delete_fn, ip_type: str, location: str, quantity: int, bad_prefixes: list[str]
+    creds: HetznerCredentials, create_fn, delete_fn, ip_type: str, location: str, quantity: int, bad_prefixes: list[str],
+    progress=None,
 ) -> tuple[list, int, int]:
     """Buys Primary/Floating IPs one at a time until `quantity` pass the
     bad-prefix blocklist (or a generous attempt cap is hit, so an entirely
     bad location can't loop forever) -- any purchase that lands on a
-    blocked prefix is deleted right away rather than left sitting there."""
+    blocked prefix is deleted right away rather than left sitting there.
+    Each buy round-trip (plus a delete for a blocked one) takes a real
+    couple of seconds against Hetzner's API, and a heavily-filtered batch
+    can need many of them -- `progress`, if given, is awaited after every
+    attempt so the caller can show that it's still working rather than
+    looking frozen for however long that takes."""
     addresses: list = []
     failed_count = 0
     skipped_bad = 0
@@ -4127,6 +4134,8 @@ async def _hetzner_buy_filtered(
             address = await create_fn(creds, ip_type, location)
         except HetznerAPIError:
             failed_count += 1
+            if progress:
+                await progress(len(addresses), quantity, skipped_bad, attempts, max_attempts)
             continue
         if bad_prefixes and texts.ip_matches_any_prefix(address.ip, bad_prefixes):
             skipped_bad += 1
@@ -4134,8 +4143,12 @@ async def _hetzner_buy_filtered(
                 await delete_fn(creds, address.id)
             except HetznerAPIError:
                 pass
+            if progress:
+                await progress(len(addresses), quantity, skipped_bad, attempts, max_attempts)
             continue
         addresses.append(address)
+        if progress:
+            await progress(len(addresses), quantity, skipped_bad, attempts, max_attempts)
     return addresses, failed_count, skipped_bad
 
 
@@ -4155,13 +4168,38 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
     delete_fn = hetzner_delete_primary_ip if kind == "p" else hetzner_remove_floating_ip
     bad_prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, data["account_id"])
 
+    status_message = callback.message
+    await status_message.edit_text(texts.hetzner_buying_progress_text(lang, 0, quantity, 0))
+    last_update = time.monotonic()
+
+    async def progress(done: int, total: int, skipped: int, attempt: int, max_attempts: int) -> None:
+        nonlocal last_update
+        # A buy (+ a delete when it lands on a blocked prefix) is a real
+        # API round-trip -- this can take a while for a heavily-filtered
+        # batch, so it's throttled by wall-clock time rather than by
+        # attempt count, to stay well clear of Telegram's edit rate limit
+        # regardless of how fast or slow Hetzner is responding.
+        now = time.monotonic()
+        if now - last_update < 1.5 and done < total and attempt < max_attempts:
+            return
+        last_update = now
+        try:
+            await status_message.edit_text(texts.hetzner_buying_progress_text(lang, done, total, skipped))
+        except Exception:
+            pass
+
     addresses, _attempt_failures, skipped_bad = await _hetzner_buy_filtered(
-        creds, create, delete_fn, data["ip_type"], data["location"], quantity, bad_prefixes
+        creds, create, delete_fn, data["ip_type"], data["location"], quantity, bad_prefixes, progress=progress
     )
     await state.clear()
     kind_full = "primary" if kind == "p" else "floating"
     if not addresses:
-        await callback.message.edit_text(texts.action_error_text(lang, "bad_response"), reply_markup=cloud_error_keyboard(lang))
+        if skipped_bad:
+            await callback.message.edit_text(
+                texts.hetzner_buying_exhausted_text(lang, quantity, skipped_bad), reply_markup=cloud_error_keyboard(lang)
+            )
+        else:
+            await callback.message.edit_text(texts.action_error_text(lang, "bad_response"), reply_markup=cloud_error_keyboard(lang))
         return
     if quantity == 1:
         await callback.message.edit_text(
