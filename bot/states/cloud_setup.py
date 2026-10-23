@@ -85,6 +85,10 @@ class HetznerIPCreateStates(StatesGroup):
     confirming = State()
 
 
+class HetznerBadPrefixStates(StatesGroup):
+    waiting_prefix = State()
+
+
 class HetznerIPAssignStates(StatesGroup):
     choosing_server = State()
 

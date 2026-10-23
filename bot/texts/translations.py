@@ -2912,6 +2912,103 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} Purchased {count} × {kind}. Couldn't buy {failed} more.\n\n{ip_list}",
         "tk": "{icon} Satyn alyndy: {count} sany {kind}. Ýene {failed} sanyny satyn alyp bolmady.\n\n{ip_list}",
     },
+    "hetzner_skipped_bad_ips": {
+        "ru": "{icon} Ещё {count} попали в чёрный список по префиксу — куплены и сразу удалены, в счёт не идут.",
+        "en": "{icon} {count} more matched a blocked prefix — bought and deleted right away, not counted above.",
+        "tk": "{icon} Ýene {count} sany gara sanawdaky prefikse düşdi — satyn alnyp, derrew pozuldy, ýokardaky sana girenok.",
+    },
+    "btn_hetzner_bad_prefixes": {
+        "ru": "⚙️ Плохие префиксы",
+        "en": "⚙️ Bad prefixes",
+        "tk": "⚙️ Erbet prefiksler",
+    },
+    "btn_hetzner_delete_bad_ips": {
+        "ru": "🗑 Удалить плохие IP",
+        "en": "🗑 Delete bad IPs",
+        "tk": "🗑 Erbet IP-leri poz",
+    },
+    "hetzner_bad_prefixes_header": {
+        "ru": "{icon} <b>Плохие префиксы IP</b>\n\n{body}",
+        "en": "{icon} <b>Bad IP prefixes</b>\n\n{body}",
+        "tk": "{icon} <b>Erbet IP prefiksleri</b>\n\n{body}",
+    },
+    "hetzner_bad_prefixes_hint": {
+        "ru": (
+            "<i>IP, начинающиеся с любого из этих префиксов, считаются нерабочими — "
+            "при массовой покупке бот пропускает их и покупает ещё, пока не наберёт нужное "
+            "количество рабочих.</i>\n\nНажмите на префикс, чтобы убрать его из списка."
+        ),
+        "en": (
+            "<i>IPs starting with any of these prefixes are treated as unusable — "
+            "bulk purchase skips them and buys more until it has enough working ones.</i>\n\n"
+            "Tap a prefix to remove it from the list."
+        ),
+        "tk": (
+            "<i>Şu prefiksleriň haýsydyr biri bilen başlanýan IP-ler işlemeýär diýip hasaplanýar — "
+            "köpçülikleýin satyn almada bot olary geçirýär we ýeterlik işleýäni tapýança ýene satyn alýar.</i>\n\n"
+            "Sanawdan aýyrmak üçin prefikse basyň."
+        ),
+    },
+    "hetzner_bad_prefixes_empty": {
+        "ru": "<i>Список пуст — все IP считаются рабочими.</i>",
+        "en": "<i>The list is empty — every IP is treated as working.</i>",
+        "tk": "<i>Sanaw boş — ähli IP işleýär diýip hasaplanýar.</i>",
+    },
+    "hetzner_bad_prefix_waiting": {
+        "ru": "Введите префикс, например <code>2</code> или <code>178.63</code> (IP, начинающиеся с него, будут считаться нерабочими):",
+        "en": "Enter a prefix, e.g. <code>2</code> or <code>178.63</code> (IPs starting with it will be treated as unusable):",
+        "tk": "Prefiks giriziň, mysal üçin <code>2</code> ýa-da <code>178.63</code> (ondan başlanýan IP-ler işlemeýär diýip hasaplanar):",
+    },
+    "hetzner_bad_prefix_invalid": {
+        "ru": "Префикс должен состоять из цифр и точек, например <code>2</code> или <code>178.63</code>. Попробуйте ещё раз:",
+        "en": "A prefix must be digits and dots only, e.g. <code>2</code> or <code>178.63</code>. Try again:",
+        "tk": "Prefiks diňe sanlardan we nokatlardan ybarat bolmaly, mysal üçin <code>2</code> ýa-da <code>178.63</code>. Gaýtadan synanyň:",
+    },
+    "hetzner_bad_prefix_added": {
+        "ru": "{icon} Префикс <code>{prefix}</code> добавлен в чёрный список.",
+        "en": "{icon} Prefix <code>{prefix}</code> added to the blocklist.",
+        "tk": "{icon} <code>{prefix}</code> prefiksi gara sanawa goşuldy.",
+    },
+    "hetzner_bad_prefix_removed": {
+        "ru": "{icon} Префикс <code>{prefix}</code> убран из чёрного списка.",
+        "en": "{icon} Prefix <code>{prefix}</code> removed from the blocklist.",
+        "tk": "{icon} <code>{prefix}</code> prefiksi gara sanawdan aýryldy.",
+    },
+    "btn_hetzner_bad_prefix_add": {
+        "ru": "➕ Добавить префикс",
+        "en": "➕ Add prefix",
+        "tk": "➕ Prefiks goş",
+    },
+    "hetzner_delete_bad_ips_confirm": {
+        "ru": "{icon} Удалить {count} IP, попавших под плохие префиксы? Это необратимо.\n\n{ip_list}",
+        "en": "{icon} Delete {count} IPs matching the bad prefixes? This is irreversible.\n\n{ip_list}",
+        "tk": "{icon} Erbet prefikslere düşýän {count} sany IP-ni pozmalymy? Bu yzyna gaýtarylmaz.\n\n{ip_list}",
+    },
+    "hetzner_delete_bad_ips_empty": {
+        "ru": "<i>Среди текущих свободных IP нет совпадений с плохими префиксами.</i>",
+        "en": "<i>None of the current free IPs match the bad prefixes.</i>",
+        "tk": "<i>Häzirki boş IP-leriň arasynda erbet prefikslere gabat gelýäni ýok.</i>",
+    },
+    "hetzner_delete_bad_ips_result": {
+        "ru": "{icon} Удалено плохих IP: {count}.",
+        "en": "{icon} Deleted {count} bad IPs.",
+        "tk": "{icon} {count} sany erbet IP pozuldy.",
+    },
+    "hetzner_delete_bad_ips_result_partial": {
+        "ru": "{icon} Удалено: {deleted}. Не получилось удалить: {failed}.",
+        "en": "{icon} Deleted: {deleted}. Couldn't delete: {failed}.",
+        "tk": "{icon} Pozuldy: {deleted}. Pozup bolmady: {failed}.",
+    },
+    "btn_hetzner_bad_prefix_confirm_delete": {
+        "ru": "🗑 Да, удалить",
+        "en": "🗑 Yes, delete",
+        "tk": "🗑 Hawa, poz",
+    },
+    "btn_hetzner_create_server_here": {
+        "ru": "🖥 Создать сервер с этим IP",
+        "en": "🖥 Create a server with this IP",
+        "tk": "🖥 Bu IP bilen serwer dörediň",
+    },
     "hetzner_address_assign_choose_server": {
         "ru": "Выберите сервер, к которому привязать этот адрес:",
         "en": "Choose the server to assign this address to:",

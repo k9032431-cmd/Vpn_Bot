@@ -54,10 +54,13 @@ from bot.keyboards.cloud import (
     hetzner_addresses_list_keyboard,
     hetzner_addresses_menu_back_keyboard,
     hetzner_addresses_menu_keyboard,
+    hetzner_bad_prefix_cancel_keyboard,
+    hetzner_bad_prefixes_keyboard,
     hetzner_create_auth_method_keyboard,
     hetzner_create_cancel_keyboard,
     hetzner_create_confirm_keyboard,
     hetzner_create_ipv6_keyboard,
+    hetzner_delete_bad_ips_confirm_keyboard,
     hetzner_free_ips_confirm_keyboard,
     hetzner_ip_add_confirm_keyboard,
     hetzner_ip_remove_confirm_keyboard,
@@ -195,6 +198,7 @@ from bot.states.cloud_setup import (
     CloudSetupStates,
     ExoscaleSetupStates,
     ExoscaleVMCreateStates,
+    HetznerBadPrefixStates,
     HetznerIPAssignStates,
     HetznerIPCreateStates,
     HetznerPlanChangeStates,
@@ -2850,6 +2854,22 @@ async def _render_hetzner_location_step(
     )
 
 
+async def _hetzner_show_image_step(callback: CallbackQuery, state: FSMContext, lang: str, account: dict) -> None:
+    try:
+        images = await hetzner_list_available_images(_hetzner_creds(account))
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    image_dicts = [{"key": img.key, "name": img.name, "description": img.description} for img in images]
+    await state.update_data(images=image_dicts)
+    await state.set_state(HetznerVMCreateStates.choosing_image)
+    await _render_create_page(
+        callback, state, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(image_dicts),
+        0, "hzcreate:imgpage", "hzcreate:cancel",
+    )
+
+
 @router.callback_query(F.data.startswith("hzcreate:type:"), HetznerVMCreateStates.choosing_type)
 async def cb_hetzner_create_pick_type(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     index = int(callback.data.split(":", 2)[2])
@@ -2862,6 +2882,15 @@ async def cb_hetzner_create_pick_type(callback: CallbackQuery, state: FSMContext
         await callback.answer()
         return
     await callback.answer()
+
+    if data.get("location"):
+        # Entered the wizard already pinned to one location (e.g. "create a
+        # server with this IP" from a specific Primary IP) -- the location
+        # step doesn't apply, go straight to images.
+        await state.update_data(server_type=server_type["name"])
+        await _hetzner_show_image_step(callback, state, lang, account)
+        return
+
     try:
         all_locations = await hetzner_list_locations(_hetzner_creds(account))
     except HetznerAPIError as exc:
@@ -2899,23 +2928,11 @@ async def cb_hetzner_create_pick_location(callback: CallbackQuery, state: FSMCon
         await callback.answer()
         return
     await callback.answer()
-    try:
-        images = await hetzner_list_available_images(_hetzner_creds(account))
-    except HetznerAPIError as exc:
-        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
-        return
-
-    image_dicts = [{"key": img.key, "name": img.name, "description": img.description} for img in images]
     await state.update_data(
         location=location["name"],
         location_display=texts.hetzner_location_display(SimpleNamespace(**location)),
-        images=image_dicts,
     )
-    await state.set_state(HetznerVMCreateStates.choosing_image)
-    await _render_create_page(
-        callback, state, lang, texts.hetzner_create_choose_image_text, _hetzner_image_options(image_dicts),
-        0, "hzcreate:imgpage", "hzcreate:cancel",
-    )
+    await _hetzner_show_image_step(callback, state, lang, account)
 
 
 @router.callback_query(F.data.startswith("hzcreate:imgpage:"), HetznerVMCreateStates.choosing_image)
@@ -3022,6 +3039,11 @@ async def _hetzner_create_offer_primary_ip(source, state: FSMContext, lang: str,
     type/location filtering. `source` is whatever step reached this one --
     a CallbackQuery (password auth) or a Message (a typed SSH key)."""
     data = await state.get_data()
+    if data.get("primary_ipv4_id"):
+        # Already committed to a specific Primary IP (entered the wizard
+        # via "create a server with this IP") -- nothing to offer.
+        await _show_hetzner_create_confirmation(source, state, lang)
+        return
     account = await cloud_store.get(user_id, data["account_id"])
     if not account:
         await state.clear()
@@ -3477,6 +3499,160 @@ async def cb_hetzner_addresses_menu(callback: CallbackQuery, state: FSMContext, 
     )
 
 
+@router.callback_query(F.data.startswith("hzaddr:prefixes:"))
+async def cb_hetzner_bad_prefixes_show(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, account_id)
+    await callback.message.edit_text(
+        texts.hetzner_bad_prefixes_text(lang, prefixes),
+        reply_markup=hetzner_bad_prefixes_keyboard(lang, account_id, prefixes),
+    )
+
+
+@router.callback_query(F.data.startswith("hzaddr:prefixaddask:"))
+async def cb_hetzner_bad_prefix_add_ask(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await state.clear()
+    await state.update_data(account_id=account_id)
+    await state.set_state(HetznerBadPrefixStates.waiting_prefix)
+    await callback.message.edit_text(
+        texts.hetzner_bad_prefix_waiting_text(lang), reply_markup=hetzner_bad_prefix_cancel_keyboard(lang, account_id)
+    )
+    await track_prompt(callback, state)
+    await callback.answer()
+
+
+_BAD_PREFIX_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){0,3}$")
+
+
+@router.message(HetznerBadPrefixStates.waiting_prefix)
+async def process_hetzner_bad_prefix(message: Message, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account_id = data["account_id"]
+    raw = (message.text or "").strip()
+    if not _BAD_PREFIX_RE.match(raw):
+        await advance_screen(
+            message, state, texts.hetzner_bad_prefix_invalid_text(lang), reply_markup=hetzner_bad_prefix_cancel_keyboard(lang, account_id)
+        )
+        return
+
+    prefixes = await cloud_store.get_bad_ip_prefixes(message.from_user.id, account_id)
+    if raw not in prefixes:
+        prefixes.append(raw)
+        await cloud_store.set_bad_ip_prefixes(message.from_user.id, account_id, prefixes)
+
+    await advance_screen(
+        message, state, texts.hetzner_bad_prefix_added_text(lang, raw),
+        reply_markup=hetzner_bad_prefixes_keyboard(lang, account_id, prefixes),
+    )
+    await state.clear()
+
+
+@router.callback_query(F.data.startswith("hzaddr:prefixdel:"))
+async def cb_hetzner_bad_prefix_remove(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, index_raw = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await state.clear()
+    prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, account_id)
+    index = int(index_raw)
+    if 0 <= index < len(prefixes):
+        removed = prefixes.pop(index)
+        await cloud_store.set_bad_ip_prefixes(callback.from_user.id, account_id, prefixes)
+        await callback.answer(texts.hetzner_bad_prefix_removed_text(lang, removed))
+    else:
+        await callback.answer()
+    await callback.message.edit_text(
+        texts.hetzner_bad_prefixes_text(lang, prefixes),
+        reply_markup=hetzner_bad_prefixes_keyboard(lang, account_id, prefixes),
+    )
+
+
+@router.callback_query(F.data.startswith("hzaddr:delbadask:"))
+async def cb_hetzner_delete_bad_ips_ask(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, account_id)
+    if not prefixes:
+        await callback.message.edit_text(
+            texts.hetzner_delete_bad_ips_empty_text(lang),
+            reply_markup=hetzner_addresses_menu_back_keyboard(lang, account_id),
+        )
+        return
+    creds = _hetzner_creds(account)
+    try:
+        primary_ips, floating_ips = await _hetzner_free_ips(creds)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    matches = [("🟩", ip.ip) for ip in primary_ips if texts.ip_matches_any_prefix(ip.ip, prefixes)]
+    matches += [("🌐", ip.ip) for ip in floating_ips if texts.ip_matches_any_prefix(ip.ip, prefixes)]
+    if not matches:
+        await callback.message.edit_text(
+            texts.hetzner_delete_bad_ips_empty_text(lang),
+            reply_markup=hetzner_addresses_menu_back_keyboard(lang, account_id),
+        )
+        return
+    await callback.message.edit_text(
+        texts.hetzner_delete_bad_ips_confirm_text(lang, matches),
+        reply_markup=hetzner_delete_bad_ips_confirm_keyboard(lang, account_id),
+    )
+
+
+@router.callback_query(F.data.startswith("hzaddr:delbad:"))
+async def cb_hetzner_delete_bad_ips_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, account_id)
+    creds = _hetzner_creds(account)
+    try:
+        primary_ips, floating_ips = await _hetzner_free_ips(creds)
+    except HetznerAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    deleted = 0
+    failed = 0
+    for ip in primary_ips:
+        if not texts.ip_matches_any_prefix(ip.ip, prefixes):
+            continue
+        try:
+            await hetzner_delete_primary_ip(creds, ip.id)
+            deleted += 1
+        except HetznerAPIError:
+            failed += 1
+    for ip in floating_ips:
+        if not texts.ip_matches_any_prefix(ip.ip, prefixes):
+            continue
+        try:
+            await hetzner_remove_floating_ip(creds, ip.id)
+            deleted += 1
+        except HetznerAPIError:
+            failed += 1
+
+    await callback.message.edit_text(
+        texts.hetzner_delete_bad_ips_result_text(lang, deleted, failed),
+        reply_markup=hetzner_addresses_menu_back_keyboard(lang, account_id),
+    )
+
+
 @router.callback_query(F.data.startswith("hzaddr:list:"))
 async def cb_hetzner_addresses_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
@@ -3593,6 +3769,60 @@ async def cb_hetzner_address_view(callback: CallbackQuery, state: FSMContext, la
     await callback.message.edit_text(
         texts.hetzner_address_detail_text(lang, kind_full, address, server_name),
         reply_markup=hetzner_address_detail_keyboard(lang, account_id, kind_full, address),
+    )
+
+
+@router.callback_query(F.data.startswith("hzaddr:createserver:"))
+async def cb_hetzner_address_create_server(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    """Starts the server-create wizard already pinned to this free Primary
+    IP and its location -- skips the location step and the later "reuse an
+    existing IP?" offer entirely, since both are already decided."""
+    _, _, account_id, _kind, address_id_raw = callback.data.split(":", 4)
+    address_id = int(address_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    creds = _hetzner_creds(account)
+    try:
+        address = await _get_hetzner_address(creds, "p", address_id)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    if address is None or address.server_id is not None:
+        await callback.answer()
+        await _show_hetzner_address_list(callback, lang, account, account_id, "primary")
+        return
+
+    try:
+        types_ = await hetzner_list_available_server_types(creds, address.location)
+        all_locations = await hetzner_list_locations(creds)
+    except HetznerAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+
+    location_info = next((loc for loc in all_locations if loc.name == address.location), None)
+    location_display = texts.hetzner_location_display(location_info) if location_info else address.location
+
+    await state.clear()
+    type_dicts = [
+        {
+            "name": s.name, "cores": s.cores, "memory_gb": s.memory_gb, "disk_gb": s.disk_gb,
+            "price_hourly": s.price_hourly, "locations": [address.location],
+        }
+        for s in types_
+    ]
+    await state.update_data(
+        account_id=account_id, types=type_dicts,
+        location=address.location, location_display=location_display,
+        primary_ipv4_id=address.id, primary_ipv4_address=address.ip,
+    )
+    await state.set_state(HetznerVMCreateStates.choosing_type)
+    await _render_create_page(
+        callback, state, lang, texts.hetzner_create_choose_type_text, _hetzner_type_options(type_dicts),
+        0, "hzcreate:typepage", "hzcreate:cancel",
     )
 
 
@@ -3879,6 +4109,36 @@ async def process_hetzner_address_quantity(message: Message, state: FSMContext, 
 
 
 @router.callback_query(F.data == "hzaddrcreate:confirm", HetznerIPCreateStates.confirming)
+async def _hetzner_buy_filtered(
+    creds: HetznerCredentials, create_fn, delete_fn, ip_type: str, location: str, quantity: int, bad_prefixes: list[str]
+) -> tuple[list, int, int]:
+    """Buys Primary/Floating IPs one at a time until `quantity` pass the
+    bad-prefix blocklist (or a generous attempt cap is hit, so an entirely
+    bad location can't loop forever) -- any purchase that lands on a
+    blocked prefix is deleted right away rather than left sitting there."""
+    addresses: list = []
+    failed_count = 0
+    skipped_bad = 0
+    max_attempts = quantity + max(10, quantity * 3)
+    attempts = 0
+    while len(addresses) < quantity and attempts < max_attempts:
+        attempts += 1
+        try:
+            address = await create_fn(creds, ip_type, location)
+        except HetznerAPIError:
+            failed_count += 1
+            continue
+        if bad_prefixes and texts.ip_matches_any_prefix(address.ip, bad_prefixes):
+            skipped_bad += 1
+            try:
+                await delete_fn(creds, address.id)
+            except HetznerAPIError:
+                pass
+            continue
+        addresses.append(address)
+    return addresses, failed_count, skipped_bad
+
+
 async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     account = await cloud_store.get(callback.from_user.id, data["account_id"])
@@ -3892,39 +4152,29 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
     kind = data["kind"]
     quantity = data.get("quantity", 1)
     create = hetzner_create_primary_ip if kind == "p" else hetzner_create_floating_ip
+    delete_fn = hetzner_delete_primary_ip if kind == "p" else hetzner_remove_floating_ip
+    bad_prefixes = await cloud_store.get_bad_ip_prefixes(callback.from_user.id, data["account_id"])
 
-    if quantity == 1:
-        try:
-            address = await create(creds, data["ip_type"], data["location"])
-        except HetznerAPIError as exc:
-            await state.clear()
-            await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
-            return
-        await state.clear()
-        kind_full = "primary" if kind == "p" else "floating"
-        await callback.message.edit_text(
-            texts.hetzner_address_create_success_text(lang, kind_full, address),
-            reply_markup=hetzner_address_detail_keyboard(lang, data["account_id"], kind_full, address),
-        )
-        return
-
-    # Hetzner has no bulk-create endpoint -- buys them one at a time,
-    # sequentially (not in parallel, to stay gentle on rate limits), and
-    # keeps whatever already succeeded if a later one in the batch fails.
-    addresses = []
-    failed_count = 0
-    for _ in range(quantity):
-        try:
-            addresses.append(await create(creds, data["ip_type"], data["location"]))
-        except HetznerAPIError:
-            failed_count += 1
+    addresses, _attempt_failures, skipped_bad = await _hetzner_buy_filtered(
+        creds, create, delete_fn, data["ip_type"], data["location"], quantity, bad_prefixes
+    )
     await state.clear()
     kind_full = "primary" if kind == "p" else "floating"
     if not addresses:
         await callback.message.edit_text(texts.action_error_text(lang, "bad_response"), reply_markup=cloud_error_keyboard(lang))
         return
+    if quantity == 1:
+        await callback.message.edit_text(
+            texts.hetzner_address_create_success_text(lang, kind_full, addresses[0], skipped_bad_count=skipped_bad),
+            reply_markup=hetzner_address_detail_keyboard(lang, data["account_id"], kind_full, addresses[0]),
+        )
+        return
+    # "failed" here means "short of what was asked for" after every retry
+    # the buy loop already made -- a transient error it successfully
+    # retried past isn't worth reporting as a failure.
+    shortfall = max(0, quantity - len(addresses))
     await callback.message.edit_text(
-        texts.hetzner_address_bulk_created_text(lang, kind_full, addresses, failed_count),
+        texts.hetzner_address_bulk_created_text(lang, kind_full, addresses, shortfall, skipped_bad_count=skipped_bad),
         reply_markup=hetzner_address_bulk_created_keyboard(lang, data["account_id"], kind_full),
     )
 

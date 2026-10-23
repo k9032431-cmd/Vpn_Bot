@@ -101,5 +101,24 @@ class CloudStore:
                     break
             await self._write(data)
 
+    async def get_bad_ip_prefixes(self, user_id: int, account_id: str) -> list[str]:
+        """Hetzner-specific: IP prefixes (e.g. "2" or "178.63") the user has
+        flagged as not actually usable for them, even though Hetzner itself
+        sells them fine -- bulk IP purchase skips/retries on these, and a
+        dedicated action can clean out any already-bought ones."""
+        account = await self.get(user_id, account_id)
+        if not account:
+            return []
+        return list(account.get("bad_ip_prefixes") or [])
+
+    async def set_bad_ip_prefixes(self, user_id: int, account_id: str, prefixes: list[str]) -> None:
+        data = await self._load()
+        async with self._lock:
+            for account in data.get(str(user_id), []):
+                if account["id"] == account_id:
+                    account["bad_ip_prefixes"] = prefixes
+                    break
+            await self._write(data)
+
 
 cloud_store = CloudStore(config.data_dir / "cloud_accounts.json")

@@ -685,8 +685,10 @@ def hetzner_addresses_menu_keyboard(lang: str, account_id: str) -> InlineKeyboar
     builder.button(text=t(lang, "btn_hetzner_address_category_primary"), callback_data=f"hzaddr:list:{account_id}:p", style="primary")
     builder.button(text=t(lang, "btn_hetzner_address_category_floating"), callback_data=f"hzaddr:list:{account_id}:f", style="primary")
     builder.button(text=t(lang, "btn_hetzner_address_delete_free"), callback_data=f"hzaddr:freeask:{account_id}", style="danger")
+    builder.button(text=t(lang, "btn_hetzner_delete_bad_ips"), callback_data=f"hzaddr:delbadask:{account_id}", style="danger")
+    builder.button(text=t(lang, "btn_hetzner_bad_prefixes"), callback_data=f"hzaddr:prefixes:{account_id}", style="primary")
     builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}", style="primary")
-    builder.adjust(1, 1, 1, 1)
+    builder.adjust(1, 1, 1, 1, 1)
     return builder.as_markup()
 
 
@@ -727,13 +729,22 @@ def hetzner_address_detail_keyboard(lang: str, account_id: str, kind: str, addre
     kind_char = "p" if kind == "primary" else "f"
     tail = f"{account_id}:{kind_char}:{address.id}"
     builder = InlineKeyboardBuilder()
+    rows = []
     if address.server_id:
         builder.button(text=t(lang, "btn_hetzner_address_unassign"), callback_data=f"hzaddr:unassign:{tail}", style="primary")
+        rows.append(1)
     else:
         builder.button(text=t(lang, "btn_hetzner_address_assign"), callback_data=f"hzaddr:assignask:{tail}", style="primary")
+        rows.append(1)
+        if kind == "primary":
+            builder.button(
+                text=t(lang, "btn_hetzner_create_server_here"), callback_data=f"hzaddr:createserver:{tail}", style="success"
+            )
+            rows.append(1)
     builder.button(text=t(lang, "btn_hetzner_address_delete"), callback_data=f"hzaddr:delask:{tail}", style="danger")
     builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}:{kind_char}", style="danger")
-    builder.adjust(1, 1, 1)
+    rows += [1, 1]
+    builder.adjust(*rows)
     return builder.as_markup()
 
 
@@ -774,6 +785,40 @@ def hetzner_address_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzaddrcreate:confirm", style="success")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- Hetzner: "bad" IP prefixes ---
+
+
+def hetzner_bad_prefixes_keyboard(lang: str, account_id: str, prefixes: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, prefix in enumerate(prefixes):
+        builder.button(text=f"❌ {prefix}", callback_data=f"hzaddr:prefixdel:{account_id}:{i}", style="danger")
+        rows.append(1)
+    builder.button(text=t(lang, "btn_hetzner_bad_prefix_add"), callback_data=f"hzaddr:prefixaddask:{account_id}", style="primary")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}", style="danger")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def hetzner_bad_prefix_cancel_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"hzaddr:prefixes:{account_id}", style="danger")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def hetzner_delete_bad_ips_confirm_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_hetzner_bad_prefix_confirm_delete"), callback_data=f"hzaddr:delbad:{account_id}", style="danger"
+    )
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:menu:{account_id}", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 

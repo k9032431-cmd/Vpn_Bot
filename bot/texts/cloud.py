@@ -1121,20 +1121,28 @@ def hetzner_address_create_confirm_text(lang: str, kind: str, ip_type: str, loca
     )
 
 
-def hetzner_address_create_success_text(lang: str, kind: str, address) -> str:
+def hetzner_skipped_bad_note(lang: str, skipped_count: int) -> str:
+    if not skipped_count:
+        return ""
+    return "\n\n" + t(lang, "hetzner_skipped_bad_ips", icon=e("warning", "⚠️"), count=skipped_count)
+
+
+def hetzner_address_create_success_text(lang: str, kind: str, address, skipped_bad_count: int = 0) -> str:
     return t(
         lang,
         "hetzner_address_create_success",
         icon=e("success", "✅"),
         kind=hetzner_address_kind_title(lang, kind),
         ip=address.ip,
-    )
+    ) + hetzner_skipped_bad_note(lang, skipped_bad_count)
 
 
-def hetzner_address_bulk_created_text(lang: str, kind: str, addresses: list, failed_count: int) -> str:
+def hetzner_address_bulk_created_text(
+    lang: str, kind: str, addresses: list, failed_count: int, skipped_bad_count: int = 0
+) -> str:
     ip_list = "\n".join(f"<code>{addr.ip}</code>" for addr in addresses)
     if failed_count:
-        return t(
+        text = t(
             lang,
             "hetzner_address_bulk_created_partial",
             icon=e("warning", "⚠️"),
@@ -1143,14 +1151,16 @@ def hetzner_address_bulk_created_text(lang: str, kind: str, addresses: list, fai
             failed=failed_count,
             ip_list=ip_list,
         )
-    return t(
-        lang,
-        "hetzner_address_bulk_created",
-        icon=e("success", "✅"),
-        kind=hetzner_address_kind_title(lang, kind),
-        count=len(addresses),
-        ip_list=ip_list,
-    )
+    else:
+        text = t(
+            lang,
+            "hetzner_address_bulk_created",
+            icon=e("success", "✅"),
+            kind=hetzner_address_kind_title(lang, kind),
+            count=len(addresses),
+            ip_list=ip_list,
+        )
+    return text + hetzner_skipped_bad_note(lang, skipped_bad_count)
 
 
 def hetzner_address_assign_choose_server_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
@@ -1353,3 +1363,55 @@ def exoscale_create_success_text(lang: str, server, ssh_key_used: bool = False) 
         ip=server.public_ip or t(lang, "cloud_server_no_ip"),
         password_line=password_line,
     )
+
+
+# --- Hetzner: "bad" IP prefixes (self-curated blocklist) ---
+
+
+def ip_matches_prefix(ip: str, prefix: str) -> bool:
+    ip_parts = ip.split(".")
+    prefix_parts = prefix.strip().split(".")
+    return ip_parts[: len(prefix_parts)] == prefix_parts
+
+
+def ip_matches_any_prefix(ip: str, prefixes: list[str]) -> bool:
+    return any(ip_matches_prefix(ip, p) for p in prefixes)
+
+
+def hetzner_bad_prefixes_text(lang: str, prefixes: list[str]) -> str:
+    body_key = "hetzner_bad_prefixes_hint" if prefixes else "hetzner_bad_prefixes_empty"
+    return t(lang, "hetzner_bad_prefixes_header", icon=e("warning", "⚠️"), body=t(lang, body_key))
+
+
+def hetzner_bad_prefix_waiting_text(lang: str) -> str:
+    return t(lang, "hetzner_bad_prefix_waiting")
+
+
+def hetzner_bad_prefix_invalid_text(lang: str) -> str:
+    return t(lang, "hetzner_bad_prefix_invalid")
+
+
+def hetzner_bad_prefix_added_text(lang: str, prefix: str) -> str:
+    return t(lang, "hetzner_bad_prefix_added", icon=e("success", "✅"), prefix=prefix)
+
+
+def hetzner_bad_prefix_removed_text(lang: str, prefix: str) -> str:
+    return t(lang, "hetzner_bad_prefix_removed", icon=e("success", "✅"), prefix=prefix)
+
+
+def hetzner_delete_bad_ips_confirm_text(lang: str, matches: list[tuple[str, str]]) -> str:
+    ip_list = "\n".join(f"{icon} <code>{ip}</code>" for icon, ip in matches)
+    return t(lang, "hetzner_delete_bad_ips_confirm", icon=e("warning", "⚠️"), count=len(matches), ip_list=ip_list)
+
+
+def hetzner_delete_bad_ips_empty_text(lang: str) -> str:
+    return t(lang, "hetzner_delete_bad_ips_empty")
+
+
+def hetzner_delete_bad_ips_result_text(lang: str, deleted_count: int, failed_count: int) -> str:
+    if failed_count:
+        return t(
+            lang, "hetzner_delete_bad_ips_result_partial",
+            icon=e("warning", "⚠️"), deleted=deleted_count, failed=failed_count,
+        )
+    return t(lang, "hetzner_delete_bad_ips_result", icon=e("success", "✅"), count=deleted_count)
