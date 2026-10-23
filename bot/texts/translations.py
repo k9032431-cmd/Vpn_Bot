@@ -2859,24 +2859,58 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "{icon} <code>{ip}</code> hemişelik pozulsynmy? Bu yza gaýtaryp bolmaýar — salgy ýok bolar.",
     },
     "hetzner_address_create_choose_type": {
-        "ru": "Покупка {kind} — шаг 1/3\n\nВыберите версию протокола:",
-        "en": "Buying a {kind} — step 1/3\n\nChoose the protocol version:",
-        "tk": "{kind} satyn almak — 1/3 ädim\n\nProtokol wersiýasyny saýlaň:",
+        "ru": "Покупка {kind} — шаг 1/4\n\nВыберите версию протокола:",
+        "en": "Buying a {kind} — step 1/4\n\nChoose the protocol version:",
+        "tk": "{kind} satyn almak — 1/4 ädim\n\nProtokol wersiýasyny saýlaň:",
     },
     "hetzner_address_create_choose_location": {
-        "ru": "Покупка IP — шаг 2/3\n\nВыберите локацию (дата-центр):",
-        "en": "Buying an IP — step 2/3\n\nChoose a location (datacenter):",
-        "tk": "IP satyn almak — 2/3 ädim\n\nÝerleşişi (datacenter) saýlaň:",
+        "ru": "Покупка IP — шаг 2/4\n\nВыберите локацию (дата-центр):",
+        "en": "Buying an IP — step 2/4\n\nChoose a location (datacenter):",
+        "tk": "IP satyn almak — 2/4 ädim\n\nÝerleşişi (datacenter) saýlaň:",
+    },
+    "hetzner_address_create_waiting_quantity": {
+        "ru": "Покупка IP — шаг 3/4\n\nСколько адресов купить за раз? Введите число от 1 до {max}:",
+        "en": "Buying an IP — step 3/4\n\nHow many addresses to buy at once? Enter a number from 1 to {max}:",
+        "tk": "IP satyn almak — 3/4 ädim\n\nBirbada näçe salgy satyn almaly? 1-den {max}-a çenli san giriziň:",
+    },
+    "hetzner_address_create_invalid_quantity": {
+        "ru": "Введите целое число от 1 до {max}:",
+        "en": "Enter a whole number from 1 to {max}:",
+        "tk": "1-den {max}-a çenli bitin san giriziň:",
     },
     "hetzner_address_create_confirm": {
-        "ru": "Подтвердите покупку:\n\n🌐 Тип: {kind}\n🔢 Версия: {ip_type}\n📍 Локация: {location}",
-        "en": "Confirm the purchase:\n\n🌐 Type: {kind}\n🔢 Version: {ip_type}\n📍 Location: {location}",
-        "tk": "Satyn almany tassyklaň:\n\n🌐 Görnüşi: {kind}\n🔢 Wersiýasy: {ip_type}\n📍 Ýerleşişi: {location}",
+        "ru": "Подтвердите покупку — шаг 4/4:\n\n🌐 Тип: {kind}\n🔢 Версия: {ip_type}\n📍 Локация: {location}",
+        "en": "Confirm the purchase — step 4/4:\n\n🌐 Type: {kind}\n🔢 Version: {ip_type}\n📍 Location: {location}",
+        "tk": "Satyn almany tassyklaň — 4/4 ädim:\n\n🌐 Görnüşi: {kind}\n🔢 Wersiýasy: {ip_type}\n📍 Ýerleşişi: {location}",
+    },
+    "hetzner_address_create_confirm_bulk": {
+        "ru": (
+            "Подтвердите покупку — шаг 4/4:\n\n🌐 Тип: {kind}\n🔢 Версия: {ip_type}\n📍 Локация: {location}\n"
+            "📦 Количество: {quantity}\n\n💰 Это создаст {quantity} платных ресурсов в Hetzner."
+        ),
+        "en": (
+            "Confirm the purchase — step 4/4:\n\n🌐 Type: {kind}\n🔢 Version: {ip_type}\n📍 Location: {location}\n"
+            "📦 Quantity: {quantity}\n\n💰 This will create {quantity} billable resources in Hetzner."
+        ),
+        "tk": (
+            "Satyn almany tassyklaň — 4/4 ädim:\n\n🌐 Görnüşi: {kind}\n🔢 Wersiýasy: {ip_type}\n📍 Ýerleşişi: {location}\n"
+            "📦 Sany: {quantity}\n\n💰 Bu Hetzner-de {quantity} sany tölegli resurs dörediler."
+        ),
     },
     "hetzner_address_create_success": {
         "ru": "{icon} {kind} <code>{ip}</code> куплен и пока не привязан ни к одному серверу.",
         "en": "{icon} {kind} <code>{ip}</code> purchased and not yet assigned to any server.",
         "tk": "{icon} {kind} <code>{ip}</code> satyn alyndy we heniz hiç bir servere baglanmady.",
+    },
+    "hetzner_address_bulk_created": {
+        "ru": "{icon} Куплено {kind}: {count} шт.\n\n{ip_list}",
+        "en": "{icon} Purchased {count} × {kind}.\n\n{ip_list}",
+        "tk": "{icon} Satyn alyndy: {count} sany {kind}.\n\n{ip_list}",
+    },
+    "hetzner_address_bulk_created_partial": {
+        "ru": "{icon} Куплено {kind}: {count} шт. Не получилось купить ещё: {failed}.\n\n{ip_list}",
+        "en": "{icon} Purchased {count} × {kind}. Couldn't buy {failed} more.\n\n{ip_list}",
+        "tk": "{icon} Satyn alyndy: {count} sany {kind}. Ýene {failed} sanyny satyn alyp bolmady.\n\n{ip_list}",
     },
     "hetzner_address_assign_choose_server": {
         "ru": "Выберите сервер, к которому привязать этот адрес:",

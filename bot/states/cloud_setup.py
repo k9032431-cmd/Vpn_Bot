@@ -81,6 +81,7 @@ class HetznerPlanChangeStates(StatesGroup):
 class HetznerIPCreateStates(StatesGroup):
     choosing_type = State()
     choosing_location = State()
+    waiting_quantity = State()
     confirming = State()
 
 

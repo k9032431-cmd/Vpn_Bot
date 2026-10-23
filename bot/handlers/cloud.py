@@ -45,6 +45,8 @@ from bot.keyboards.cloud import (
     exoscale_server_delete_confirm_keyboard,
     exoscale_server_detail_keyboard,
     exoscale_servers_list_keyboard,
+    hetzner_address_bulk_created_keyboard,
+    hetzner_address_create_cancel_keyboard,
     hetzner_address_create_confirm_keyboard,
     hetzner_address_create_type_keyboard,
     hetzner_address_delete_confirm_keyboard,
@@ -3834,14 +3836,30 @@ async def cb_hetzner_address_create_pick_location(callback: CallbackQuery, state
     index = int(callback.data.split(":", 2)[2])
     data = await state.get_data()
     location = data["locations"][index]
-    await state.update_data(location=location["name"])
-    await state.set_state(HetznerIPCreateStates.confirming)
-    kind_full = "primary" if data["kind"] == "p" else "floating"
+    await state.update_data(location=location["name"], location_display=location["description"])
+    await state.set_state(HetznerIPCreateStates.waiting_quantity)
     await callback.message.edit_text(
-        texts.hetzner_address_create_confirm_text(lang, kind_full, data["ip_type"], location["description"]),
-        reply_markup=hetzner_address_create_confirm_keyboard(lang),
+        texts.hetzner_address_create_waiting_quantity_text(lang), reply_markup=hetzner_address_create_cancel_keyboard(lang)
     )
     await callback.answer()
+
+
+@router.message(HetznerIPCreateStates.waiting_quantity)
+async def process_hetzner_address_quantity(message: Message, state: FSMContext, lang: str) -> None:
+    raw = message.text.strip() if message.text else ""
+    if not raw.isdigit() or not (1 <= int(raw) <= texts.HETZNER_ADDRESS_BULK_MAX):
+        await message.answer(
+            texts.hetzner_address_create_invalid_quantity_text(lang), reply_markup=hetzner_address_create_cancel_keyboard(lang)
+        )
+        return
+
+    data = await state.update_data(quantity=int(raw))
+    await state.set_state(HetznerIPCreateStates.confirming)
+    kind_full = "primary" if data["kind"] == "p" else "floating"
+    await message.answer(
+        texts.hetzner_address_create_confirm_text(lang, kind_full, data["ip_type"], data["location_display"], int(raw)),
+        reply_markup=hetzner_address_create_confirm_keyboard(lang),
+    )
 
 
 @router.callback_query(F.data == "hzaddrcreate:confirm", HetznerIPCreateStates.confirming)
@@ -3856,20 +3874,42 @@ async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMC
     await callback.answer()
     creds = _hetzner_creds(account)
     kind = data["kind"]
-    try:
-        if kind == "p":
-            address = await hetzner_create_primary_ip(creds, data["ip_type"], data["location"])
-        else:
-            address = await hetzner_create_floating_ip(creds, data["ip_type"], data["location"])
-    except HetznerAPIError as exc:
+    quantity = data.get("quantity", 1)
+    create = hetzner_create_primary_ip if kind == "p" else hetzner_create_floating_ip
+
+    if quantity == 1:
+        try:
+            address = await create(creds, data["ip_type"], data["location"])
+        except HetznerAPIError as exc:
+            await state.clear()
+            await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+            return
         await state.clear()
-        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        kind_full = "primary" if kind == "p" else "floating"
+        await callback.message.edit_text(
+            texts.hetzner_address_create_success_text(lang, kind_full, address),
+            reply_markup=hetzner_address_detail_keyboard(lang, data["account_id"], kind_full, address),
+        )
         return
+
+    # Hetzner has no bulk-create endpoint -- buys them one at a time,
+    # sequentially (not in parallel, to stay gentle on rate limits), and
+    # keeps whatever already succeeded if a later one in the batch fails.
+    addresses = []
+    failed_count = 0
+    for _ in range(quantity):
+        try:
+            addresses.append(await create(creds, data["ip_type"], data["location"]))
+        except HetznerAPIError:
+            failed_count += 1
     await state.clear()
     kind_full = "primary" if kind == "p" else "floating"
+    if not addresses:
+        await callback.message.edit_text(texts.action_error_text(lang, "bad_response"), reply_markup=cloud_error_keyboard(lang))
+        return
     await callback.message.edit_text(
-        texts.hetzner_address_create_success_text(lang, kind_full, address),
-        reply_markup=hetzner_address_detail_keyboard(lang, data["account_id"], kind_full, address),
+        texts.hetzner_address_bulk_created_text(lang, kind_full, addresses, failed_count),
+        reply_markup=hetzner_address_bulk_created_keyboard(lang, data["account_id"], kind_full),
     )
 
 

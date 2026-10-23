@@ -1092,13 +1092,26 @@ def hetzner_address_create_choose_location_text(lang: str, page: int = 0, total_
     return t(lang, "hetzner_address_create_choose_location") + _page_suffix(lang, page, total_pages)
 
 
-def hetzner_address_create_confirm_text(lang: str, kind: str, ip_type: str, location: str) -> str:
+HETZNER_ADDRESS_BULK_MAX = 20
+
+
+def hetzner_address_create_waiting_quantity_text(lang: str) -> str:
+    return t(lang, "hetzner_address_create_waiting_quantity", max=HETZNER_ADDRESS_BULK_MAX)
+
+
+def hetzner_address_create_invalid_quantity_text(lang: str) -> str:
+    return t(lang, "hetzner_address_create_invalid_quantity", max=HETZNER_ADDRESS_BULK_MAX)
+
+
+def hetzner_address_create_confirm_text(lang: str, kind: str, ip_type: str, location: str, quantity: int = 1) -> str:
+    key = "hetzner_address_create_confirm_bulk" if quantity > 1 else "hetzner_address_create_confirm"
     return t(
         lang,
-        "hetzner_address_create_confirm",
+        key,
         kind=hetzner_address_kind_title(lang, kind),
         ip_type=ip_type.upper(),
         location=location,
+        quantity=quantity,
     )
 
 
@@ -1109,6 +1122,28 @@ def hetzner_address_create_success_text(lang: str, kind: str, address) -> str:
         icon=e("success", "✅"),
         kind=hetzner_address_kind_title(lang, kind),
         ip=address.ip,
+    )
+
+
+def hetzner_address_bulk_created_text(lang: str, kind: str, addresses: list, failed_count: int) -> str:
+    ip_list = "\n".join(f"<code>{addr.ip}</code>" for addr in addresses)
+    if failed_count:
+        return t(
+            lang,
+            "hetzner_address_bulk_created_partial",
+            icon=e("warning", "⚠️"),
+            kind=hetzner_address_kind_title(lang, kind),
+            count=len(addresses),
+            failed=failed_count,
+            ip_list=ip_list,
+        )
+    return t(
+        lang,
+        "hetzner_address_bulk_created",
+        icon=e("success", "✅"),
+        kind=hetzner_address_kind_title(lang, kind),
+        count=len(addresses),
+        ip_list=ip_list,
     )
 
 

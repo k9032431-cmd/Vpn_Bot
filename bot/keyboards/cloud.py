@@ -755,6 +755,21 @@ def hetzner_address_create_type_keyboard(lang: str) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def hetzner_address_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="hzaddrcreate:cancel", style="danger")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def hetzner_address_bulk_created_keyboard(lang: str, account_id: str, kind: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    kind_char = "p" if kind == "primary" else "f"
+    builder.button(text=t(lang, "btn_cloud_addresses_back"), callback_data=f"hzaddr:list:{account_id}:{kind_char}", style="danger")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def hetzner_address_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="hzaddrcreate:confirm", style="success")
