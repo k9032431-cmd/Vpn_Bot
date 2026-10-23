@@ -706,15 +706,39 @@ def hetzner_free_ips_confirm_keyboard(lang: str, account_id: str) -> InlineKeybo
     return builder.as_markup()
 
 
-def hetzner_addresses_list_keyboard(lang: str, account_id: str, kind: str, addresses: list) -> InlineKeyboardMarkup:
+HETZNER_ADDRESS_LIST_PAGE_SIZE = 20
+
+
+def hetzner_addresses_list_keyboard(
+    lang: str, account_id: str, kind: str, addresses: list, page: int = 0
+) -> InlineKeyboardMarkup:
     kind_char = "p" if kind == "primary" else "f"
+    # A flat one-button-per-address keyboard breaks once an account has
+    # enough IPs (Telegram caps how large an inline keyboard can be), which
+    # bulk-buying 50-100 at a time reaches fast -- paginate it the same way
+    # the create wizards' zone/plan pickers do.
+    total_pages = max(1, -(-len(addresses) // HETZNER_ADDRESS_LIST_PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    page_addresses = addresses[page * HETZNER_ADDRESS_LIST_PAGE_SIZE : (page + 1) * HETZNER_ADDRESS_LIST_PAGE_SIZE]
+
     builder = InlineKeyboardBuilder()
     rows: list[int] = []
-    for address in addresses:
+    for address in page_addresses:
         builder.button(
             text=hetzner_address_list_label(kind, address), callback_data=f"hzaddr:view:{account_id}:{kind_char}:{address.id}"
         , style="primary")
         rows.append(1)
+
+    nav_count = 0
+    if page > 0:
+        builder.button(text="◀️", callback_data=f"hzaddr:listpage:{account_id}:{kind_char}:{page - 1}", style="primary")
+        nav_count += 1
+    if page < total_pages - 1:
+        builder.button(text="▶️", callback_data=f"hzaddr:listpage:{account_id}:{kind_char}:{page + 1}", style="primary")
+        nav_count += 1
+    if nav_count:
+        rows.append(nav_count)
+
     buy_key = "btn_hetzner_address_buy_primary" if kind == "primary" else "btn_hetzner_address_buy_floating"
     buy_prefix = "hzaddr:buyp" if kind == "primary" else "hzaddr:buyf"
     builder.button(text=t(lang, buy_key), callback_data=f"{buy_prefix}:{account_id}", style="primary")

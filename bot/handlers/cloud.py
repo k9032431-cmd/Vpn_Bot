@@ -12,6 +12,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.cloud import (
+    HETZNER_ADDRESS_LIST_PAGE_SIZE,
     PAGE_SIZE,
     account_dashboard_keyboard,
     account_list_keyboard,
@@ -3475,16 +3476,20 @@ async def cb_hetzner_ip_remove(callback: CallbackQuery, lang: str) -> None:
 # --- Hetzner: standalone IP addresses (Primary + Floating, account-level) ---
 
 
-async def _show_hetzner_address_list(callback: CallbackQuery, lang: str, account: dict, account_id: str, kind: str) -> None:
+async def _show_hetzner_address_list(
+    callback: CallbackQuery, lang: str, account: dict, account_id: str, kind: str, page: int = 0
+) -> None:
     creds = _hetzner_creds(account)
     try:
         addresses = await hetzner_list_primary_ips(creds) if kind == "primary" else await hetzner_list_all_floating_ips(creds)
     except HetznerAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
+    total_pages = max(1, -(-len(addresses) // HETZNER_ADDRESS_LIST_PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
     await callback.message.edit_text(
-        texts.hetzner_addresses_header_text(lang, kind, bool(addresses)),
-        reply_markup=hetzner_addresses_list_keyboard(lang, account_id, kind, addresses),
+        texts.hetzner_addresses_header_text(lang, kind, bool(addresses), page, total_pages),
+        reply_markup=hetzner_addresses_list_keyboard(lang, account_id, kind, addresses, page),
     )
 
 
@@ -3665,6 +3670,18 @@ async def cb_hetzner_addresses_list(callback: CallbackQuery, state: FSMContext, 
     await callback.answer()
     kind = "primary" if kind_char == "p" else "floating"
     await _show_hetzner_address_list(callback, lang, account, account_id, kind)
+
+
+@router.callback_query(F.data.startswith("hzaddr:listpage:"))
+async def cb_hetzner_addresses_list_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, kind_char, page_raw = callback.data.split(":", 4)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    kind = "primary" if kind_char == "p" else "floating"
+    await _show_hetzner_address_list(callback, lang, account, account_id, kind, page=int(page_raw))
 
 
 async def _hetzner_free_ips(creds: HetznerCredentials) -> tuple[list, list]:

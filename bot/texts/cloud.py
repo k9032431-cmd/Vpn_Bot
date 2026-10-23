@@ -1059,12 +1059,15 @@ def hetzner_addresses_menu_text(lang: str) -> str:
     return t(lang, "hetzner_addresses_menu")
 
 
-def hetzner_addresses_header_text(lang: str, kind: str, has_addresses: bool) -> str:
+def hetzner_addresses_header_text(
+    lang: str, kind: str, has_addresses: bool, page: int = 0, total_pages: int = 1
+) -> str:
     icon = "🟩" if kind == "primary" else "🌐"
     body_key = "hetzner_addresses_hint" if has_addresses else "hetzner_addresses_empty"
-    return t(
+    text = t(
         lang, "hetzner_addresses_header", icon=icon, kind=hetzner_address_kind_title(lang, kind), body=t(lang, body_key)
     )
+    return text + _page_suffix(lang, page, total_pages)
 
 
 def hetzner_address_detail_text(lang: str, kind: str, address, server_name: str | None) -> str:
