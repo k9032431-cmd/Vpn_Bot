@@ -4109,7 +4109,6 @@ async def process_hetzner_address_quantity(message: Message, state: FSMContext, 
     )
 
 
-@router.callback_query(F.data == "hzaddrcreate:confirm", HetznerIPCreateStates.confirming)
 async def _hetzner_buy_filtered(
     creds: HetznerCredentials, create_fn, delete_fn, ip_type: str, location: str, quantity: int, bad_prefixes: list[str],
     progress=None,
@@ -4152,6 +4151,7 @@ async def _hetzner_buy_filtered(
     return addresses, failed_count, skipped_bad
 
 
+@router.callback_query(F.data == "hzaddrcreate:confirm", HetznerIPCreateStates.confirming)
 async def cb_hetzner_address_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
     account = await cloud_store.get(callback.from_user.id, data["account_id"])
