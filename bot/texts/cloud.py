@@ -651,14 +651,6 @@ def azure_create_choose_size_text(lang: str, page: int = 0, total_pages: int = 1
     return t(lang, "azure_create_choose_size", icon=e("azure", "🔷")) + _page_suffix(lang, page, total_pages)
 
 
-def azure_create_size_capacity_error_text(
-    lang: str, failed_size: str, page: int = 0, total_pages: int = 1
-) -> str:
-    return t(lang, "azure_create_size_capacity_error", icon=e("error", "❌"), size=failed_size) + _page_suffix(
-        lang, page, total_pages
-    )
-
-
 def azure_create_choose_zone_text(lang: str) -> str:
     return t(lang, "azure_create_choose_zone", icon=e("azure", "🔷"))
 
@@ -811,14 +803,14 @@ def azure_port_deleted_text(lang: str) -> str:
     return t(lang, "azure_port_deleted", icon=e("success", "✅"))
 
 
-def azure_create_success_text(lang: str, vm, ssh_key_used: bool = False) -> str:
+def azure_create_success_text(lang: str, vm, ssh_key_used: bool = False, requested_size: str | None = None) -> str:
     no_ip = t(lang, "cloud_server_no_ip")
     password_line = ""
     if ssh_key_used:
         password_line = t(lang, "cloud_create_ssh_key_line")
     elif vm.admin_password:
         password_line = t(lang, "cloud_create_password_line", password=html.escape(vm.admin_password))
-    return t(
+    text = t(
         lang,
         "azure_create_success",
         icon=e("success", "✅"),
@@ -828,6 +820,17 @@ def azure_create_success_text(lang: str, vm, ssh_key_used: bool = False) -> str:
         username=html.escape(vm.admin_username),
         password_line=password_line,
     )
+    if requested_size and requested_size != vm.vm_size:
+        text += t(lang, "azure_create_size_switched_note", icon=e("warning", "⚠️"), requested=requested_size, used=vm.vm_size)
+    return text
+
+
+def azure_create_retry_size_text(lang: str, failed_size: str, next_size: str) -> str:
+    return t(lang, "azure_create_retry_size", icon=e("warning", "⚠️"), failed=failed_size, next=next_size)
+
+
+def azure_create_all_sizes_exhausted_text(lang: str) -> str:
+    return t(lang, "azure_create_all_sizes_exhausted", icon=e("error", "❌"))
 
 
 def ip_removed_text(lang: str) -> str:

@@ -2352,38 +2352,49 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
     else:
         admin_password = data.get("custom_password") or generate_azure_password()
 
-    try:
-        vm = await azure_create_vm(
-            _azure_creds(account),
-            location=data["location"],
-            vm_size=data["vm_size"],
-            image=image,
-            vm_name=data["hostname"],
-            admin_username=data["admin_username"],
-            admin_password=admin_password,
-            ssh_public_key=ssh_public_key,
-            zone=data.get("zone"),
-            progress=progress,
-        )
-    except AzureAPIError as exc:
-        reason = str(exc)
-        failed_skus = azure_capacity_restricted_skus(reason) if reason.startswith("detail:") else []
-        remaining_sizes = [s for s in data["sizes"] if s["name"] not in failed_skus]
-        if failed_skus and remaining_sizes:
-            await state.update_data(sizes=remaining_sizes)
-            await state.set_state(AzureVMCreateStates.choosing_size)
-            failed_size = failed_skus[0]
-            await _render_create_page(
-                callback,
-                state, lang,
-                lambda l, p, tp, _size=failed_size: texts.azure_create_size_capacity_error_text(l, _size, p, tp),
-                _azure_size_options(remaining_sizes),
-                0, "azcreate:sizepage", "azcreate:cancel",
+    requested_size = data["vm_size"]
+    # Azure's live datacenter capacity can't be checked ahead of time (see
+    # azure_list_available_sizes' docstring) -- the only way to make "only
+    # available options" true from the user's side is to keep trying the
+    # other sizes already vetted for this location/quota automatically on a
+    # capacity failure, instead of bouncing them back to re-pick by hand.
+    candidates = [(requested_size, data.get("zone"))]
+    candidates += [(s["name"], None) for s in data["sizes"] if s["name"] != requested_size]
+
+    vm = None
+    for i, (size_name, zone) in enumerate(candidates):
+        try:
+            vm = await azure_create_vm(
+                _azure_creds(account),
+                location=data["location"],
+                vm_size=size_name,
+                image=image,
+                vm_name=data["hostname"],
+                admin_username=data["admin_username"],
+                admin_password=admin_password,
+                ssh_public_key=ssh_public_key,
+                zone=zone,
+                progress=progress,
             )
-            return
-        await state.clear()
-        await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
-        return
+            break
+        except AzureAPIError as exc:
+            reason = str(exc)
+            failed_skus = azure_capacity_restricted_skus(reason) if reason.startswith("detail:") else []
+            if not failed_skus:
+                await state.clear()
+                await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
+                return
+            if i + 1 >= len(candidates):
+                await state.clear()
+                await status_message.edit_text(
+                    texts.azure_create_all_sizes_exhausted_text(lang), reply_markup=cloud_error_keyboard(lang)
+                )
+                return
+            next_size = candidates[i + 1][0]
+            try:
+                await status_message.edit_text(texts.azure_create_retry_size_text(lang, size_name, next_size))
+            except Exception:
+                pass
 
     if admin_password:
         # Azure never hands the password back after this point -- keep our
@@ -2392,7 +2403,7 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
 
     await state.clear()
     await status_message.edit_text(
-        texts.azure_create_success_text(lang, vm, ssh_key_used=bool(ssh_public_key)),
+        texts.azure_create_success_text(lang, vm, ssh_key_used=bool(ssh_public_key), requested_size=requested_size),
         reply_markup=azure_vm_detail_keyboard(lang, data["account_id"], vm),
     )
 

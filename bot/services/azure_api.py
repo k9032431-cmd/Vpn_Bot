@@ -448,10 +448,9 @@ def azure_capacity_restricted_skus(error_detail: str) -> list[str]:
 
     This only ever fires *after* a create attempt, because live capacity
     shortages aren't visible through ``azure_list_available_sizes`` (Azure
-    doesn't report them ahead of time) — the caller uses this to drop just
-    the failed size(s) from the picker and let the user retry with a
-    different one instead of the whole create wizard dying with a raw
-    error."""
+    doesn't report them ahead of time) — the caller uses this to drop the
+    failed size and automatically retry with the next already-vetted one,
+    instead of the whole create wizard dying with a raw error."""
     match = _CAPACITY_RESTRICTION_RE.search(error_detail)
     if not match:
         return []

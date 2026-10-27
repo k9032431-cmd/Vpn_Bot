@@ -2315,11 +2315,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} <b>New VM — step 2/7</b>\n\nChoose a size:",
         "tk": "{icon} <b>Täze VM — 2/7 ädim</b>\n\nÖlçegi saýlaň:",
     },
-    "azure_create_size_capacity_error": {
-        "ru": "{icon} <b>{size}</b> сейчас недоступен в этом регионе (нет мощностей у Azure). Выберите другой:",
-        "en": "{icon} <b>{size}</b> is unavailable in this region right now (Azure capacity). Choose another:",
-        "tk": "{icon} <b>{size}</b> häzir bu sebitde elýeterli däl (Azure-da kuwwat ýok). Başga saýlaň:",
-    },
     "azure_create_choose_image": {
         "ru": "{icon} <b>Новая VM — шаг 4/7</b>\n\nВыберите операционную систему:",
         "en": "{icon} <b>New VM — step 4/7</b>\n\nChoose an OS image:",
@@ -2483,6 +2478,30 @@ _STRINGS: dict[str, dict[str, str]] = {
             "🌐 <b>IP:</b> <code>{ip}</code>\n"
             "👤 <b>Ulanyjy ady:</b> <code>{username}</code>\n"
             "{password_line}"
+        ),
+    },
+    "azure_create_size_switched_note": {
+        "ru": "\n\n{icon} <b>{requested}</b> был недоступен по мощности прямо сейчас — бот автоматически создал сервер на <b>{used}</b>.",
+        "en": "\n\n{icon} <b>{requested}</b> had no capacity available right now — the bot automatically created the server on <b>{used}</b> instead.",
+        "tk": "\n\n{icon} <b>{requested}</b> häzir kuwwat boýunça elýeterli däldi — bot awtomatiki <b>{used}</b> ölçeginde server döretdi.",
+    },
+    "azure_create_retry_size": {
+        "ru": "{icon} <b>{failed}</b> недоступен прямо сейчас (нет мощностей). Пробую <b>{next}</b>...",
+        "en": "{icon} <b>{failed}</b> is unavailable right now (no capacity). Trying <b>{next}</b>...",
+        "tk": "{icon} <b>{failed}</b> häzir elýeterli däl (kuwwat ýok). <b>{next}</b> synanyşylýar...",
+    },
+    "azure_create_all_sizes_exhausted": {
+        "ru": (
+            "{icon} Прямо сейчас ни один из подходящих размеров VM не доступен в этом регионе "
+            "(у Azure нет свободных мощностей). Попробуйте ещё раз через несколько минут или выберите другой регион."
+        ),
+        "en": (
+            "{icon} Right now none of the suitable VM sizes have capacity in this region. "
+            "Try again in a few minutes or pick a different region."
+        ),
+        "tk": (
+            "{icon} Häzir bu sebitde hiç bir laýyk VM ölçegi elýeterli däl (Azure-da boş kuwwat ýok). "
+            "Birnäçe minutdan gaýtadan synanyşyň ýa-da başga sebit saýlaň."
         ),
     },
     "btn_azure_vm_ports": {"ru": "🔌 Порты", "en": "🔌 Ports", "tk": "🔌 Portlar"},
