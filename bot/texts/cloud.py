@@ -829,8 +829,12 @@ def azure_create_retry_size_text(lang: str, failed_size: str, next_size: str) ->
     return t(lang, "azure_create_retry_size", icon=e("warning", "⚠️"), failed=failed_size, next=next_size)
 
 
-def azure_create_all_sizes_exhausted_text(lang: str) -> str:
-    return t(lang, "azure_create_all_sizes_exhausted", icon=e("error", "❌"))
+def azure_create_location_capacity_error_text(
+    lang: str, failed_location: str, page: int = 0, total_pages: int = 1
+) -> str:
+    return t(lang, "azure_create_location_capacity_error", icon=e("error", "❌"), location=failed_location) + _page_suffix(
+        lang, page, total_pages
+    )
 
 
 def ip_removed_text(lang: str) -> str:

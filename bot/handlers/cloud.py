@@ -2158,6 +2158,19 @@ async def _show_azure_image_step(callback: CallbackQuery, state: FSMContext, lan
     )
 
 
+async def _azure_after_size_or_zone(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    """After a size (and zone, if any) is picked: the normal wizard still
+    needs an image/hostname/username/auth method, but a retry after a
+    whole region ran out of capacity already has all of those from the
+    attempt that failed -- skip straight back to confirming instead of
+    making the user re-answer questions they already answered once."""
+    data = await state.get_data()
+    if data.get("retry_after_exhaustion") and data.get("hostname"):
+        await _show_azure_create_confirmation(callback, state, lang)
+    else:
+        await _show_azure_image_step(callback, state, lang)
+
+
 @router.callback_query(F.data.startswith("azcreate:size:"), AzureVMCreateStates.choosing_size)
 async def cb_azure_create_pick_size(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     index = int(callback.data.split(":", 2)[2])
@@ -2179,7 +2192,7 @@ async def cb_azure_create_pick_size(callback: CallbackQuery, state: FSMContext, 
         return
 
     await state.update_data(zone=None)
-    await _show_azure_image_step(callback, state, lang)
+    await _azure_after_size_or_zone(callback, state, lang)
 
 
 @router.callback_query(F.data.startswith("azcreate:zone:"), AzureVMCreateStates.choosing_zone)
@@ -2188,7 +2201,7 @@ async def cb_azure_create_pick_zone(callback: CallbackQuery, state: FSMContext, 
     zone = None if raw == "none" else raw
     await state.update_data(zone=zone)
     await callback.answer()
-    await _show_azure_image_step(callback, state, lang)
+    await _azure_after_size_or_zone(callback, state, lang)
 
 
 @router.callback_query(F.data.startswith("azcreate:imgpage:"), AzureVMCreateStates.choosing_image)
@@ -2385,9 +2398,23 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
                 await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
                 return
             if i + 1 >= len(candidates):
-                await state.clear()
-                await status_message.edit_text(
-                    texts.azure_create_all_sizes_exhausted_text(lang), reply_markup=cloud_error_keyboard(lang)
+                # Every size already vetted for this location is out of
+                # capacity right now -- rather than wipe the whole wizard
+                # (hostname/auth/image the user already picked), send them
+                # straight back to the location step so picking a different
+                # region is the only thing they have to redo. Region is
+                # kept a deliberate, visible choice rather than silently
+                # auto-switched: for a VPN server, which country it's in
+                # isn't an interchangeable detail like the VM size is.
+                await state.update_data(retry_after_exhaustion=True)
+                await state.set_state(AzureVMCreateStates.choosing_location)
+                await _render_create_page(
+                    callback, state, lang,
+                    lambda l, p, tp, _loc=data["location_display"]: texts.azure_create_location_capacity_error_text(
+                        l, _loc, p, tp
+                    ),
+                    _azure_location_options(data["locations"]),
+                    0, "azcreate:locpage", "azcreate:cancel",
                 )
                 return
             next_size = candidates[i + 1][0]

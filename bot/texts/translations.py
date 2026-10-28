@@ -2490,18 +2490,18 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} <b>{failed}</b> is unavailable right now (no capacity). Trying <b>{next}</b>...",
         "tk": "{icon} <b>{failed}</b> häzir elýeterli däl (kuwwat ýok). <b>{next}</b> synanyşylýar...",
     },
-    "azure_create_all_sizes_exhausted": {
+    "azure_create_location_capacity_error": {
         "ru": (
-            "{icon} Прямо сейчас ни один из подходящих размеров VM не доступен в этом регионе "
-            "(у Azure нет свободных мощностей). Попробуйте ещё раз через несколько минут или выберите другой регион."
+            "{icon} В регионе <b>{location}</b> прямо сейчас нет мощностей ни под один из подходящих размеров VM. "
+            "Выберите другой регион:"
         ),
         "en": (
-            "{icon} Right now none of the suitable VM sizes have capacity in this region. "
-            "Try again in a few minutes or pick a different region."
+            "{icon} <b>{location}</b> has no capacity right now for any of the suitable VM sizes. "
+            "Choose a different region:"
         ),
         "tk": (
-            "{icon} Häzir bu sebitde hiç bir laýyk VM ölçegi elýeterli däl (Azure-da boş kuwwat ýok). "
-            "Birnäçe minutdan gaýtadan synanyşyň ýa-da başga sebit saýlaň."
+            "{icon} <b>{location}</b> sebitinde häzir hiç bir laýyk VM ölçegi üçin kuwwat ýok. "
+            "Başga sebit saýlaň:"
         ),
     },
     "btn_azure_vm_ports": {"ru": "🔌 Порты", "en": "🔌 Ports", "tk": "🔌 Portlar"},
