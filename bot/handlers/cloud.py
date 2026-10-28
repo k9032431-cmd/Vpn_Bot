@@ -2483,6 +2483,27 @@ async def _show_azure_create_confirmation(source, state: FSMContext, lang: str) 
     )
 
 
+_TRANSIENT_AZURE_ERRORS = {"connect_failed", "timeout", "bad_response"}
+
+
+async def _azure_create_vm_retrying_transient(*args, max_attempts: int = 3, retry_delay: float = 3.0, **kwargs):
+    """Retries the exact same create call (same size/location/everything)
+    a couple of times when it fails for a transient infra reason -- a
+    dropped connection, a timeout, or a garbled response talking to Azure
+    is usually gone on the next try. This is a different kind of failure
+    from a size being out of capacity (handled by the caller moving on to
+    a *different* size, not just retrying this one again)."""
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            return await azure_create_vm(*args, **kwargs)
+        except AzureAPIError as exc:
+            if str(exc) not in _TRANSIENT_AZURE_ERRORS or attempt >= max_attempts:
+                raise
+            await asyncio.sleep(retry_delay)
+
+
 @router.callback_query(F.data == "azcreate:confirm", AzureVMCreateStates.confirming)
 async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     data = await state.get_data()
@@ -2520,13 +2541,15 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
     # available options" true from the user's side is to keep trying the
     # other sizes already vetted for this location/quota automatically on a
     # capacity failure, instead of bouncing them back to re-pick by hand.
+    # They're already cheapest-first (CURATED_SIZES' own order), so a
+    # fallback never jumps to something pricier than it has to.
     candidates = [(requested_size, data.get("zone"))]
     candidates += [(s["name"], None) for s in data["sizes"] if s["name"] != requested_size]
 
     vm = None
     for i, (size_name, zone) in enumerate(candidates):
         try:
-            vm = await azure_create_vm(
+            vm = await _azure_create_vm_retrying_transient(
                 _azure_creds(account),
                 location=data["location"],
                 vm_size=size_name,
