@@ -841,6 +841,49 @@ def ip_removed_text(lang: str) -> str:
     return t(lang, "cloud_ip_removed", icon=e("success", "✅"))
 
 
+# --- Azure: leftover (orphaned) resource cleanup ---
+
+_AZURE_ORPHAN_ICONS = {"nic": "🔌", "nsg": "🛡", "pip": "🌐", "disk": "💽"}
+
+
+def azure_orphan_icon(kind: str) -> str:
+    return _AZURE_ORPHAN_ICONS.get(kind, "📦")
+
+
+def azure_orphan_list_label(orphan: dict) -> str:
+    return f"{azure_orphan_icon(orphan['kind'])} {orphan['name']}"
+
+
+def azure_orphans_header_text(lang: str, orphans: list[dict], page: int = 0, total_pages: int = 1) -> str:
+    body_key = "azure_orphans_hint" if orphans else "azure_orphans_empty"
+    text = t(lang, "azure_orphans_header", icon=e("azure", "🔷"), count=len(orphans), body=t(lang, body_key))
+    return text + _page_suffix(lang, page, total_pages)
+
+
+def azure_orphan_delete_confirm_text(lang: str, orphan: dict) -> str:
+    return t(
+        lang, "azure_orphan_delete_confirm", icon=e("warning", "⚠️"), ricon=azure_orphan_icon(orphan["kind"]),
+        name=html.escape(orphan["name"]), location=html.escape(orphan["location"]),
+    )
+
+
+def azure_orphans_delete_all_confirm_text(lang: str, count: int) -> str:
+    return t(lang, "azure_orphans_delete_all_confirm", icon=e("warning", "⚠️"), count=count)
+
+
+def azure_orphan_deleted_text(lang: str) -> str:
+    return t(lang, "azure_orphan_deleted", icon=e("success", "✅"))
+
+
+def azure_orphans_deleted_text(lang: str, deleted: int, failed: list[str]) -> str:
+    if failed:
+        return t(
+            lang, "azure_orphans_deleted_partial", icon=e("warning", "⚠️"),
+            deleted=deleted, failed=", ".join(html.escape(n) for n in failed),
+        )
+    return t(lang, "azure_orphans_deleted_all", icon=e("success", "✅"), deleted=deleted)
+
+
 # --- Hetzner ---
 
 _HETZNER_STATUS_EMOJI = {

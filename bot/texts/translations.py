@@ -2568,6 +2568,57 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} Rule deleted.",
         "tk": "{icon} Düzgün pozuldy.",
     },
+    "btn_azure_orphans": {"ru": "🧹 Остатки", "en": "🧹 Leftovers", "tk": "🧹 Galyndylar"},
+    "azure_orphans_header": {
+        "ru": "🧹 <b>Остатки ресурсов</b> ({count})\n\n{body}",
+        "en": "🧹 <b>Leftover resources</b> ({count})\n\n{body}",
+        "tk": "🧹 <b>Galyndy resurslar</b> ({count})\n\n{body}",
+    },
+    "azure_orphans_hint": {
+        "ru": "Сетевые интерфейсы, группы безопасности, публичные IP и диски, которые больше ни к одному серверу не привязаны. Нажмите на один, чтобы удалить.",
+        "en": "Network interfaces, security groups, public IPs and disks no longer attached to any server. Tap one to delete it.",
+        "tk": "Hiç bir servere baglanmadyk tor interfeýsleri, howpsuzlyk toparlary, jemgyýetçilik IP-ler we diskler. Pozmak üçin birine basyň.",
+    },
+    "azure_orphans_empty": {
+        "ru": "Остатков нет — всё чисто.",
+        "en": "No leftovers — all clean.",
+        "tk": "Galyndy ýok — hemmesi arassa.",
+    },
+    "azure_orphan_delete_confirm": {
+        "ru": "{icon} Удалить {ricon} <b>{name}</b> ({location})? Это необратимо.",
+        "en": "{icon} Delete {ricon} <b>{name}</b> ({location})? This can't be undone.",
+        "tk": "{icon} {ricon} <b>{name}</b> ({location}) pozulsynmy? Bu yzyna gaýtarylmaýar.",
+    },
+    "btn_azure_orphans_delete_all": {
+        "ru": "🗑 Удалить все остатки",
+        "en": "🗑 Delete all leftovers",
+        "tk": "🗑 Ähli galyndylary poz",
+    },
+    "azure_orphans_delete_all_confirm": {
+        "ru": "{icon} Удалить все остатки ({count} шт.)? Это необратимо.",
+        "en": "{icon} Delete all leftovers ({count})? This can't be undone.",
+        "tk": "{icon} Ähli galyndylary pozmalymy ({count} sany)? Bu yzyna gaýtarylmaýar.",
+    },
+    "btn_azure_orphans_confirm_delete_all": {
+        "ru": "🗑 Да, удалить все",
+        "en": "🗑 Yes, delete all",
+        "tk": "🗑 Hawa, hemmesini poz",
+    },
+    "azure_orphan_deleted": {
+        "ru": "{icon} Удалено.",
+        "en": "{icon} Deleted.",
+        "tk": "{icon} Pozuldy.",
+    },
+    "azure_orphans_deleted_all": {
+        "ru": "{icon} Удалено остатков: {deleted}.",
+        "en": "{icon} Deleted {deleted} leftover resources.",
+        "tk": "{icon} {deleted} sany galyndy pozuldy.",
+    },
+    "azure_orphans_deleted_partial": {
+        "ru": "{icon} Удалено: {deleted}. Не получилось удалить: {failed}.",
+        "en": "{icon} Deleted: {deleted}. Failed to delete: {failed}.",
+        "tk": "{icon} Pozuldy: {deleted}. Pozup bolmady: {failed}.",
+    },
     "hetzner_step_token": {
         "ru": (
             "🔑 <b>Подключение Hetzner Cloud</b>\n\n"

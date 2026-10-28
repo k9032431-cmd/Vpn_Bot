@@ -13,6 +13,7 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.cloud import (
     HETZNER_ADDRESS_LIST_PAGE_SIZE,
+    AZURE_ORPHAN_LIST_PAGE_SIZE,
     PAGE_SIZE,
     account_dashboard_keyboard,
     account_list_keyboard,
@@ -20,6 +21,10 @@ from bot.keyboards.cloud import (
     azure_create_auth_method_keyboard,
     azure_create_cancel_keyboard,
     azure_create_confirm_keyboard,
+    azure_orphan_delete_confirm_keyboard,
+    azure_orphans_back_keyboard,
+    azure_orphans_delete_all_confirm_keyboard,
+    azure_orphans_list_keyboard,
     azure_password_mode_keyboard,
     azure_port_cancel_keyboard,
     azure_port_delete_confirm_keyboard,
@@ -100,6 +105,7 @@ from bot.services.azure_api import (
     azure_add_port_rule,
     azure_capacity_restricted_skus,
     azure_create_vm,
+    azure_delete_orphaned_resource,
     azure_delete_port_rule,
     azure_delete_vm,
     azure_get_account,
@@ -108,6 +114,7 @@ from bot.services.azure_api import (
     azure_list_available_sizes,
     azure_list_images,
     azure_list_locations,
+    azure_list_orphaned_resources,
     azure_list_port_rules,
     azure_list_vms,
     azure_login,
@@ -2023,6 +2030,148 @@ async def cb_azure_vm_delete(callback: CallbackQuery, lang: str) -> None:
     await cloud_store.remove_vm_secret(callback.from_user.id, account_id, vm_name)
     await callback.message.edit_text(texts.azure_vm_deleted_text(lang), reply_markup=None)
     await _show_azure_vms(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("azvm:list:"))
+async def cb_azure_vms_list(callback: CallbackQuery, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_azure_vms(callback, lang, account, account_id)
+
+
+# --- Azure: leftover (orphaned) resource cleanup ---
+
+
+async def _show_azure_orphans(callback: CallbackQuery, lang: str, account: dict, account_id: str, page: int = 0) -> None:
+    try:
+        orphans = await azure_list_orphaned_resources(_azure_creds(account))
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    orphan_dicts = [{"kind": o.kind, "name": o.name, "location": o.location, "id": o.id} for o in orphans]
+    total_pages = max(1, -(-len(orphan_dicts) // AZURE_ORPHAN_LIST_PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    await callback.message.edit_text(
+        texts.azure_orphans_header_text(lang, orphan_dicts, page, total_pages),
+        reply_markup=azure_orphans_list_keyboard(lang, account_id, orphan_dicts, page),
+    )
+
+
+@router.callback_query(F.data.startswith("azorphan:list:"))
+async def cb_azure_orphans_list(callback: CallbackQuery, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_azure_orphans(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("azorphan:page:"))
+async def cb_azure_orphans_page(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, page_raw = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_azure_orphans(callback, lang, account, account_id, page=int(page_raw))
+
+
+async def _azure_orphan_by_index(creds: AzureCredentials, index: int) -> dict | None:
+    orphans = await azure_list_orphaned_resources(creds)
+    if index < 0 or index >= len(orphans):
+        return None
+    o = orphans[index]
+    return {"kind": o.kind, "name": o.name, "location": o.location, "id": o.id}
+
+
+@router.callback_query(F.data.startswith("azorphan:delask:"))
+async def cb_azure_orphan_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, index_raw = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    orphan = await _azure_orphan_by_index(_azure_creds(account), int(index_raw))
+    if not orphan:
+        # the list changed since it was last shown (something else already
+        # removed this one) -- just show the current state instead of
+        # erroring on a resource that isn't there any more.
+        await _show_azure_orphans(callback, lang, account, account_id)
+        return
+    await callback.message.edit_text(
+        texts.azure_orphan_delete_confirm_text(lang, orphan),
+        reply_markup=azure_orphan_delete_confirm_keyboard(lang, account_id, int(index_raw)),
+    )
+
+
+@router.callback_query(F.data.startswith("azorphan:del:"))
+async def cb_azure_orphan_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, index_raw = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    creds = _azure_creds(account)
+    orphan = await _azure_orphan_by_index(creds, int(index_raw))
+    if orphan:
+        try:
+            await azure_delete_orphaned_resource(creds, orphan["kind"], orphan["id"])
+        except AzureAPIError as exc:
+            await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+            return
+    await _show_azure_orphans(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("azorphan:delallask:"))
+async def cb_azure_orphans_delete_all_ask(callback: CallbackQuery, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        orphans = await azure_list_orphaned_resources(_azure_creds(account))
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    if not orphans:
+        await _show_azure_orphans(callback, lang, account, account_id)
+        return
+    await callback.message.edit_text(
+        texts.azure_orphans_delete_all_confirm_text(lang, len(orphans)),
+        reply_markup=azure_orphans_delete_all_confirm_keyboard(lang, account_id),
+    )
+
+
+@router.callback_query(F.data.startswith("azorphan:delall:"))
+async def cb_azure_orphans_delete_all(callback: CallbackQuery, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    creds = _azure_creds(account)
+    try:
+        orphans = await azure_list_orphaned_resources(creds)
+    except AzureAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    deleted = 0
+    failed: list[str] = []
+    for orphan in orphans:
+        try:
+            await azure_delete_orphaned_resource(creds, orphan.kind, orphan.id)
+            deleted += 1
+        except AzureAPIError:
+            failed.append(orphan.name)
+    await callback.message.edit_text(
+        texts.azure_orphans_deleted_text(lang, deleted, failed),
+        reply_markup=azure_orphans_back_keyboard(lang, account_id),
+    )
 
 
 # --- Azure: VM creation ---

@@ -761,10 +761,21 @@ async def azure_create_vm(
                     "sku": image.sku,
                     "version": image.version,
                 },
-                "osDisk": {"createOption": "FromImage", "managedDisk": {"storageAccountType": "Standard_LRS"}},
+                "osDisk": {
+                    "createOption": "FromImage",
+                    "managedDisk": {"storageAccountType": "Standard_LRS"},
+                    # Deleting the VM deletes its OS disk too, instead of
+                    # leaving an (still-billed) orphaned managed disk behind.
+                    "deleteOption": "Delete",
+                },
             },
             "osProfile": os_profile,
-            "networkProfile": {"networkInterfaces": [{"id": nic_id}]},
+            "networkProfile": {
+                # Same reasoning as the OS disk -- deleting the VM deletes
+                # the NIC with it. azure_delete_vm's own best-effort NIC
+                # delete right after becomes a harmless no-op on top of this.
+                "networkInterfaces": [{"id": nic_id, "properties": {"deleteOption": "Delete"}}]
+            },
         },
     }
     if zone:
@@ -923,3 +934,67 @@ async def azure_delete_vm(creds: AzureCredentials, vm_name: str) -> None:
             await _poll_deleted(path, creds, params={"api-version": api_version})
         except AzureAPIError:
             pass
+
+
+# --- Leftover resource cleanup ---
+#
+# azure_delete_vm (above) and the VM's own deleteOption settings already
+# clean up after a VM deleted through the bot, but that can still miss
+# something -- a VM deleted straight from the Azure Portal instead of the
+# bot, an old VM created before deleteOption existed, or a cleanup call
+# that itself failed partway. This is how the user finds and clears out
+# whatever that leaves behind, scoped to this bot's own resource groups
+# only (never touches resources it didn't create).
+
+_ORPHAN_RESOURCE_TYPES: dict[str, tuple[str, str]] = {
+    "nic": ("Microsoft.Network/networkInterfaces", API_VERSION_NETWORK),
+    "nsg": ("Microsoft.Network/networkSecurityGroups", API_VERSION_NETWORK),
+    "pip": ("Microsoft.Network/publicIPAddresses", API_VERSION_NETWORK),
+    "disk": ("Microsoft.Compute/disks", API_VERSION_COMPUTE),
+}
+
+
+@dataclass
+class OrphanResourceInfo:
+    kind: str  # one of _ORPHAN_RESOURCE_TYPES' keys
+    name: str
+    location: str
+    id: str  # full ARM resource id -- also what deleting it needs
+
+
+def _is_orphan_resource(kind: str, props: dict) -> bool:
+    if kind == "nic":
+        return not props.get("virtualMachine")
+    if kind == "nsg":
+        return not props.get("networkInterfaces") and not props.get("subnets")
+    if kind == "pip":
+        return not props.get("ipConfiguration")
+    if kind == "disk":
+        return props.get("diskState") == "Unattached"
+    return False
+
+
+async def azure_list_orphaned_resources(creds: AzureCredentials) -> list[OrphanResourceInfo]:
+    result: list[OrphanResourceInfo] = []
+    for kind, (resource_type, api_version) in _ORPHAN_RESOURCE_TYPES.items():
+        path = f"/subscriptions/{creds.subscription_id}/providers/{resource_type}"
+        _, payload = await _request("GET", path, creds, params={"api-version": api_version})
+        for item in (payload or {}).get("value", []):
+            item_id = item.get("id", "")
+            match = _RG_ID_RE.search(item_id)
+            if not match or not match.group(1).lower().startswith(f"{RESOURCE_GROUP_PREFIX}-"):
+                continue  # not one of this bot's resource groups -- leave it alone
+            props = item.get("properties", {}) or {}
+            if not _is_orphan_resource(kind, props):
+                continue
+            result.append(
+                OrphanResourceInfo(kind=kind, name=item.get("name", ""), location=item.get("location", ""), id=item_id)
+            )
+    result.sort(key=lambda o: (o.kind, o.name.lower()))
+    return result
+
+
+async def azure_delete_orphaned_resource(creds: AzureCredentials, kind: str, resource_id: str) -> None:
+    api_version = _ORPHAN_RESOURCE_TYPES[kind][1]
+    await _request("DELETE", resource_id, creds, params={"api-version": api_version})
+    await _poll_deleted(resource_id, creds, params={"api-version": api_version})

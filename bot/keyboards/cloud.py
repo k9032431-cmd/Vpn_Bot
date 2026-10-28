@@ -5,6 +5,7 @@ from bot.texts.cloud import (
     ACTIVE_PROVIDERS,
     PROVIDERS,
     account_list_label,
+    azure_orphan_list_label,
     azure_port_rule_label,
     azure_vm_list_label,
     azure_zone_label,
@@ -408,10 +409,76 @@ def azure_vms_list_keyboard(lang: str, account_id: str, vms: list) -> InlineKeyb
         builder.button(text=azure_vm_list_label(vm), callback_data=f"azvm:view:{account_id}:{vm.name}", style="primary")
         rows.append(1)
     builder.button(text=t(lang, "btn_cloud_server_add"), callback_data=f"azvm:add:{account_id}", style="primary")
-    rows.append(1)
+    builder.button(text=t(lang, "btn_azure_orphans"), callback_data=f"azorphan:list:{account_id}", style="primary")
+    rows += [1, 1]
     builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}", style="primary")
     rows.append(1)
     builder.adjust(*rows)
+    return builder.as_markup()
+
+
+AZURE_ORPHAN_LIST_PAGE_SIZE = 15
+
+
+def azure_orphans_list_keyboard(lang: str, account_id: str, orphans: list[dict], page: int = 0) -> InlineKeyboardMarkup:
+    total_pages = max(1, -(-len(orphans) // AZURE_ORPHAN_LIST_PAGE_SIZE))
+    page = max(0, min(page, total_pages - 1))
+    start = page * AZURE_ORPHAN_LIST_PAGE_SIZE
+    page_orphans = orphans[start : start + AZURE_ORPHAN_LIST_PAGE_SIZE]
+
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for i, orphan in enumerate(page_orphans):
+        builder.button(
+            text=azure_orphan_list_label(orphan), callback_data=f"azorphan:delask:{account_id}:{start + i}", style="primary"
+        )
+        rows.append(1)
+
+    nav_count = 0
+    if page > 0:
+        builder.button(text="◀️", callback_data=f"azorphan:page:{account_id}:{page - 1}", style="primary")
+        nav_count += 1
+    if page < total_pages - 1:
+        builder.button(text="▶️", callback_data=f"azorphan:page:{account_id}:{page + 1}", style="primary")
+        nav_count += 1
+    if nav_count:
+        rows.append(nav_count)
+
+    if orphans:
+        builder.button(
+            text=t(lang, "btn_azure_orphans_delete_all"), callback_data=f"azorphan:delallask:{account_id}", style="danger"
+        )
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"azvm:list:{account_id}", style="danger")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def azure_orphan_delete_confirm_keyboard(lang: str, account_id: str, index: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_hetzner_address_delete_confirm"), callback_data=f"azorphan:del:{account_id}:{index}", style="danger"
+    )
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azorphan:list:{account_id}", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def azure_orphans_delete_all_confirm_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=t(lang, "btn_azure_orphans_confirm_delete_all"), callback_data=f"azorphan:delall:{account_id}", style="danger"
+    )
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data=f"azorphan:list:{account_id}", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def azure_orphans_back_keyboard(lang: str, account_id: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"azvm:list:{account_id}", style="danger")
+    builder.adjust(1)
     return builder.as_markup()
 
 
