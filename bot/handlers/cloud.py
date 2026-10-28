@@ -2536,15 +2536,35 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
         admin_password = data.get("custom_password") or generate_azure_password()
 
     requested_size = data["vm_size"]
+
+    def zone_candidates(size: dict, preferred: str | None) -> list[str | None]:
+        # A size can have capacity in one Availability Zone of a region and
+        # not another -- try every zone it supports (preferred one first,
+        # if any), and "no zone" (let Azure place it itself) last, before
+        # giving up on this size entirely.
+        zones = list(size.get("zones") or [])
+        ordered = ([preferred] if preferred in zones else []) + [z for z in zones if z != preferred]
+        ordered.append(None)
+        return ordered
+
+    def candidate_label(size_name: str, zone: str | None) -> str:
+        return f"{size_name} ({texts.azure_zone_label(lang, zone)})" if zone else size_name
+
     # Azure's live datacenter capacity can't be checked ahead of time (see
     # azure_list_available_sizes' docstring) -- the only way to make "only
-    # available options" true from the user's side is to keep trying the
-    # other sizes already vetted for this location/quota automatically on a
-    # capacity failure, instead of bouncing them back to re-pick by hand.
-    # They're already cheapest-first (CURATED_SIZES' own order), so a
-    # fallback never jumps to something pricier than it has to.
-    candidates = [(requested_size, data.get("zone"))]
-    candidates += [(s["name"], None) for s in data["sizes"] if s["name"] != requested_size]
+    # available options" true from the user's side is to keep trying every
+    # zone of every size already vetted for this location/quota
+    # automatically on a capacity failure, instead of bouncing them back to
+    # re-pick by hand. Sizes are already cheapest-first (CURATED_SIZES' own
+    # order), so a fallback never jumps to something pricier than it has to.
+    size_by_name = {s["name"]: s for s in data["sizes"]}
+    candidates: list[tuple[str, str | None]] = [
+        (requested_size, z) for z in zone_candidates(size_by_name[requested_size], data.get("zone"))
+    ]
+    for s in data["sizes"]:
+        if s["name"] == requested_size:
+            continue
+        candidates += [(s["name"], z) for z in zone_candidates(s, None)]
 
     vm = None
     for i, (size_name, zone) in enumerate(candidates):
@@ -2570,14 +2590,15 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
                 await status_message.edit_text(texts.action_error_text(lang, reason), reply_markup=cloud_error_keyboard(lang))
                 return
             if i + 1 >= len(candidates):
-                # Every size already vetted for this location is out of
-                # capacity right now -- rather than wipe the whole wizard
-                # (hostname/auth/image the user already picked), send them
-                # straight back to the location step so picking a different
-                # region is the only thing they have to redo. Region is
-                # kept a deliberate, visible choice rather than silently
-                # auto-switched: for a VPN server, which country it's in
-                # isn't an interchangeable detail like the VM size is.
+                # Every size/zone combination already vetted for this
+                # location is out of capacity right now -- rather than wipe
+                # the whole wizard (hostname/auth/image the user already
+                # picked), send them straight back to the location step so
+                # picking a different region is the only thing they have to
+                # redo. Region is kept a deliberate, visible choice rather
+                # than silently auto-switched: for a VPN server, which
+                # country it's in isn't an interchangeable detail like the
+                # VM size or zone is.
                 await state.update_data(retry_after_exhaustion=True)
                 await state.set_state(AzureVMCreateStates.choosing_location)
                 await _render_create_page(
@@ -2589,9 +2610,13 @@ async def cb_azure_create_confirm(callback: CallbackQuery, state: FSMContext, la
                     0, "azcreate:locpage", "azcreate:cancel",
                 )
                 return
-            next_size = candidates[i + 1][0]
+            next_size_name, next_zone = candidates[i + 1]
             try:
-                await status_message.edit_text(texts.azure_create_retry_size_text(lang, size_name, next_size))
+                await status_message.edit_text(
+                    texts.azure_create_retry_size_text(
+                        lang, candidate_label(size_name, zone), candidate_label(next_size_name, next_zone)
+                    )
+                )
             except Exception:
                 pass
 
