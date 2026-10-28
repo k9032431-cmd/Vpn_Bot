@@ -2575,9 +2575,21 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tk": "🧹 <b>Galyndy resurslar</b> ({count})\n\n{body}",
     },
     "azure_orphans_hint": {
-        "ru": "Сетевые интерфейсы, группы безопасности, публичные IP и диски, которые больше ни к одному серверу не привязаны. Нажмите на один, чтобы удалить.",
-        "en": "Network interfaces, security groups, public IPs and disks no longer attached to any server. Tap one to delete it.",
-        "tk": "Hiç bir servere baglanmadyk tor interfeýsleri, howpsuzlyk toparlary, jemgyýetçilik IP-ler we diskler. Pozmak üçin birine basyň.",
+        "ru": (
+            "Сетевые интерфейсы, группы безопасности, публичные IP и диски, которые больше ни к одному серверу "
+            "не привязаны. Ресурсы работающих серверов сюда никогда не попадают — проверяется напрямую по каждому "
+            "реально существующему серверу. Нажмите на один, чтобы удалить."
+        ),
+        "en": (
+            "Network interfaces, security groups, public IPs and disks no longer attached to any server. A working "
+            "server's own resources never show up here — checked directly against every server that actually "
+            "exists. Tap one to delete it."
+        ),
+        "tk": (
+            "Hiç bir servere baglanmadyk tor interfeýsleri, howpsuzlyk toparlary, jemgyýetçilik IP-ler we diskler. "
+            "Işleýän serweriň öz resurslary bu ýere hiç düşmeýär — hakykatdanam bar bolan her bir server boýunça "
+            "gönüden-göni barlanýar. Pozmak üçin birine basyň."
+        ),
     },
     "azure_orphans_empty": {
         "ru": "Остатков нет — всё чисто.",

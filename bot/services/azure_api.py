@@ -981,7 +981,52 @@ def _is_orphan_resource(kind: str, props: dict) -> bool:
     return False
 
 
+async def _azure_protected_resource_ids(creds: AzureCredentials) -> set[str]:
+    """The exact ids of every NIC, OS disk, NSG and public IP a currently
+    existing server is actually using, in this bot's own resource groups --
+    traced straight from each live VM's own network/storage config, not
+    from the candidate resource's own "nothing attached" property. A
+    second, independent safety net on top of _is_orphan_resource, so a
+    bulk cleanup can never delete something a working server still needs,
+    even if a single property read were ever stale."""
+    protected: set[str] = set()
+
+    vm_path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Compute/virtualMachines"
+    _, vm_payload = await _request("GET", vm_path, creds, params={"api-version": API_VERSION_COMPUTE})
+    for item in (vm_payload or {}).get("value", []):
+        match = _RG_ID_RE.search(item.get("id", ""))
+        if not match or not match.group(1).lower().startswith(f"{RESOURCE_GROUP_PREFIX}-"):
+            continue
+        props = item.get("properties", {}) or {}
+        disk_id = ((props.get("storageProfile") or {}).get("osDisk") or {}).get("managedDisk", {}).get("id")
+        if disk_id:
+            protected.add(disk_id.lower())
+        for nic_ref in (props.get("networkProfile") or {}).get("networkInterfaces", []) or []:
+            nic_id = nic_ref.get("id")
+            if nic_id:
+                protected.add(nic_id.lower())
+
+    # A protected NIC's own NSG/public IP are protected too, even though
+    # neither is referenced directly on the VM resource itself.
+    nic_path = f"/subscriptions/{creds.subscription_id}/providers/Microsoft.Network/networkInterfaces"
+    _, nic_payload = await _request("GET", nic_path, creds, params={"api-version": API_VERSION_NETWORK})
+    for item in (nic_payload or {}).get("value", []):
+        if (item.get("id") or "").lower() not in protected:
+            continue
+        props = item.get("properties", {}) or {}
+        nsg_id = (props.get("networkSecurityGroup") or {}).get("id")
+        if nsg_id:
+            protected.add(nsg_id.lower())
+        for ip_cfg in props.get("ipConfigurations") or []:
+            pip_id = ((ip_cfg.get("properties") or {}).get("publicIPAddress") or {}).get("id")
+            if pip_id:
+                protected.add(pip_id.lower())
+
+    return protected
+
+
 async def azure_list_orphaned_resources(creds: AzureCredentials) -> list[OrphanResourceInfo]:
+    protected_ids = await _azure_protected_resource_ids(creds)
     result: list[OrphanResourceInfo] = []
     for kind, (resource_type, api_version) in _ORPHAN_RESOURCE_TYPES.items():
         path = f"/subscriptions/{creds.subscription_id}/providers/{resource_type}"
@@ -991,6 +1036,8 @@ async def azure_list_orphaned_resources(creds: AzureCredentials) -> list[OrphanR
             match = _RG_ID_RE.search(item_id)
             if not match or not match.group(1).lower().startswith(f"{RESOURCE_GROUP_PREFIX}-"):
                 continue  # not one of this bot's resource groups -- leave it alone
+            if item_id.lower() in protected_ids:
+                continue  # a currently existing server still uses this
             props = item.get("properties", {}) or {}
             if not _is_orphan_resource(kind, props):
                 continue
