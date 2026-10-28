@@ -907,13 +907,20 @@ async def azure_restart_vm(creds: AzureCredentials, vm_name: str) -> None:
     await _do_power_action(creds, vm_name, "restart", "running")
 
 
-async def azure_reimage_vm(creds: AzureCredentials, vm_name: str) -> None:
+async def azure_reimage_vm(creds: AzureCredentials, vm_name: str, admin_password: str | None = None) -> None:
     """Reinstalls the OS from the same image the VM was created with,
     wiping the OS disk — same as the "Reimage" action in the Azure Portal.
-    Keeps the VM's name, network config, size and IP untouched."""
+    Keeps the VM's name, network config, size and IP untouched.
+
+    For a VM that uses password auth, Azure refuses the reimage outright
+    unless the password is resupplied in the request body (it's never
+    stored server-side in a retrievable form, so there's nothing else for
+    Azure to carry over onto the fresh disk) -- pass the same password the
+    VM already has. An SSH-key VM needs no body at all."""
     rg_name = await _find_vm_resource_group(creds, vm_name)
     path = f"{_vm_path(creds, rg_name, vm_name)}/reimage"
-    await _request("POST", path, creds, params={"api-version": API_VERSION_COMPUTE})
+    body = {"osProfile": {"adminPassword": admin_password}} if admin_password else None
+    await _request("POST", path, creds, json_body=body, params={"api-version": API_VERSION_COMPUTE})
     await _poll_power_state(creds, rg_name, vm_name, "running")
 
 

@@ -2614,13 +2614,13 @@ async def cb_azure_vm_reimage(callback: CallbackQuery, lang: str) -> None:
         return
     await callback.answer(texts.azure_vm_reimage_ok_text(lang))
     creds = _azure_creds(account)
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, vm_name)
     try:
-        await azure_reimage_vm(creds, vm_name)
+        await azure_reimage_vm(creds, vm_name, admin_password=stored_password)
         vm = await azure_get_vm(creds, vm_name)
     except AzureAPIError as exc:
         await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
         return
-    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, vm.name)
     await callback.message.edit_text(
         texts.azure_vm_detail_text(lang, vm, stored_password),
         reply_markup=azure_vm_detail_keyboard(lang, account_id, vm),
