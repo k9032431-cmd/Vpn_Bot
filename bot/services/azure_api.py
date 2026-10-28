@@ -365,6 +365,62 @@ async def _azure_get_usages(creds: AzureCredentials, location: str) -> dict[str,
     return result
 
 
+# Not every Azure region carries the same SKU catalog -- a newer or
+# smaller region (seen in practice: ItalyNorth) can offer none of
+# CURATED_SIZES at all while still having plenty of its own small
+# general-purpose/burstable sizes. Matches the "family letter + digit"
+# shape of those (B2als_v2, D2ads_v7, A1_v2, ...), while skipping
+# premium-storage-era naming without it (DS1_v2) and specialized
+# families naming shares a letter with but isn't (DC-series
+# confidential computing never has a digit right after the "D").
+_REASONABLE_FALLBACK_SIZE_RE = re.compile(r"^Standard_[ABD]\d")
+_FALLBACK_MAX_CORES = 4
+_FALLBACK_MAX_MEMORY_GB = 16
+_FALLBACK_MAX_RESULTS = 8
+
+
+def _azure_size_quota_check(item: dict, usages: dict) -> tuple[int, float] | None:
+    """Returns (cores, memory_gb) for one Microsoft.Compute/skus entry, or
+    None if offering it would blow the subscription's own "Total Regional
+    Cores" or per-family vCPU quota (Azure's Usages API) -- shared between
+    the curated list and the dynamic fallback below it."""
+    caps = {c.get("name"): c.get("value") for c in item.get("capabilities", []) if isinstance(c, dict)}
+    cores = int(caps.get("vCPUs", 0) or 0)
+    memory_gb = float(caps.get("MemoryGB", 0) or 0)
+
+    total_current, total_limit = usages.get("cores", (0, None))
+    if total_limit is not None and total_current + cores > total_limit:
+        return None
+    # The SKU's own "family" field is Azure's authoritative quota-family
+    # name (more reliable than the static table, which only covers the
+    # curated names) -- fall back to that table only if it's ever missing.
+    family = item.get("family") or _SIZE_FAMILY_QUOTA.get(item.get("name"))
+    if family and family in usages:
+        fam_current, fam_limit = usages[family]
+        if fam_current + cores > fam_limit:
+            return None
+    return cores, memory_gb
+
+
+def _azure_size_zones(item: dict, location: str) -> list[str]:
+    zones: list[str] = []
+    for loc_info in item.get("locationInfo") or []:
+        if isinstance(loc_info, dict) and loc_info.get("location") == location:
+            zones = list(loc_info.get("zones") or [])
+            break
+    blocked_zones: set[str] = set()
+    for r in item.get("restrictions") or []:
+        if r.get("type") == "Zone":
+            info = r.get("restrictionInfo") or {}
+            blocked_zones.update(info.get("zones") or r.get("values") or [])
+    return [z for z in zones if z not in blocked_zones]
+
+
+def _azure_not_location_restricted(item: dict, location: str) -> bool:
+    restrictions = item.get("restrictions") or []
+    return not any(r.get("type") == "Location" and location in (r.get("values") or []) for r in restrictions)
+
+
 async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> list[VmSizeInfo]:
     """Lists the curated sizes that are actually usable in ``location`` right
     now. Uses the Resource SKUs API (not the plain vmSizes list) because
@@ -373,6 +429,10 @@ async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> 
     the subscription's own regional/family vCPU quota (Azure's Usages API)
     so a size that would blow the "Total Regional Cores" or per-family
     quota is never offered in the first place.
+
+    If none of CURATED_SIZES exist in this location at all, falls back to
+    whatever small general-purpose/burstable sizes it does offer instead
+    of leaving the picker empty (see _REASONABLE_FALLBACK_SIZE_RE).
 
     This still can't catch everything: live datacenter capacity shortages
     ("Following SKUs have failed for Capacity Restrictions...") are
@@ -384,53 +444,45 @@ async def azure_list_available_sizes(creds: AzureCredentials, location: str) -> 
     _, payload = await _request(
         "GET", path, creds, params={"api-version": API_VERSION_SKUS, "$filter": f"location eq '{location}'"}
     )
-    entries = (payload or {}).get("value", [])
-    by_name: dict[str, dict] = {}
-    for item in entries:
-        if not isinstance(item, dict) or item.get("resourceType") != "virtualMachines":
-            continue
-        name = item.get("name")
-        if name not in CURATED_SIZES:
-            continue
-        restrictions = item.get("restrictions") or []
-        if any(r.get("type") == "Location" and location in (r.get("values") or []) for r in restrictions):
-            continue  # unavailable for this subscription/location right now
-        by_name[name] = item
-
+    entries = [
+        item for item in (payload or {}).get("value", [])
+        if isinstance(item, dict) and item.get("resourceType") == "virtualMachines"
+    ]
     usages = await _azure_get_usages(creds, location)
-    total_current, total_limit = usages.get("cores", (0, None))
 
+    by_name = {
+        item.get("name"): item for item in entries
+        if item.get("name") in CURATED_SIZES and _azure_not_location_restricted(item, location)
+    }
     result = []
     for name in CURATED_SIZES:
         item = by_name.get(name)
         if not item:
             continue
-        caps = {c.get("name"): c.get("value") for c in item.get("capabilities", []) if isinstance(c, dict)}
-        cores = int(caps.get("vCPUs", 0) or 0)
-        memory_gb = float(caps.get("MemoryGB", 0) or 0)
+        quota = _azure_size_quota_check(item, usages)
+        if not quota:
+            continue
+        cores, memory_gb = quota
+        result.append(VmSizeInfo(name=name, cores=cores, memory_mb=int(memory_gb * 1024), zones=_azure_size_zones(item, location)))
+    if result:
+        return result
 
-        if total_limit is not None and total_current + cores > total_limit:
-            continue  # would exceed the subscription's Total Regional vCPUs quota
-        family = _SIZE_FAMILY_QUOTA.get(name)
-        if family and family in usages:
-            fam_current, fam_limit = usages[family]
-            if fam_current + cores > fam_limit:
-                continue  # would exceed this size family's own vCPU quota
-
-        zones: list[str] = []
-        for loc_info in item.get("locationInfo") or []:
-            if isinstance(loc_info, dict) and loc_info.get("location") == location:
-                zones = list(loc_info.get("zones") or [])
-                break
-        blocked_zones: set[str] = set()
-        for r in item.get("restrictions") or []:
-            if r.get("type") == "Zone":
-                info = r.get("restrictionInfo") or {}
-                blocked_zones.update(info.get("zones") or r.get("values") or [])
-        zones = [z for z in zones if z not in blocked_zones]
-
-        result.append(VmSizeInfo(name=name, cores=cores, memory_mb=int(memory_gb * 1024), zones=zones))
-    return result
+    fallback: list[VmSizeInfo] = []
+    for item in entries:
+        name = item.get("name") or ""
+        if not _REASONABLE_FALLBACK_SIZE_RE.match(name):
+            continue
+        if not _azure_not_location_restricted(item, location):
+            continue
+        quota = _azure_size_quota_check(item, usages)
+        if not quota:
+            continue
+        cores, memory_gb = quota
+        if cores == 0 or cores > _FALLBACK_MAX_CORES or memory_gb > _FALLBACK_MAX_MEMORY_GB:
+            continue
+        fallback.append(VmSizeInfo(name=name, cores=cores, memory_mb=int(memory_gb * 1024), zones=_azure_size_zones(item, location)))
+    fallback.sort(key=lambda s: (s.cores, s.memory_mb, s.name))
+    return fallback[:_FALLBACK_MAX_RESULTS]
 
 
 def azure_list_images() -> list[ImageInfo]:
