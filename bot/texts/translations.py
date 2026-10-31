@@ -22,9 +22,24 @@ def resolve_language(code: str | None) -> str:
 
 _STRINGS: dict[str, dict[str, str]] = {
     "welcome": {
-        "ru": "{icon} <b>ArsiCloudBot - управляйте всей VPN-системой в одном месте</b>\n\n👇 Выберите раздел",
-        "en": "{icon} <b>ArsiCloudBot - manage your whole VPN system in one place</b>\n\n👇 Choose a section",
-        "tk": "{icon} <b>ArsiCloudBot - hemme VPN ulgamyňyzy bir ýerde dolandyryň</b>\n\n👇 Bölümi saýlaň",
+        "ru": (
+            "{icon} <b>ArsiCloudBot</b>\n"
+            "<i>Вся ваша VPN-система в одном месте</i>\n\n"
+            "⚡ Быстрая установка · ☁️ Своё облако · 🔒 Полный контроль\n\n"
+            "👇 Выберите раздел"
+        ),
+        "en": (
+            "{icon} <b>ArsiCloudBot</b>\n"
+            "<i>Your whole VPN system in one place</i>\n\n"
+            "⚡ Fast setup · ☁️ Your own cloud · 🔒 Full control\n\n"
+            "👇 Choose a section"
+        ),
+        "tk": (
+            "{icon} <b>ArsiCloudBot</b>\n"
+            "<i>Bütin VPN ulgamyňyz bir ýerde</i>\n\n"
+            "⚡ Çalt gurnama · ☁️ Öz buludyňyz · 🔒 Doly gözegçilik\n\n"
+            "👇 Bölümi saýlaň"
+        ),
     },
     # --- Button labels ---
     "btn_node": {"ru": "Node", "en": "Node", "tk": "Node"},
