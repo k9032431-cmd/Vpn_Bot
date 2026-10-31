@@ -3431,6 +3431,84 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{password_line}"
         ),
     },
+
+    # --- Admin: premium-emoji settings ---
+    "btn_admin_emoji": {"ru": "⚙️ Эмодзи", "en": "⚙️ Emoji", "tk": "⚙️ Emoji"},
+    "admin_emoji_sections": {
+        "ru": "{icon} <b>Премиум-эмодзи</b>\n\nВыберите раздел бота:",
+        "en": "{icon} <b>Premium emoji</b>\n\nChoose a section of the bot:",
+        "tk": "{icon} <b>Premium emoji</b>\n\nBotuň bölümini saýlaň:",
+    },
+    "admin_emoji_section": {
+        "ru": "{icon} <b>{section}</b>\n\nВыберите значок, чтобы изменить или сбросить его:",
+        "en": "{icon} <b>{section}</b>\n\nChoose an icon to change or reset it:",
+        "tk": "{icon} <b>{section}</b>\n\nÜýtgetmek ýa-da täzeden tertiplemek üçin nyşany saýlaň:",
+    },
+    "admin_emoji_slot": {
+        "ru": "{preview}\n\n{status}",
+        "en": "{preview}\n\n{status}",
+        "tk": "{preview}\n\n{status}",
+    },
+    "admin_emoji_status_override": {
+        "ru": "🟢 Установлен вручную. ID: <code>{id}</code>",
+        "en": "🟢 Set manually. ID: <code>{id}</code>",
+        "tk": "🟢 Elde goýuldy. ID: <code>{id}</code>",
+    },
+    "admin_emoji_status_default": {
+        "ru": "⚪ Значение по умолчанию. ID: <code>{id}</code>",
+        "en": "⚪ Default value. ID: <code>{id}</code>",
+        "tk": "⚪ Adaty baha. ID: <code>{id}</code>",
+    },
+    "admin_emoji_status_empty": {
+        "ru": "⚪ Не задан — сейчас используется обычный эмодзи {fallback}",
+        "en": "⚪ Not set — a plain emoji {fallback} is used for now",
+        "tk": "⚪ Goýulmady — häzir ýönekeý emoji {fallback} ulanylýar",
+    },
+    "btn_admin_emoji_set": {"ru": "📤 Отправить эмодзи", "en": "📤 Send an emoji", "tk": "📤 Emoji iber"},
+    "btn_admin_emoji_reset": {"ru": "↩️ Сбросить", "en": "↩️ Reset", "tk": "↩️ Täzeden tertiple"},
+    "admin_emoji_waiting": {
+        "ru": (
+            "{icon} <b>{label}</b>\n\n"
+            "Отправьте сюда сообщение с самим премиум-эмодзи (long tap → выбрать эмодзи → отправить) — "
+            "я сам определю его ID.\n\n"
+            "Если ID уже известен (например, от @itisemojibot) — просто пришлите его числом.\n\n"
+            "Сейчас для этого места используется: {fallback}"
+        ),
+        "en": (
+            "{icon} <b>{label}</b>\n\n"
+            "Send a message containing the premium emoji itself here (long press → pick emoji → send) — "
+            "I'll work out its ID myself.\n\n"
+            "If you already know the ID (e.g. from @itisemojibot), just send it as a number.\n\n"
+            "Currently used here: {fallback}"
+        ),
+        "tk": (
+            "{icon} <b>{label}</b>\n\n"
+            "Premium emojiniň özüni öz içine alýan habary şu ýere iberiň (uzak basyň → emoji saýlaň → iberiň) — "
+            "ID-sini özüm tapyp alaryn.\n\n"
+            "ID eýýäm belli bolsa (meselem @itisemojibot-dan) — ony san hökmünde iberiň.\n\n"
+            "Häzir şu ýerde ulanylýan: {fallback}"
+        ),
+    },
+    "admin_emoji_invalid": {
+        "ru": (
+            "{icon} Не нашёл в сообщении премиум-эмодзи и это не похоже на ID. "
+            "Отправьте сообщение с самим эмодзи, или пришлите числовой ID."
+        ),
+        "en": (
+            "{icon} Couldn't find a premium emoji in that message, and it doesn't look like an ID. "
+            "Send a message containing the emoji itself, or send a numeric ID."
+        ),
+        "tk": (
+            "{icon} Habarda premium emoji tapylmady we ID-e meňzänok. "
+            "Emojiniň özüni öz içine alýan habary ýa-da san ID iberiň."
+        ),
+    },
+    "admin_emoji_set_ok": {
+        "ru": "{icon} Готово! Теперь здесь: {preview} <b>{label}</b>",
+        "en": "{icon} Done! Now here: {preview} <b>{label}</b>",
+        "tk": "{icon} Taýyn! Indi şu ýerde: {preview} <b>{label}</b>",
+    },
+    "btn_admin_emoji_back_sections": {"ru": "⬅️ К разделам", "en": "⬅️ Back to sections", "tk": "⬅️ Bölümlere gaýt"},
 }
 
 

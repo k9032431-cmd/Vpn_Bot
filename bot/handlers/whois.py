@@ -4,6 +4,7 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
+from bot.config import config
 from bot.keyboards.main_menu import back_keyboard, main_menu_keyboard
 from bot.keyboards.whois import whois_again_keyboard, whois_cancel_keyboard
 from bot.services.whois_api import WhoisAPIError, is_domain, is_ip, lookup_domain, lookup_ip
@@ -36,7 +37,10 @@ async def cb_whois_cancel(callback: CallbackQuery, state: FSMContext, lang: str)
 @router.callback_query(F.data == "whois:home")
 async def cb_whois_home(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
     await state.clear()
-    await callback.message.answer_photo(WELCOME_BANNER, caption=welcome_text(lang), reply_markup=main_menu_keyboard(lang))
+    is_admin = config.is_admin(callback.from_user.id)
+    await callback.message.answer_photo(
+        WELCOME_BANNER, caption=welcome_text(lang), reply_markup=main_menu_keyboard(lang, is_admin)
+    )
     await callback.answer()
 
 

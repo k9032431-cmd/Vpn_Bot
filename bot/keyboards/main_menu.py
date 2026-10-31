@@ -7,7 +7,7 @@ from bot.texts.support import build_sos_chat_url
 from bot.texts.translations import t
 
 
-def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
+def main_menu_keyboard(lang: str, is_admin: bool = False) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     # Bot API 9.4 button "style" (primary/success/danger/default) and
     # icon_custom_emoji_id -- see bot/texts/premium_emoji.py for the
@@ -31,7 +31,13 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     else:
         builder.button(text=t(lang, "btn_sos"), callback_data="menu:sos", style="danger", icon_custom_emoji_id=button_icon("sos"))
 
-    builder.adjust(2, 2, 2, 2, 2)
+    rows = [2, 2, 2, 2, 2]
+    if is_admin:
+        # Lets ADMIN_IDS owners set every premium emoji from inside the bot
+        # itself, instead of needing a code change/redeploy for each one.
+        builder.button(text=t(lang, "btn_admin_emoji"), callback_data="menu:admin_emoji", style="primary")
+        rows.append(1)
+    builder.adjust(*rows)
     return builder.as_markup()
 
 

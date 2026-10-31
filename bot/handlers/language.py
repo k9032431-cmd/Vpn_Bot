@@ -1,6 +1,7 @@
 from aiogram import F, Router
 from aiogram.types import CallbackQuery
 
+from bot.config import config
 from bot.keyboards.language import language_picker_keyboard
 from bot.keyboards.main_menu import main_menu_keyboard
 from bot.services.user_prefs import user_prefs
@@ -21,7 +22,8 @@ async def cb_language_menu(callback: CallbackQuery, lang: str) -> None:
 async def cb_set_language(callback: CallbackQuery) -> None:
     new_lang = callback.data.split(":", 1)[1]
     await user_prefs.set_language(callback.from_user.id, new_lang)
+    is_admin = config.is_admin(callback.from_user.id)
     await callback.message.edit_text(
-        language_saved_text(new_lang), reply_markup=main_menu_keyboard(new_lang)
+        language_saved_text(new_lang), reply_markup=main_menu_keyboard(new_lang, is_admin)
     )
     await callback.answer()

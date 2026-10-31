@@ -26,6 +26,9 @@ class Config:
     data_dir: Path
     admin_ids: frozenset[int] = field(default_factory=frozenset)
 
+    def is_admin(self, user_id: int) -> bool:
+        return user_id in self.admin_ids
+
 
 def load_config() -> Config:
     token = os.getenv("BOT_TOKEN")
