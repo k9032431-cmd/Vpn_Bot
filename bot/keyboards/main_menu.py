@@ -7,21 +7,24 @@ from bot.texts.support import build_sos_chat_url
 from bot.texts.translations import t
 
 
-def main_menu_keyboard(lang: str, is_admin: bool = False) -> InlineKeyboardMarkup:
+def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     # Bot API 9.4 button "style" (primary/success/danger/default) and
     # icon_custom_emoji_id -- see bot/texts/premium_emoji.py for the
     # Premium/Fragment requirement that gates whether Telegram actually
-    # shows the icon. All blue except Info (green) and SOS (red).
+    # shows the icon. One wide "hero" row up top (Cloud VPS, green --
+    # this bot's main paid action), paired rows below, SOS alone at the
+    # bottom -- same rhythm as other polished hosting-bot menus, instead
+    # of one flat grid of same-sized buttons.
+    builder.button(text=t(lang, "btn_cloud_vps"), callback_data="menu:cloud_vps", style="success", icon_custom_emoji_id=button_icon("cloud_vps"))
     builder.button(text=t(lang, "btn_node"), callback_data="menu:node", style="primary", icon_custom_emoji_id=button_icon("node"))
     builder.button(text=t(lang, "btn_panel"), callback_data="menu:panel", style="primary", icon_custom_emoji_id=button_icon("panel"))
     builder.button(text=t(lang, "btn_profile"), callback_data="menu:profile", style="primary", icon_custom_emoji_id=button_icon("profile"))
     builder.button(text=t(lang, "btn_whois"), callback_data="menu:whois", style="primary", icon_custom_emoji_id=button_icon("whois"))
-    builder.button(text=t(lang, "btn_cloud_vps"), callback_data="menu:cloud_vps", style="primary", icon_custom_emoji_id=button_icon("cloud_vps"))
     builder.button(text=t(lang, "btn_cloud_account"), callback_data="menu:cloud_account", style="primary", icon_custom_emoji_id=button_icon("cloud_account"))
     builder.button(text=t(lang, "btn_crypt"), callback_data="menu:crypt", style="primary", icon_custom_emoji_id=button_icon("crypt"))
     builder.button(text=t(lang, "btn_language"), callback_data="menu:language", style="primary", icon_custom_emoji_id=button_icon("language"))
-    builder.button(text=t(lang, "btn_info"), callback_data="menu:info", style="success", icon_custom_emoji_id=button_icon("info"))
+    builder.button(text=t(lang, "btn_info"), callback_data="menu:info", style="primary", icon_custom_emoji_id=button_icon("info"))
 
     # When a support contact is configured, SOS opens a chat with the admin
     # directly (pre-filled greeting) instead of a menu screen.
@@ -31,13 +34,7 @@ def main_menu_keyboard(lang: str, is_admin: bool = False) -> InlineKeyboardMarku
     else:
         builder.button(text=t(lang, "btn_sos"), callback_data="menu:sos", style="danger", icon_custom_emoji_id=button_icon("sos"))
 
-    rows = [2, 2, 2, 2, 2]
-    if is_admin:
-        # Lets ADMIN_IDS owners set premium emoji and check bot stats from
-        # inside the bot itself -- see bot/handlers/admin_panel.py.
-        builder.button(text=t(lang, "btn_admin_panel"), callback_data="menu:admin", style="primary")
-        rows.append(1)
-    builder.adjust(*rows)
+    builder.adjust(1, 2, 2, 2, 2, 1)
     return builder.as_markup()
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 from aiogram.types import FSInputFile
@@ -21,8 +22,8 @@ _SECTION_ICON = {
 WELCOME_BANNER = FSInputFile(Path(__file__).resolve().parent.parent / "assets" / "welcome_banner.jpg")
 
 
-def welcome_text(lang: str) -> str:
-    return t(lang, "welcome", icon=e("welcome", "👋"))
+def welcome_text(lang: str, name: str) -> str:
+    return t(lang, "welcome", icon=e("welcome", "👋"), name=html.escape(name))
 
 
 def section_text(lang: str, section: str) -> str | None:

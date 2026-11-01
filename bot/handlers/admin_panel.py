@@ -1,6 +1,7 @@
 from aiogram import F, Router
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from bot.config import config
 from bot.handlers.admin_emoji import show_emoji_sections
@@ -13,6 +14,17 @@ router = Router(name="admin_panel")
 
 def _is_admin(user_id: int) -> bool:
     return config.is_admin(user_id)
+
+
+@router.message(Command("admin"))
+async def cmd_admin(message: Message, state: FSMContext, lang: str) -> None:
+    # Deliberately not a main-menu button -- only reachable by typing the
+    # command, and silently ignored for anyone outside ADMIN_IDS, so it
+    # doesn't even hint at existing for everyone else.
+    if not _is_admin(message.from_user.id):
+        return
+    await state.clear()
+    await message.answer(texts.admin_panel_text(lang), reply_markup=admin_panel_keyboard(lang))
 
 
 @router.callback_query(F.data == "menu:admin")

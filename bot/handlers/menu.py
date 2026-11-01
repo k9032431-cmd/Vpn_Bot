@@ -2,7 +2,6 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from bot.config import config
 from bot.keyboards.main_menu import back_keyboard, main_menu_keyboard
 from bot.texts.main import WELCOME_BANNER, section_text, welcome_text
 from bot.utils.messages import show_text
@@ -19,9 +18,9 @@ async def cb_back(callback: CallbackQuery, state: FSMContext, lang: str) -> None
         await callback.message.delete()
     except Exception:
         pass
-    is_admin = config.is_admin(callback.from_user.id)
+    name = callback.from_user.first_name or callback.from_user.username or ""
     await callback.message.answer_photo(
-        WELCOME_BANNER, caption=welcome_text(lang), reply_markup=main_menu_keyboard(lang, is_admin)
+        WELCOME_BANNER, caption=welcome_text(lang, name), reply_markup=main_menu_keyboard(lang)
     )
     await callback.answer()
 

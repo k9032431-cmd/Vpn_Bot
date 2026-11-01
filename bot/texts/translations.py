@@ -23,22 +23,28 @@ def resolve_language(code: str | None) -> str:
 _STRINGS: dict[str, dict[str, str]] = {
     "welcome": {
         "ru": (
-            "{icon} <b>ArsiCloudBot</b>\n"
-            "<i>Вся ваша VPN-система в одном месте</i>\n\n"
-            "⚡ Быстрая установка · ☁️ Своё облако · 🔒 Полный контроль\n\n"
-            "👇 Выберите раздел"
+            "{icon} Приветствую, <b>{name}</b>\n\n"
+            "ArsiCloudBot — управление VPN-нодами и облачными серверами в одном месте.\n\n"
+            "✅ Быстрая установка\n"
+            "✅ Своё облако\n"
+            "✅ Полный контроль\n\n"
+            "Выберите нужный раздел ниже."
         ),
         "en": (
-            "{icon} <b>ArsiCloudBot</b>\n"
-            "<i>Your whole VPN system in one place</i>\n\n"
-            "⚡ Fast setup · ☁️ Your own cloud · 🔒 Full control\n\n"
-            "👇 Choose a section"
+            "{icon} Welcome, <b>{name}</b>\n\n"
+            "ArsiCloudBot — manage your VPN nodes and cloud servers in one place.\n\n"
+            "✅ Fast setup\n"
+            "✅ Your own cloud\n"
+            "✅ Full control\n\n"
+            "Choose the section you need below."
         ),
         "tk": (
-            "{icon} <b>ArsiCloudBot</b>\n"
-            "<i>Bütin VPN ulgamyňyz bir ýerde</i>\n\n"
-            "⚡ Çalt gurnama · ☁️ Öz buludyňyz · 🔒 Doly gözegçilik\n\n"
-            "👇 Bölümi saýlaň"
+            "{icon} Salam, <b>{name}</b>\n\n"
+            "ArsiCloudBot — VPN düwünleriňizi we bulut serwerleriňizi bir ýerden dolandyryň.\n\n"
+            "✅ Çalt gurnama\n"
+            "✅ Öz buludyňyz\n"
+            "✅ Doly gözegçilik\n\n"
+            "Aşakdan gerekli bölümi saýlaň."
         ),
     },
     # --- Button labels ---
@@ -3433,7 +3439,6 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
 
     # --- Admin panel ---
-    "btn_admin_panel": {"ru": "🛡 Админ-панель", "en": "🛡 Admin panel", "tk": "🛡 Admin paneli"},
     "admin_panel_header": {
         "ru": "{icon} <b>Админ-панель</b>\n\nВыберите раздел:",
         "en": "{icon} <b>Admin panel</b>\n\nChoose a section:",
