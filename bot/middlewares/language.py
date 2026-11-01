@@ -6,6 +6,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
 from bot.services.user_prefs import user_prefs
+from bot.services.user_stats import user_stats
 from bot.texts.translations import resolve_language
 
 
@@ -27,6 +28,7 @@ class LanguageMiddleware(BaseMiddleware):
     ) -> Any:
         user = data.get("event_from_user")
         if user is not None:
+            await user_stats.record_seen(user.id)
             lang = await user_prefs.get_language(user.id)
             if lang is None:
                 lang = resolve_language(user.language_code)

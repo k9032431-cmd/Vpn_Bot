@@ -22,14 +22,10 @@ def _is_admin(user_id: int) -> bool:
     return config.is_admin(user_id)
 
 
-@router.callback_query(F.data == "menu:admin_emoji")
-async def cb_admin_emoji_open(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
-    if not _is_admin(callback.from_user.id):
-        await callback.answer()
-        return
-    await state.clear()
+async def show_emoji_sections(callback: CallbackQuery, lang: str) -> None:
+    """Shared by this module's own "back to sections" button and by the
+    admin panel's "⚙️ Эмодзи" entry (bot/handlers/admin_panel.py)."""
     await callback.message.edit_text(texts.admin_emoji_sections_text(lang), reply_markup=admin_emoji_sections_keyboard(lang))
-    await callback.answer()
 
 
 @router.callback_query(F.data == "adminemoji:sections")
@@ -38,7 +34,7 @@ async def cb_admin_emoji_sections(callback: CallbackQuery, state: FSMContext, la
         await callback.answer()
         return
     await state.clear()
-    await callback.message.edit_text(texts.admin_emoji_sections_text(lang), reply_markup=admin_emoji_sections_keyboard(lang))
+    await show_emoji_sections(callback, lang)
     await callback.answer()
 
 

@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from bot.config import config
-from bot.handlers import admin_emoji, cloud, crypt, language, menu, node, panel, profile, start, whois
+from bot.handlers import admin_emoji, admin_panel, cloud, crypt, language, menu, node, panel, profile, start, whois
 from bot.middlewares.language import LanguageMiddleware
 
 
@@ -29,8 +29,9 @@ async def main() -> None:
     dp.include_router(crypt.router)
     dp.include_router(language.router)
     # Before menu.router: its own "menu:*" catch-all (cb_section) would
-    # otherwise swallow "menu:admin_emoji" first and silently no-op it.
+    # otherwise swallow "menu:admin" first and silently no-op it.
     dp.include_router(admin_emoji.router)
+    dp.include_router(admin_panel.router)
     dp.include_router(menu.router)
 
     await bot.delete_webhook(drop_pending_updates=True)

@@ -33,9 +33,9 @@ def main_menu_keyboard(lang: str, is_admin: bool = False) -> InlineKeyboardMarku
 
     rows = [2, 2, 2, 2, 2]
     if is_admin:
-        # Lets ADMIN_IDS owners set every premium emoji from inside the bot
-        # itself, instead of needing a code change/redeploy for each one.
-        builder.button(text=t(lang, "btn_admin_emoji"), callback_data="menu:admin_emoji", style="primary")
+        # Lets ADMIN_IDS owners set premium emoji and check bot stats from
+        # inside the bot itself -- see bot/handlers/admin_panel.py.
+        builder.button(text=t(lang, "btn_admin_panel"), callback_data="menu:admin", style="primary")
         rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()

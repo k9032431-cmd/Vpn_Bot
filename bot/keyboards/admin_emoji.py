@@ -9,7 +9,7 @@ def admin_emoji_sections_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for section in sections():
         builder.button(text=section, callback_data=f"adminemoji:section:{section}", style="primary")
-    builder.button(text=t(lang, "btn_back"), callback_data="menu:back", style="danger")
+    builder.button(text=t(lang, "btn_back"), callback_data="menu:admin", style="danger")
     builder.adjust(*([1] * len(sections())), 1)
     return builder.as_markup()
 

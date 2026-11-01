@@ -3432,6 +3432,35 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
 
+    # --- Admin panel ---
+    "btn_admin_panel": {"ru": "🛡 Админ-панель", "en": "🛡 Admin panel", "tk": "🛡 Admin paneli"},
+    "admin_panel_header": {
+        "ru": "{icon} <b>Админ-панель</b>\n\nВыберите раздел:",
+        "en": "{icon} <b>Admin panel</b>\n\nChoose a section:",
+        "tk": "{icon} <b>Admin paneli</b>\n\nBölümi saýlaň:",
+    },
+    "btn_admin_stats": {"ru": "📊 Статистика", "en": "📊 Statistics", "tk": "📊 Statistika"},
+    "admin_stats": {
+        "ru": (
+            "{icon} <b>Статистика</b>\n\n"
+            "👥 Всего пользователей: <b>{total}</b>\n"
+            "🆕 Новых за 24 часа: <b>{new_24h}</b>\n"
+            "📈 Новых за 7 дней: <b>{new_7d}</b>"
+        ),
+        "en": (
+            "{icon} <b>Statistics</b>\n\n"
+            "👥 Total users: <b>{total}</b>\n"
+            "🆕 New in the last 24h: <b>{new_24h}</b>\n"
+            "📈 New in the last 7 days: <b>{new_7d}</b>"
+        ),
+        "tk": (
+            "{icon} <b>Statistika</b>\n\n"
+            "👥 Jemi ulanyjylar: <b>{total}</b>\n"
+            "🆕 Soňky 24 sagatda täze: <b>{new_24h}</b>\n"
+            "📈 Soňky 7 günde täze: <b>{new_7d}</b>"
+        ),
+    },
+
     # --- Admin: premium-emoji settings ---
     "btn_admin_emoji": {"ru": "⚙️ Эмодзи", "en": "⚙️ Emoji", "tk": "⚙️ Emoji"},
     "admin_emoji_sections": {
