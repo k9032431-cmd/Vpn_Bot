@@ -23,7 +23,10 @@ WELCOME_BANNER = FSInputFile(Path(__file__).resolve().parent.parent / "assets" /
 
 
 def welcome_text(lang: str, name: str) -> str:
-    return t(lang, "welcome", icon=e("welcome", "👋"), name=html.escape(name))
+    # Reuses the same "success" slot as every ✅-style confirmation
+    # elsewhere in the bot, rather than a dedicated one -- one consistent
+    # checkmark, editable from the same "Общие" section in /admin.
+    return t(lang, "welcome", icon=e("welcome", "👋"), check=e("success", "✅"), name=html.escape(name))
 
 
 def section_text(lang: str, section: str) -> str | None:

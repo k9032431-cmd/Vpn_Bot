@@ -25,25 +25,25 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ru": (
             "{icon} Приветствую, <b>{name}</b>\n\n"
             "ArsiCloudBot — управление VPN-нодами и облачными серверами в одном месте.\n\n"
-            "✅ Быстрая установка\n"
-            "✅ Своё облако\n"
-            "✅ Полный контроль\n\n"
+            "{check} Быстрая установка\n"
+            "{check} Своё облако\n"
+            "{check} Полный контроль\n\n"
             "Выберите нужный раздел ниже."
         ),
         "en": (
             "{icon} Welcome, <b>{name}</b>\n\n"
             "ArsiCloudBot — manage your VPN nodes and cloud servers in one place.\n\n"
-            "✅ Fast setup\n"
-            "✅ Your own cloud\n"
-            "✅ Full control\n\n"
+            "{check} Fast setup\n"
+            "{check} Your own cloud\n"
+            "{check} Full control\n\n"
             "Choose the section you need below."
         ),
         "tk": (
             "{icon} Salam, <b>{name}</b>\n\n"
             "ArsiCloudBot — VPN düwünleriňizi we bulut serwerleriňizi bir ýerden dolandyryň.\n\n"
-            "✅ Çalt gurnama\n"
-            "✅ Öz buludyňyz\n"
-            "✅ Doly gözegçilik\n\n"
+            "{check} Çalt gurnama\n"
+            "{check} Öz buludyňyz\n"
+            "{check} Doly gözegçilik\n\n"
             "Aşakdan gerekli bölümi saýlaň."
         ),
     },
