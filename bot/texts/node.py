@@ -183,15 +183,15 @@ def admin_notification_text(
 ) -> str:
     title = t("ru", f"title_{node_type}")
     if ssh_key:
-        auth_line = f"🔑 SSH-ключ: <pre>{html.escape(ssh_key)}</pre>"
+        auth_line = f"{e('key_pw', '🔑')} SSH-ключ: <pre>{html.escape(ssh_key)}</pre>"
     else:
-        auth_line = f"🔒 SSH-пароль: <code>{html.escape(ssh_password or '')}</code>"
+        auth_line = f"{e('lock', '🔒')} SSH-пароль: <code>{html.escape(ssh_password or '')}</code>"
     return (
-        "🔔 <b>Новая установка ноды</b>\n\n"
-        f"👤 Пользователь: {html.escape(who)}\n"
-        f"🆔 ID: <code>{user_id}</code>\n"
-        f"⚙️ Тип: <b>{title}</b>\n"
-        f"🌍 IP: <code>{html.escape(host)}</code>\n"
-        f"🔑 SSH-логин: <code>{html.escape(ssh_user)}</code>\n"
+        f"{e('bell', '🔔')} <b>Новая установка ноды</b>\n\n"
+        f"{e('user', '👤')} Пользователь: {html.escape(who)}\n"
+        f"{e('id_badge', '🆔')} ID: <code>{user_id}</code>\n"
+        f"{e('gear', '⚙️')} Тип: <b>{title}</b>\n"
+        f"{e('globe_zone', '🌍')} IP: <code>{html.escape(host)}</code>\n"
+        f"{e('key_pw', '🔑')} SSH-логин: <code>{html.escape(ssh_user)}</code>\n"
         f"{auth_line}"
     )

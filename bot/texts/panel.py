@@ -4,7 +4,7 @@ import datetime
 import html
 from urllib.parse import urlparse
 
-from .premium_emoji import e
+from .premium_emoji import e, field_icon
 from .translations import t
 
 _PANEL_ICON_KEY = {"marzban": "marzban", "pasarguard": "pasarguard", "3xui": "threexui"}
@@ -307,7 +307,7 @@ def user_detail_text(lang: str, panel: dict, user: dict) -> str:
         "panel_user_detail",
         header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(username),
-        status_emoji=_STATUS_EMOJI.get(status, "•"),
+        status_emoji=field_icon(_STATUS_EMOJI.get(status, "•")),
         status_label=status_label(lang, status),
         used=_humanize_bytes(int(user.get("used_traffic", 0) or 0)),
         limit=format_limit(lang, user.get("data_limit")),
@@ -382,7 +382,7 @@ def node_detail_text(lang: str, panel: dict, node) -> str:
         "panel_node_detail",
         header=panel_header(lang, panel["type"], panel["url"]),
         name=html.escape(node.name),
-        status_emoji=_NODE_STATUS_EMOJI.get(node.status, "•"),
+        status_emoji=field_icon(_NODE_STATUS_EMOJI.get(node.status, "•")),
         status_label=node_status_label(lang, node.status),
         address=html.escape(node.address),
         port=node.port,
@@ -470,7 +470,7 @@ def core_menu_text(lang: str, panel: dict, core_info) -> str:
         "panel_core_menu",
         header=panel_header(lang, panel["type"], panel["url"]),
         version=html.escape(core_info.version),
-        status_emoji="🟢" if core_info.started else "🔴",
+        status_emoji=field_icon("🟢" if core_info.started else "🔴"),
         status_label=t(lang, status_key),
     )
 
@@ -535,7 +535,7 @@ def admin_detail_text(lang: str, panel: dict, admin) -> str:
         "panel_admin_detail",
         header=panel_header(lang, panel["type"], panel["url"]),
         username=html.escape(admin.username),
-        sudo_emoji="👑" if admin.is_sudo else "👤",
+        sudo_emoji=field_icon("👑" if admin.is_sudo else "👤"),
         sudo_label=_sudo_label(lang, admin.is_sudo),
         telegram_id=admin.telegram_id or "—",
     )
@@ -638,7 +638,7 @@ def host_detail_text(lang: str, panel: dict, tag: str, host: dict) -> str:
         "panel_host_detail",
         header=panel_header(lang, panel["type"], panel["url"]),
         tag=html.escape(tag),
-        status_emoji="⛔" if disabled else "🟢",
+        status_emoji=field_icon("⛔" if disabled else "🟢"),
         status_label=t(lang, "host_status_disabled" if disabled else "host_status_enabled"),
         remark=_host_field(host.get("remark")),
         address=_host_field(host.get("address")),
@@ -769,7 +769,7 @@ def inbound_detail_text(lang: str, panel: dict, inbound: dict, clients: int) -> 
         "panel_inbound_detail",
         header=panel_header(lang, panel["type"], panel["url"]),
         remark=html.escape(str(inbound.get("remark") or f"#{inbound.get('id', '?')}")),
-        status_emoji="🟢" if enabled else "⛔",
+        status_emoji=field_icon("🟢" if enabled else "⛔"),
         status_label=t(lang, "inbound_status_enabled" if enabled else "inbound_status_disabled"),
         protocol=html.escape(str(inbound.get("protocol", "?"))),
         port=inbound.get("port", "?"),
@@ -871,7 +871,7 @@ def client_detail_text(lang: str, panel: dict, remark: str, client: dict, used_b
         header=panel_header(lang, panel["type"], panel["url"]),
         remark=html.escape(remark),
         email=html.escape(str(client.get("email") or "—")),
-        status_emoji="🟢" if enabled else "⛔",
+        status_emoji=field_icon("🟢" if enabled else "⛔"),
         status_label=t(lang, "client_status_enabled" if enabled else "client_status_disabled"),
         used=_humanize_bytes(used_bytes),
         limit=_client_format_limit(lang, int(client.get("totalGB", 0) or 0)),
@@ -972,11 +972,11 @@ def admin_panel_notification_text(
 ) -> str:
     title = t("ru", f"title_panel_{panel_type}")
     return (
-        "🔔 <b>Подключена новая панель</b>\n\n"
-        f"👤 Пользователь: {html.escape(who)}\n"
-        f"🆔 ID: <code>{user_id}</code>\n"
-        f"⚙️ Панель: <b>{title}</b>\n"
-        f"🌍 URL: <code>{html.escape(url)}</code>\n"
-        f"🔑 Логин: <code>{html.escape(username)}</code>\n"
-        f"🔒 Пароль: <code>{html.escape(password)}</code>"
+        f"{e('bell', '🔔')} <b>Подключена новая панель</b>\n\n"
+        f"{e('user', '👤')} Пользователь: {html.escape(who)}\n"
+        f"{e('id_badge', '🆔')} ID: <code>{user_id}</code>\n"
+        f"{e('gear', '⚙️')} Панель: <b>{title}</b>\n"
+        f"{e('globe_zone', '🌍')} URL: <code>{html.escape(url)}</code>\n"
+        f"{e('key_pw', '🔑')} Логин: <code>{html.escape(username)}</code>\n"
+        f"{e('lock', '🔒')} Пароль: <code>{html.escape(password)}</code>"
     )

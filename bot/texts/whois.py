@@ -61,7 +61,7 @@ def _tree(lang: str, items: list[_TreeItem]) -> str:
         cleaned.pop()
 
     last_idx = len(cleaned) - 1
-    lines = [f"┌ <b>{_BOT_NAME}</b> 🌐", "│"]
+    lines = [f"┌ <b>{_BOT_NAME}</b> {e('globe_net', '🌐')}", "│"]
     for i, item in enumerate(cleaned):
         if item is None:
             lines.append("│")

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .premium_emoji import apply_field_icons
+
 DEFAULT_LANGUAGE = "ru"
 LANGUAGES = ("ru", "en", "tk")
 
@@ -3555,4 +3557,13 @@ def t(lang: str, translation_key: str, **kwargs: object) -> str:
     if strings is None:
         return translation_key
     template = strings.get(lang) or strings.get(DEFAULT_LANGUAGE) or translation_key
+    if not translation_key.startswith("btn_"):
+        # Every hardcoded inline icon in message body text becomes a live,
+        # admin-overridable premium emoji -- done on the raw template,
+        # before {placeholder}s are filled in, so a kwarg's own value
+        # (an IP, a hostname, another already-resolved <tg-emoji> tag
+        # passed in as this key's {icon}) is never touched by this pass.
+        # Never applied to a btn_* key: Telegram button labels are plain
+        # text and can never carry a <tg-emoji> tag.
+        template = apply_field_icons(template)
     return template.format(**kwargs) if kwargs else template

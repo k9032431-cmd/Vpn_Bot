@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import re
 
-from .premium_emoji import e
+from .premium_emoji import e, field_icon
 from .translations import t
 
 PROVIDERS = ("upcloud", "aws", "azure", "hetzner", "exoscale", "linode", "kamatera")
@@ -221,7 +221,7 @@ def server_detail_text(lang: str, server, stored_password: str | None = None) ->
         lang,
         "cloud_server_detail",
         title=html.escape(server.title or server.hostname),
-        state=f"{_STATE_EMOJI.get(server.state, '⚪️')} {server.state}",
+        state=f"{field_icon(_STATE_EMOJI.get(server.state, '⚪️'))} {server.state}",
         location=zone_display(server.zone),
         plan=server.plan,
         cores=server.core_number,
@@ -621,7 +621,7 @@ def azure_vm_detail_text(lang: str, vm, stored_password: str | None = None) -> s
         lang,
         "azure_vm_detail",
         name=html.escape(vm.name),
-        state=f"{_AZURE_POWER_EMOJI.get(vm.power_state, '⚪️')} {vm.power_state}",
+        state=f"{field_icon(_AZURE_POWER_EMOJI.get(vm.power_state, '⚪️'))} {vm.power_state}",
         location=azure_location_display(vm.location, vm.location),
         size=vm.vm_size,
         zone_line=zone_line,
@@ -862,7 +862,7 @@ def azure_orphans_header_text(lang: str, orphans: list[dict], page: int = 0, tot
 
 def azure_orphan_delete_confirm_text(lang: str, orphan: dict) -> str:
     return t(
-        lang, "azure_orphan_delete_confirm", icon=e("warning", "⚠️"), ricon=azure_orphan_icon(orphan["kind"]),
+        lang, "azure_orphan_delete_confirm", icon=e("warning", "⚠️"), ricon=field_icon(azure_orphan_icon(orphan["kind"])),
         name=html.escape(orphan["name"]), location=html.escape(orphan["location"]),
     )
 
@@ -934,7 +934,7 @@ def hetzner_server_detail_text(lang: str, server, stored_password: str | None = 
         lang,
         "hetzner_server_detail",
         name=html.escape(server.name),
-        state=f"{_HETZNER_STATUS_EMOJI.get(server.status, '⚪️')} {server.status}",
+        state=f"{field_icon(_HETZNER_STATUS_EMOJI.get(server.status, '⚪️'))} {server.status}",
         location=server.location,
         server_type=server.server_type,
         ipv4=server.ipv4 or no_ip,
@@ -947,7 +947,9 @@ def hetzner_server_delete_confirm_text(lang: str, server, primary_ips=None, floa
     floating_ips = floating_ips or []
     if not primary_ips and not floating_ips:
         return t(lang, "hetzner_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
-    lines = [f"🟩 <code>{ip.ip}</code>" for ip in primary_ips] + [f"🌐 <code>{ip.ip}</code>" for ip in floating_ips]
+    lines = [f"{e('ip_primary', '🟩')} <code>{ip.ip}</code>" for ip in primary_ips] + [
+        f"{e('globe_net', '🌐')} <code>{ip.ip}</code>" for ip in floating_ips
+    ]
     return t(
         lang, "hetzner_server_delete_confirm_with_ips",
         icon=e("warning", "⚠️"), name=html.escape(server.name), ip_list="\n".join(lines),
@@ -1112,7 +1114,7 @@ def hetzner_addresses_menu_text(lang: str) -> str:
 def hetzner_addresses_header_text(
     lang: str, kind: str, has_addresses: bool, page: int = 0, total_pages: int = 1
 ) -> str:
-    icon = "🟩" if kind == "primary" else "🌐"
+    icon = e("ip_primary", "🟩") if kind == "primary" else e("globe_net", "🌐")
     body_key = "hetzner_addresses_hint" if has_addresses else "hetzner_addresses_empty"
     text = t(
         lang, "hetzner_addresses_header", icon=icon, kind=hetzner_address_kind_title(lang, kind), body=t(lang, body_key)
@@ -1256,7 +1258,9 @@ def hetzner_address_deleted_text(lang: str) -> str:
 
 
 def hetzner_free_ips_confirm_text(lang: str, primary_ips: list, floating_ips: list) -> str:
-    lines = [f"🟩 <code>{ip.ip}</code>" for ip in primary_ips] + [f"🌐 <code>{ip.ip}</code>" for ip in floating_ips]
+    lines = [f"{e('ip_primary', '🟩')} <code>{ip.ip}</code>" for ip in primary_ips] + [
+        f"{e('globe_net', '🌐')} <code>{ip.ip}</code>" for ip in floating_ips
+    ]
     return t(
         lang, "hetzner_free_ips_confirm",
         icon=e("warning", "⚠️"), count=len(primary_ips) + len(floating_ips), ip_list="\n".join(lines),
@@ -1356,7 +1360,7 @@ def exoscale_server_detail_text(lang: str, server, stored_password: str | None =
         lang,
         "exoscale_server_detail",
         name=html.escape(server.name),
-        state=f"{_EXOSCALE_STATUS_EMOJI.get(server.state, '⚪️')} {server.state}",
+        state=f"{field_icon(_EXOSCALE_STATUS_EMOJI.get(server.state, '⚪️'))} {server.state}",
         zone=exoscale_zone_display(server.zone),
         instance_type=server.instance_type_label or server.instance_type_id,
         template=server.template_label or server.template_id,
@@ -1476,7 +1480,7 @@ def hetzner_bad_prefix_removed_text(lang: str, prefix: str) -> str:
 
 
 def hetzner_delete_bad_ips_confirm_text(lang: str, matches: list[tuple[str, str]]) -> str:
-    ip_list = "\n".join(f"{icon} <code>{ip}</code>" for icon, ip in matches)
+    ip_list = "\n".join(f"{field_icon(icon)} <code>{ip}</code>" for icon, ip in matches)
     return t(lang, "hetzner_delete_bad_ips_confirm", icon=e("warning", "⚠️"), count=len(matches), ip_list=ip_list)
 
 
