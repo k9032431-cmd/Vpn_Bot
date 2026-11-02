@@ -222,6 +222,23 @@ def slots_in_section(section: str) -> list[EmojiSlot]:
     return [s for s in SLOTS if s.section == section]
 
 
+def section_index(section: str) -> int:
+    """A stable, short ASCII stand-in for a section name in callback_data
+    -- some section names (Cyrillic, "Значки — действия/интерфейс") are
+    long enough in UTF-8 that embedding them directly would push
+    callback_data past Telegram's 64-byte limit, silently breaking the
+    whole keyboard. Position in sections() is stable within one running
+    process; a restart with a changed SLOTS list only affects buttons
+    already drawn before the restart, which is harmless since they're
+    re-sent on every navigation anyway."""
+    return sections().index(section)
+
+
+def section_by_index(index: int) -> str | None:
+    all_sections = sections()
+    return all_sections[index] if 0 <= index < len(all_sections) else None
+
+
 def current_id(key: str) -> str:
     """The id actually in effect for this slot right now: an admin
     override if one was ever set through the bot, else the factory

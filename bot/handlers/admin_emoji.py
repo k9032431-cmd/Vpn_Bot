@@ -12,6 +12,7 @@ from bot.keyboards.admin_emoji import (
 from bot.services import emoji_overrides
 from bot.states.admin_emoji import AdminEmojiStates
 from bot.texts import admin_emoji as texts
+from bot.texts.premium_emoji import section_by_index
 from bot.texts.premium_emoji import slot as get_slot
 from bot.utils.messages import advance_screen, track_prompt
 
@@ -43,7 +44,11 @@ async def cb_admin_emoji_section(callback: CallbackQuery, state: FSMContext, lan
     if not _is_admin(callback.from_user.id):
         await callback.answer()
         return
-    section = callback.data.split(":", 2)[2]
+    raw = callback.data.split(":", 2)[2]
+    section = section_by_index(int(raw)) if raw.isdigit() else None
+    if section is None:
+        await callback.answer()
+        return
     await state.clear()
     await callback.message.edit_text(
         texts.admin_emoji_section_text(lang, section), reply_markup=admin_emoji_section_keyboard(lang, section)

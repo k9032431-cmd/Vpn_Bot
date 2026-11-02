@@ -1,14 +1,14 @@
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot.texts.premium_emoji import button_icon, sections, slots_in_section
+from bot.texts.premium_emoji import button_icon, section_index, sections, slots_in_section
 from bot.texts.translations import t
 
 
 def admin_emoji_sections_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    for section in sections():
-        builder.button(text=section, callback_data=f"adminemoji:section:{section}", style="primary")
+    for i, section in enumerate(sections()):
+        builder.button(text=section, callback_data=f"adminemoji:section:{i}", style="primary")
     builder.button(text=t(lang, "btn_back"), callback_data="menu:admin", style="danger")
     builder.adjust(*([1] * len(sections())), 1)
     return builder.as_markup()
@@ -35,7 +35,7 @@ def admin_emoji_slot_keyboard(lang: str, key: str, section: str, has_override: b
     if has_override:
         builder.button(text=t(lang, "btn_admin_emoji_reset"), callback_data=f"adminemoji:reset:{key}", style="danger")
         rows.append(1)
-    builder.button(text=t(lang, "btn_back"), callback_data=f"adminemoji:section:{section}", style="danger")
+    builder.button(text=t(lang, "btn_back"), callback_data=f"adminemoji:section:{section_index(section)}", style="danger")
     rows.append(1)
     builder.adjust(*rows)
     return builder.as_markup()
