@@ -6,8 +6,8 @@ import re
 from .premium_emoji import e, field_icon
 from .translations import t
 
-PROVIDERS = ("upcloud", "aws", "azure", "hetzner", "exoscale", "linode", "kamatera")
-ACTIVE_PROVIDERS = ("upcloud", "azure", "hetzner", "exoscale")
+PROVIDERS = ("upcloud", "aws", "azure", "hetzner", "exoscale", "digitalocean", "linode", "kamatera")
+ACTIVE_PROVIDERS = ("upcloud", "azure", "hetzner", "exoscale", "digitalocean")
 
 _STATE_EMOJI = {
     "started": "🟢",
@@ -27,7 +27,7 @@ _CLOUD_ERR_KEYS = {
 
 _PROVIDER_TITLES = {
     "upcloud": "UpCloud", "aws": "AWS", "azure": "Azure", "hetzner": "Hetzner", "exoscale": "Exoscale",
-    "linode": "Linode", "kamatera": "Kamatera",
+    "digitalocean": "DigitalOcean", "linode": "Linode", "kamatera": "Kamatera",
 }
 
 # UpCloud zone ids follow "<country>-<city><n>" (e.g. "us-nyc1") — the city
@@ -113,6 +113,9 @@ def account_display_name(account: dict) -> str:
         return account.get("subscription_id", "")
     if account["provider"] == "exoscale":
         return account.get("key", "")
+    if account["provider"] == "digitalocean":
+        token = account.get("token", "")
+        return f"{token[:8]}…" if token else ""
     return account.get("username", "")
 
 
@@ -1495,3 +1498,133 @@ def hetzner_delete_bad_ips_result_text(lang: str, deleted_count: int, failed_cou
             icon=e("warning", "⚠️"), deleted=deleted_count, failed=failed_count,
         )
     return t(lang, "hetzner_delete_bad_ips_result", icon=e("success", "✅"), count=deleted_count)
+
+
+# --- DigitalOcean ---
+
+_DO_STATUS_EMOJI = {
+    "new": "🚧",
+    "active": "🟢",
+    "off": "🔴",
+    "archive": "⚪",
+}
+
+
+def digitalocean_step_token_text(lang: str) -> str:
+    return t(lang, "digitalocean_step_token")
+
+
+def digitalocean_empty_field_text(lang: str) -> str:
+    return t(lang, "digitalocean_empty_field")
+
+
+def digitalocean_account_dashboard_text(lang: str, account: dict, info) -> str:
+    return t(lang, "digitalocean_account_dashboard", icon=e("digitalocean", "💧"), email=html.escape(info.email))
+
+
+def digitalocean_servers_header_text(lang: str, account: dict, has_servers: bool) -> str:
+    body_key = "cloud_servers_hint" if has_servers else "cloud_servers_empty"
+    return t(lang, "digitalocean_servers_header", body=t(lang, body_key))
+
+
+def digitalocean_server_list_label(server) -> str:
+    icon = _DO_STATUS_EMOJI.get(server.status, "⚪️")
+    return f"{icon} {server.name}"
+
+
+def digitalocean_server_detail_text(lang: str, server, stored_password: str | None = None) -> str:
+    no_ip = t(lang, "cloud_server_no_ip")
+    if stored_password:
+        password_line = t(lang, "digitalocean_server_detail_password_line", password=html.escape(stored_password))
+    else:
+        password_line = t(lang, "digitalocean_server_detail_password_emailed")
+    return t(
+        lang,
+        "digitalocean_server_detail",
+        name=html.escape(server.name),
+        state=f"{field_icon(_DO_STATUS_EMOJI.get(server.status, '⚪️'))} {server.status}",
+        region=server.region_name or server.region,
+        size=server.size_slug,
+        vcpus=server.vcpus,
+        memory=_format_memory(server.memory_mb),
+        disk=server.disk_gb,
+        ipv4=server.ipv4 or no_ip,
+        password_line=password_line,
+    )
+
+
+def digitalocean_server_delete_confirm_text(lang: str, server) -> str:
+    return t(lang, "digitalocean_server_delete_confirm", icon=e("warning", "⚠️"), name=html.escape(server.name))
+
+
+def digitalocean_create_choose_region_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "digitalocean_create_choose_region", icon=e("digitalocean", "💧")) + _page_suffix(lang, page, total_pages)
+
+
+def digitalocean_create_choose_size_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "digitalocean_create_choose_size") + _page_suffix(lang, page, total_pages)
+
+
+def digitalocean_create_choose_image_text(lang: str, page: int = 0, total_pages: int = 1) -> str:
+    return t(lang, "digitalocean_create_choose_image") + _page_suffix(lang, page, total_pages)
+
+
+def digitalocean_create_waiting_hostname_text(lang: str) -> str:
+    return t(lang, "digitalocean_create_waiting_hostname")
+
+
+def digitalocean_create_invalid_hostname_text(lang: str) -> str:
+    return t(lang, "digitalocean_create_invalid_hostname")
+
+
+def digitalocean_create_choose_auth_method_text(lang: str) -> str:
+    return t(lang, "digitalocean_create_choose_auth_method")
+
+
+def digitalocean_create_waiting_ssh_key_text(lang: str) -> str:
+    return t(lang, "digitalocean_create_waiting_ssh_key")
+
+
+def digitalocean_create_invalid_ssh_key_text(lang: str) -> str:
+    return t(lang, "digitalocean_create_invalid_ssh_key")
+
+
+def digitalocean_create_confirm_text(
+    lang: str, hostname: str, region_name: str, size_label: str, image_label: str, auth_method: str
+) -> str:
+    auth_label = t(lang, "auth_method_key" if auth_method == "key" else "auth_method_password")
+    return t(
+        lang,
+        "digitalocean_create_confirm",
+        hostname=html.escape(hostname),
+        region=region_name,
+        size=size_label,
+        image=image_label,
+        auth_method=auth_label,
+    )
+
+
+def digitalocean_progress_text(lang: str, step: str) -> str:
+    key = {
+        "ssh_key": "digitalocean_progress_ssh_key",
+        "server": "digitalocean_progress_server",
+        "provisioning": "digitalocean_progress_provisioning",
+    }.get(step, "digitalocean_progress_server")
+    return t(lang, key)
+
+
+def digitalocean_create_success_text(lang: str, server, ssh_key_used: bool = False) -> str:
+    # Unlike Hetzner/Exoscale/UpCloud, DigitalOcean never hands back a
+    # generated root password through the API at all -- without an SSH key
+    # it only emails one to the account owner, so there's nothing of ours
+    # to store or show here; just say so instead of a blank password line.
+    password_line = "" if ssh_key_used else t(lang, "digitalocean_server_detail_password_emailed")
+    return t(
+        lang,
+        "digitalocean_create_success",
+        icon=e("success", "✅"),
+        name=html.escape(server.name),
+        region=server.region_name or server.region,
+        ip=server.ipv4 or t(lang, "cloud_server_no_ip"),
+        password_line=password_line,
+    )

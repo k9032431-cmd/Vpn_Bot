@@ -80,6 +80,7 @@ SLOTS: tuple[EmojiSlot, ...] = (
     EmojiSlot("exoscale", "Cloud VPS", "Exoscale — дашборд и мастер создания сервера", "🟧", ""),
     EmojiSlot("linode", "Cloud VPS", "Linode — в списке провайдеров (скоро)", "🟩", ""),
     EmojiSlot("kamatera", "Cloud VPS", "Kamatera — в списке провайдеров (скоро)", "🟪", ""),
+    EmojiSlot("digitalocean", "Cloud VPS", "DigitalOcean — дашборд и мастер создания сервера", "💧", ""),
 
     # ══════════════════════════════════════════════════════════
     # Общие статусные значки (используются во всех разделах)

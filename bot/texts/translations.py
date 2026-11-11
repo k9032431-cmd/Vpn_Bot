@@ -1614,6 +1614,7 @@ _STRINGS: dict[str, dict[str, str]] = {
     "btn_cloud_provider_azure": {"ru": "Azure", "en": "Azure", "tk": "Azure"},
     "btn_cloud_provider_hetzner": {"ru": "Hetzner", "en": "Hetzner", "tk": "Hetzner"},
     "btn_cloud_provider_exoscale": {"ru": "Exoscale", "en": "Exoscale", "tk": "Exoscale"},
+    "btn_cloud_provider_digitalocean": {"ru": "DigitalOcean", "en": "DigitalOcean", "tk": "DigitalOcean"},
     "btn_cloud_provider_linode": {"ru": "🟩 Linode (скоро)", "en": "🟩 Linode (soon)", "tk": "🟩 Linode (ýakynda)"},
     "btn_cloud_provider_kamatera": {
         "ru": "🟪 Kamatera (скоро)",
@@ -3435,6 +3436,191 @@ _STRINGS: dict[str, dict[str, str]] = {
             "{icon} <b>Serwer döredildi!</b>\n\n"
             "🖥 <b>Ady:</b> {name}\n"
             "📍 <b>Zolak:</b> {zone}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>"
+            "{password_line}"
+        ),
+    },
+
+    # --- DigitalOcean ---
+    "digitalocean_step_token": {
+        "ru": (
+            "🔑 <b>Подключение DigitalOcean</b>\n\n"
+            "Введите <b>Personal Access Token</b> — его можно создать в панели DigitalOcean: "
+            "API → Tokens → Generate New Token (права на чтение и запись)."
+        ),
+        "en": (
+            "🔑 <b>Connect DigitalOcean</b>\n\n"
+            "Enter your <b>Personal Access Token</b> — create one in the DigitalOcean control panel: "
+            "API → Tokens → Generate New Token (read and write scope)."
+        ),
+        "tk": (
+            "🔑 <b>DigitalOcean birikdirmek</b>\n\n"
+            "<b>Personal Access Token</b> giriziň — ony DigitalOcean panelinde döredip bolar: "
+            "API → Tokens → Generate New Token (okamak we ýazmak hukugy bilen)."
+        ),
+    },
+    "digitalocean_empty_field": {
+        "ru": "Значение не может быть пустым. Попробуйте ещё раз:",
+        "en": "The value can't be empty. Try again:",
+        "tk": "Baha boş bolup bilmez. Gaýtadan synanyň:",
+    },
+    "digitalocean_account_dashboard": {
+        "ru": "{icon} <b>DigitalOcean</b>\n\n👤 {email}",
+        "en": "{icon} <b>DigitalOcean</b>\n\n👤 {email}",
+        "tk": "{icon} <b>DigitalOcean</b>\n\n👤 {email}",
+    },
+    "digitalocean_servers_header": {
+        "ru": "🖥 <b>Серверы DigitalOcean</b>\n\n{body}",
+        "en": "🖥 <b>DigitalOcean servers</b>\n\n{body}",
+        "tk": "🖥 <b>DigitalOcean serwerleri</b>\n\n{body}",
+    },
+    "digitalocean_server_detail": {
+        "ru": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Статус: {state}\n"
+            "📍 Регион: {region}\n"
+            "⚙️ Тариф: {size} ({vcpus} CPU / {memory} RAM)\n"
+            "💽 Диск: {disk} GB\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+        "en": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Status: {state}\n"
+            "📍 Region: {region}\n"
+            "⚙️ Size: {size} ({vcpus} CPU / {memory} RAM)\n"
+            "💽 Disk: {disk} GB\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+        "tk": (
+            "🖥 <b>{name}</b>\n\n"
+            "📶 Ýagdaýy: {state}\n"
+            "📍 Region: {region}\n"
+            "⚙️ Görnüşi: {size} ({vcpus} CPU / {memory} RAM)\n"
+            "💽 Disk: {disk} GB\n"
+            "🌐 IP: <code>{ipv4}</code>"
+            "{password_line}"
+        ),
+    },
+    "digitalocean_server_detail_password_line": {
+        "ru": "\n🔑 <b>Пароль:</b> <code>{password}</code>",
+        "en": "\n🔑 <b>Password:</b> <code>{password}</code>",
+        "tk": "\n🔑 <b>Parol:</b> <code>{password}</code>",
+    },
+    "digitalocean_server_detail_password_emailed": {
+        "ru": "\n📩 Пароль root отправлен на почту вашего аккаунта DigitalOcean (так работает API без SSH-ключа).",
+        "en": "\n📩 The root password was emailed to your DigitalOcean account (that's how the API works without an SSH key).",
+        "tk": "\n📩 Root paroly DigitalOcean hasabyňyzyň poçtasyna iberildi (SSH açarsyz API şeýle işleýär).",
+    },
+    "digitalocean_server_delete_confirm": {
+        "ru": "{icon} Удалить сервер <b>{name}</b>? Это необратимо — диск тоже будет удалён.",
+        "en": "{icon} Delete server <b>{name}</b>? This is irreversible — its disk will be removed too.",
+        "tk": "{icon} <b>{name}</b> serwerini pozmalymy? Bu yzyna gaýtarylmaz — diski hem pozular.",
+    },
+    "digitalocean_create_choose_region": {
+        "ru": "{icon} <b>Новый сервер — шаг 1/5</b>\n\nВыберите регион:",
+        "en": "{icon} <b>New server — step 1/5</b>\n\nChoose a region:",
+        "tk": "{icon} <b>Täze serwer — 1/5 ädim</b>\n\nRegiony saýlaň:",
+    },
+    "digitalocean_create_choose_size": {
+        "ru": "⚙️ <b>Новый сервер — шаг 2/5</b>\n\nВыберите тарифный план (размер droplet):",
+        "en": "⚙️ <b>New server — step 2/5</b>\n\nChoose a plan (droplet size):",
+        "tk": "⚙️ <b>Täze serwer — 2/5 ädim</b>\n\nTarif meýilnamasyny (droplet ölçegini) saýlaň:",
+    },
+    "digitalocean_create_choose_image": {
+        "ru": "💿 <b>Новый сервер — шаг 3/5</b>\n\nВыберите операционную систему:",
+        "en": "💿 <b>New server — step 3/5</b>\n\nChoose an OS image:",
+        "tk": "💿 <b>Täze serwer — 3/5 ädim</b>\n\nOperasiýa ulgamyny saýlaň:",
+    },
+    "digitalocean_create_waiting_hostname": {
+        "ru": "✏️ <b>Новый сервер — шаг 4/5</b>\n\nВведите имя сервера (латиница, цифры, дефисы):",
+        "en": "✏️ <b>New server — step 4/5</b>\n\nEnter the server's name (letters, digits, hyphens):",
+        "tk": "✏️ <b>Täze serwer — 4/5 ädim</b>\n\nServeriň adyny giriziň (latyn harplary, sanlar, defisler):",
+    },
+    "digitalocean_create_invalid_hostname": {
+        "ru": "Некорректное имя. Используйте только латинские буквы, цифры и дефисы (не более 63 символов). Попробуйте ещё раз:",
+        "en": "Invalid name. Use only Latin letters, digits and hyphens (up to 63 characters). Try again:",
+        "tk": "Ady nädogry. Diňe latyn harplary, sanlar we defisler ulanyň (63 alamatdan köp däl). Gaýtadan synanyň:",
+    },
+    "digitalocean_create_choose_auth_method": {
+        "ru": "🔐 <b>Новый сервер — шаг 5/5</b>\n\nКак вы будете заходить на сервер?",
+        "en": "🔐 <b>New server — step 5/5</b>\n\nHow will you log into the server?",
+        "tk": "🔐 <b>Täze serwer — 5/5 ädim</b>\n\nServere nädip girersiňiz?",
+    },
+    "digitalocean_create_waiting_ssh_key": {
+        "ru": "🔑 Отправьте публичный SSH-ключ (строка, начинающаяся с <code>ssh-ed25519</code> или <code>ssh-rsa</code>):",
+        "en": "🔑 Send the public SSH key (a string starting with <code>ssh-ed25519</code> or <code>ssh-rsa</code>):",
+        "tk": "🔑 Public SSH açaryny iberiň (<code>ssh-ed25519</code> ýa-da <code>ssh-rsa</code> bilen başlanýan setir):",
+    },
+    "digitalocean_create_invalid_ssh_key": {
+        "ru": "Это не похоже на публичный SSH-ключ. Попробуйте ещё раз:",
+        "en": "This doesn't look like a public SSH key. Try again:",
+        "tk": "Bu public SSH açaryna meňzänok. Gaýtadan synanyň:",
+    },
+    "digitalocean_create_confirm": {
+        "ru": (
+            "✅ <b>Проверьте параметры сервера</b>\n\n"
+            "🖥 Имя: <code>{hostname}</code>\n"
+            "📍 Регион: {region}\n"
+            "⚙️ Тариф: {size}\n"
+            "💿 ОС: {image}\n"
+            "🔐 Вход: {auth_method}\n\n"
+            "💰 Это создаст платный ресурс в DigitalOcean. Создать?"
+        ),
+        "en": (
+            "✅ <b>Review server parameters</b>\n\n"
+            "🖥 Name: <code>{hostname}</code>\n"
+            "📍 Region: {region}\n"
+            "⚙️ Size: {size}\n"
+            "💿 OS: {image}\n"
+            "🔐 Login via: {auth_method}\n\n"
+            "💰 This will create a billable resource in DigitalOcean. Create it?"
+        ),
+        "tk": (
+            "✅ <b>Serweriň parametrlerini barlaň</b>\n\n"
+            "🖥 Ady: <code>{hostname}</code>\n"
+            "📍 Region: {region}\n"
+            "⚙️ Tarif: {size}\n"
+            "💿 OS: {image}\n"
+            "🔐 Giriş: {auth_method}\n\n"
+            "💰 Bu DigitalOcean-da tölegli resurs dörediler. Döredilsinmi?"
+        ),
+    },
+    "digitalocean_progress_ssh_key": {
+        "ru": "⏳ Регистрируем SSH-ключ...",
+        "en": "⏳ Registering the SSH key...",
+        "tk": "⏳ SSH açary hasaba alynýar...",
+    },
+    "digitalocean_progress_server": {
+        "ru": "⏳ Создаём сервер...",
+        "en": "⏳ Creating the server...",
+        "tk": "⏳ Serwer döredilýär...",
+    },
+    "digitalocean_progress_provisioning": {
+        "ru": "⏳ Разворачиваем сервер...",
+        "en": "⏳ Provisioning the server...",
+        "tk": "⏳ Serwer taýýarlanylýar...",
+    },
+    "digitalocean_create_success": {
+        "ru": (
+            "{icon} <b>Сервер создан!</b>\n\n"
+            "🖥 <b>Имя:</b> {name}\n"
+            "📍 <b>Регион:</b> {region}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>"
+            "{password_line}"
+        ),
+        "en": (
+            "{icon} <b>Server created!</b>\n\n"
+            "🖥 <b>Name:</b> {name}\n"
+            "📍 <b>Region:</b> {region}\n"
+            "🌐 <b>IP:</b> <code>{ip}</code>"
+            "{password_line}"
+        ),
+        "tk": (
+            "{icon} <b>Serwer döredildi!</b>\n\n"
+            "🖥 <b>Ady:</b> {name}\n"
+            "📍 <b>Region:</b> {region}\n"
             "🌐 <b>IP:</b> <code>{ip}</code>"
             "{password_line}"
         ),

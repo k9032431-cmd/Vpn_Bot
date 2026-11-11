@@ -10,6 +10,7 @@ from bot.texts.cloud import (
     azure_vm_list_label,
     azure_zone_label,
     backup_list_label,
+    digitalocean_server_list_label,
     exoscale_server_list_label,
     hetzner_address_list_label,
     hetzner_ip_list_label,
@@ -985,6 +986,88 @@ def exoscale_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="excreate:confirm", style="success")
     builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="excreate:cancel", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+# --- DigitalOcean ---
+
+
+def digitalocean_servers_list_keyboard(lang: str, account_id: str, servers: list) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    rows: list[int] = []
+    for server in servers:
+        builder.button(
+            text=digitalocean_server_list_label(server), callback_data=f"dosrv:view:{account_id}:{server.id}", style="primary"
+        )
+        rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_server_add"), callback_data=f"dosrv:add:{account_id}", style="primary")
+    rows.append(1)
+    builder.button(text=t(lang, "btn_cloud_account_dashboard"), callback_data=f"cview:{account_id}", style="primary")
+    rows.append(1)
+    builder.adjust(*rows)
+    return builder.as_markup()
+
+
+def digitalocean_server_detail_keyboard(lang: str, account_id: str, server) -> InlineKeyboardMarkup:
+    tail = f"{account_id}:{server.id}"
+    builder = InlineKeyboardBuilder()
+    if server.status == "off":
+        builder.button(text=t(lang, "btn_cloud_server_start"), callback_data=f"dosrv:start:{tail}", style="primary")
+    else:
+        builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"dosrv:stop:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_server_restart"), callback_data=f"dosrv:restart:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_server_plan"), callback_data=f"doplan:start:{tail}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_server_delete"), callback_data=f"dosrv:delask:{tail}", style="danger")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"dosrv:list:{account_id}", style="primary")
+    builder.adjust(2, 1, 1, 1)
+    return builder.as_markup()
+
+
+def digitalocean_server_delete_confirm_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_delete_confirm"), callback_data=f"dosrv:del:{account_id}:{server_id}", style="danger")
+    builder.button(text=t(lang, "btn_cloud_servers_list"), callback_data=f"dosrv:list:{account_id}", style="primary")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def digitalocean_create_cancel_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="docreate:cancel", style="danger")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def digitalocean_create_auth_method_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_auth_password"), callback_data="docreate:auth:password", style="primary")
+    builder.button(text=t(lang, "btn_cloud_auth_key"), callback_data="docreate:auth:key", style="primary")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="docreate:cancel", style="danger")
+    builder.adjust(1, 1, 1)
+    return builder.as_markup()
+
+
+def digitalocean_create_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_create_confirm"), callback_data="docreate:confirm", style="success")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="docreate:cancel", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def digitalocean_must_stop_keyboard(lang: str, account_id: str, server_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_server_stop"), callback_data=f"dosrv:stop:{account_id}:{server_id}", style="primary")
+    builder.button(text=t(lang, "btn_cloud_storage_back"), callback_data=f"dosrv:view:{account_id}:{server_id}", style="danger")
+    builder.adjust(1, 1)
+    return builder.as_markup()
+
+
+def digitalocean_plan_confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text=t(lang, "btn_cloud_plan_confirm"), callback_data="doplan:confirm", style="success")
+    builder.button(text=t(lang, "btn_cloud_cancel"), callback_data="doplan:cancel", style="danger")
     builder.adjust(1, 1)
     return builder.as_markup()
 

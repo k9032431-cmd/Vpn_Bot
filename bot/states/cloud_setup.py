@@ -107,3 +107,23 @@ class ExoscaleVMCreateStates(StatesGroup):
     choosing_auth_method = State()
     waiting_ssh_key = State()
     confirming = State()
+
+
+class DigitalOceanSetupStates(StatesGroup):
+    waiting_token = State()
+    connecting = State()
+
+
+class DigitalOceanVMCreateStates(StatesGroup):
+    choosing_region = State()
+    choosing_size = State()
+    choosing_image = State()
+    waiting_hostname = State()
+    choosing_auth_method = State()
+    waiting_ssh_key = State()
+    confirming = State()
+
+
+class DigitalOceanPlanChangeStates(StatesGroup):
+    choosing_size = State()
+    confirming = State()

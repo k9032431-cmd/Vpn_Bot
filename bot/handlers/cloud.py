@@ -46,6 +46,14 @@ from bot.keyboards.cloud import (
     create_auth_method_keyboard,
     create_cancel_keyboard,
     create_confirm_keyboard,
+    digitalocean_create_auth_method_keyboard,
+    digitalocean_create_cancel_keyboard,
+    digitalocean_create_confirm_keyboard,
+    digitalocean_must_stop_keyboard,
+    digitalocean_plan_confirm_keyboard,
+    digitalocean_server_delete_confirm_keyboard,
+    digitalocean_server_detail_keyboard,
+    digitalocean_servers_list_keyboard,
     exoscale_create_auth_method_keyboard,
     exoscale_create_cancel_keyboard,
     exoscale_create_confirm_keyboard,
@@ -126,6 +134,22 @@ from bot.services.azure_api import (
     is_valid_azure_username,
 )
 from bot.services.cloud_store import cloud_store
+from bot.services.digitalocean_api import (
+    DigitalOceanAPIError,
+    DigitalOceanCredentials,
+    digitalocean_create_server,
+    digitalocean_delete_server,
+    digitalocean_get_server,
+    digitalocean_list_available_images,
+    digitalocean_list_available_sizes,
+    digitalocean_list_regions,
+    digitalocean_list_servers,
+    digitalocean_login,
+    digitalocean_reboot_server,
+    digitalocean_resize_server,
+    digitalocean_start_server,
+    digitalocean_stop_server,
+)
 from bot.services.exoscale_api import (
     ExoscaleAPIError,
     ExoscaleCredentials,
@@ -206,6 +230,9 @@ from bot.states.cloud_setup import (
     CloudPlanChangeStates,
     CloudServerCreateStates,
     CloudSetupStates,
+    DigitalOceanPlanChangeStates,
+    DigitalOceanSetupStates,
+    DigitalOceanVMCreateStates,
     ExoscaleSetupStates,
     ExoscaleVMCreateStates,
     HetznerBadPrefixStates,
@@ -245,6 +272,10 @@ def _hetzner_creds(account: dict) -> HetznerCredentials:
 
 def _exoscale_creds(account: dict) -> ExoscaleCredentials:
     return ExoscaleCredentials(key=account["key"], secret=account["secret"])
+
+
+def _digitalocean_creds(account: dict) -> DigitalOceanCredentials:
+    return DigitalOceanCredentials(token=account["token"])
 
 
 async def _login(provider: str, username: str, password: str):
@@ -365,6 +396,14 @@ async def cb_add_account(callback: CallbackQuery, state: FSMContext, lang: str) 
         await state.set_state(ExoscaleSetupStates.waiting_key)
         await callback.message.edit_text(
             texts.exoscale_step_key_text(lang), reply_markup=cloud_cancel_keyboard(lang)
+        )
+        await track_prompt(callback, state)
+        await callback.answer()
+        return
+    if provider == "digitalocean":
+        await state.set_state(DigitalOceanSetupStates.waiting_token)
+        await callback.message.edit_text(
+            texts.digitalocean_step_token_text(lang), reply_markup=cloud_cancel_keyboard(lang)
         )
         await track_prompt(callback, state)
         await callback.answer()
@@ -546,6 +585,40 @@ async def process_exoscale_secret(message: Message, state: FSMContext, lang: str
     )
 
 
+@router.message(DigitalOceanSetupStates.waiting_token)
+async def process_digitalocean_token(message: Message, state: FSMContext, lang: str) -> None:
+    value = message.text.strip() if message.text else ""
+    if not value:
+        await advance_screen(message, state, texts.digitalocean_empty_field_text(lang), reply_markup=cloud_cancel_keyboard(lang))
+        return
+
+    await state.set_state(DigitalOceanSetupStates.connecting)
+    status_message = await advance_screen(message, state, texts.connecting_text(lang))
+
+    creds = DigitalOceanCredentials(token=value)
+    try:
+        await digitalocean_login(creds)
+    except DigitalOceanAPIError as exc:
+        await state.clear()
+        await status_message.edit_text(
+            texts.login_error_text(lang, str(exc), "digitalocean"), reply_markup=cloud_error_keyboard(lang)
+        )
+        return
+    except Exception:  # noqa: BLE001 - surface unexpected errors to the user
+        await state.clear()
+        await status_message.edit_text(
+            texts.login_error_text(lang, "bad_response", "digitalocean"), reply_markup=cloud_error_keyboard(lang)
+        )
+        return
+
+    account_id = await cloud_store.add(message.from_user.id, "digitalocean", token=value)
+    await state.clear()
+    await status_message.edit_text(
+        texts.connected_text(lang, "digitalocean"),
+        reply_markup=account_dashboard_keyboard(lang, account_id, "digitalocean"),
+    )
+
+
 @router.message(CloudSetupStates.waiting_username)
 async def process_username(message: Message, state: FSMContext, lang: str) -> None:
     username = message.text.strip() if message.text else ""
@@ -642,6 +715,17 @@ async def cb_view_account(callback: CallbackQuery, state: FSMContext, lang: str)
             reply_markup=account_dashboard_keyboard(lang, account_id, "exoscale"),
         )
         return
+    if account["provider"] == "digitalocean":
+        try:
+            info = await digitalocean_login(_digitalocean_creds(account))
+        except DigitalOceanAPIError as exc:
+            await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+            return
+        await callback.message.edit_text(
+            texts.digitalocean_account_dashboard_text(lang, account, info),
+            reply_markup=account_dashboard_keyboard(lang, account_id, "digitalocean"),
+        )
+        return
     try:
         info = await upcloud_get_account(account["username"], account["password"])
     except UpCloudAPIError as exc:
@@ -694,6 +778,9 @@ async def cb_account_servers(callback: CallbackQuery, state: FSMContext, lang: s
         return
     if account["provider"] == "exoscale":
         await _show_exoscale_servers(callback, lang, account, account_id)
+        return
+    if account["provider"] == "digitalocean":
+        await _show_digitalocean_servers(callback, lang, account, account_id)
         return
     await _show_servers(callback, lang, account)
 
@@ -759,6 +846,18 @@ async def _show_exoscale_servers(callback: CallbackQuery, lang: str, account: di
     await callback.message.edit_text(
         texts.exoscale_servers_header_text(lang, account, bool(servers), failed_zones or None),
         reply_markup=exoscale_servers_list_keyboard(lang, account_id, servers),
+    )
+
+
+async def _show_digitalocean_servers(callback: CallbackQuery, lang: str, account: dict, account_id: str) -> None:
+    try:
+        servers = await digitalocean_list_servers(_digitalocean_creds(account))
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.message.edit_text(
+        texts.digitalocean_servers_header_text(lang, account, bool(servers)),
+        reply_markup=digitalocean_servers_list_keyboard(lang, account_id, servers),
     )
 
 
@@ -4866,4 +4965,501 @@ async def cb_exoscale_create_confirm(callback: CallbackQuery, state: FSMContext,
     await status_message.edit_text(
         texts.exoscale_create_success_text(lang, server, ssh_key_used=bool(ssh_public_key)),
         reply_markup=exoscale_server_detail_keyboard(lang, data["account_id"], server),
+    )
+
+
+# --- DigitalOcean: server list, detail & actions ---
+
+
+@router.callback_query(F.data.startswith("dosrv:list:"))
+async def cb_digitalocean_server_list(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    await _show_digitalocean_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("dosrv:view:"))
+async def cb_digitalocean_server_view(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.clear()
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        server = await digitalocean_get_server(_digitalocean_creds(account), server_id)
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.digitalocean_server_detail_text(lang, server, stored_password),
+        reply_markup=digitalocean_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+async def _run_digitalocean_server_action(
+    callback: CallbackQuery, lang: str, action, account_id: str, server_id: int
+) -> None:
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer(texts.server_action_ok_text(lang))
+    creds = _digitalocean_creds(account)
+    try:
+        await action(creds, server_id)
+        server = await digitalocean_get_server(creds, server_id)
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.digitalocean_server_detail_text(lang, server, stored_password),
+        reply_markup=digitalocean_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+@router.callback_query(F.data.startswith("dosrv:start:"))
+async def cb_digitalocean_server_start(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id = callback.data.split(":", 3)
+    await _run_digitalocean_server_action(callback, lang, digitalocean_start_server, account_id, int(server_id))
+
+
+@router.callback_query(F.data.startswith("dosrv:stop:"))
+async def cb_digitalocean_server_stop(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id = callback.data.split(":", 3)
+    await _run_digitalocean_server_action(callback, lang, digitalocean_stop_server, account_id, int(server_id))
+
+
+@router.callback_query(F.data.startswith("dosrv:restart:"))
+async def cb_digitalocean_server_restart(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id = callback.data.split(":", 3)
+    await _run_digitalocean_server_action(callback, lang, digitalocean_reboot_server, account_id, int(server_id))
+
+
+@router.callback_query(F.data.startswith("dosrv:delask:"))
+async def cb_digitalocean_server_delete_ask(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    try:
+        server = await digitalocean_get_server(_digitalocean_creds(account), int(server_id))
+    except DigitalOceanAPIError as exc:
+        await callback.answer()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await callback.answer()
+    await callback.message.edit_text(
+        texts.digitalocean_server_delete_confirm_text(lang, server),
+        reply_markup=digitalocean_server_delete_confirm_keyboard(lang, account_id, server.id),
+    )
+
+
+@router.callback_query(F.data.startswith("dosrv:del:"))
+async def cb_digitalocean_server_delete(callback: CallbackQuery, lang: str) -> None:
+    _, _, account_id, server_id = callback.data.split(":", 3)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        await digitalocean_delete_server(_digitalocean_creds(account), int(server_id))
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await cloud_store.remove_vm_secret(callback.from_user.id, account_id, server_id)
+    await callback.message.edit_text(texts.server_deleted_text(lang), reply_markup=None)
+    await _show_digitalocean_servers(callback, lang, account, account_id)
+
+
+# --- DigitalOcean: server creation ---
+#
+# Region first (a global catalog, unlike Exoscale's per-zone hosts), then
+# only that region's own available sizes, then the image catalog, hostname
+# and auth method, before confirmation -- same 5-step shape as Exoscale's
+# own wizard.
+
+
+def _digitalocean_region_options(regions: list[dict]) -> list[tuple[str, str]]:
+    return [(r["name"], f"docreate:region:{i}") for i, r in enumerate(regions)]
+
+
+def _digitalocean_size_options(sizes: list[dict]) -> list[tuple[str, str]]:
+    return [
+        (f"{s['slug']} ({s['vcpus']} CPU / {s['memory_mb'] // 1024} GB RAM / {s['disk_gb']} GB SSD)", f"docreate:size:{i}")
+        for i, s in enumerate(sizes)
+    ]
+
+
+def _digitalocean_image_options(images: list[dict]) -> list[tuple[str, str]]:
+    return [(img["name"], f"docreate:image:{i}") for i, img in enumerate(images)]
+
+
+@router.callback_query(F.data.startswith("dosrv:add:"))
+async def cb_digitalocean_server_add(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    account_id = callback.data.split(":", 2)[2]
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        regions = await digitalocean_list_regions(_digitalocean_creds(account))
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    region_dicts = [{"slug": r.slug, "name": r.name} for r in regions]
+    await state.clear()
+    await state.update_data(account_id=account_id, regions=region_dicts)
+    await state.set_state(DigitalOceanVMCreateStates.choosing_region)
+    await _render_create_page(
+        callback, state, lang, texts.digitalocean_create_choose_region_text, _digitalocean_region_options(region_dicts),
+        0, "docreate:regionpage", "docreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("docreate:regionpage:"), DigitalOceanVMCreateStates.choosing_region)
+async def cb_digitalocean_create_region_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, state, lang, texts.digitalocean_create_choose_region_text, _digitalocean_region_options(data["regions"]),
+        page, "docreate:regionpage", "docreate:cancel",
+    )
+
+
+@router.callback_query(F.data == "docreate:cancel", StateFilter(DigitalOceanVMCreateStates))
+async def cb_digitalocean_create_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account_id = data.get("account_id")
+    await state.clear()
+    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
+    await callback.answer()
+    if not account:
+        await _show_provider_list(callback, lang)
+        return
+    await _show_digitalocean_servers(callback, lang, account, account_id)
+
+
+@router.callback_query(F.data.startswith("docreate:region:"), DigitalOceanVMCreateStates.choosing_region)
+async def cb_digitalocean_create_pick_region(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    region = data["regions"][index]
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        sizes = await digitalocean_list_available_sizes(_digitalocean_creds(account), region["slug"])
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    size_dicts = [
+        {"slug": s.slug, "vcpus": s.vcpus, "memory_mb": s.memory_mb, "disk_gb": s.disk_gb} for s in sizes
+    ]
+    await state.update_data(region=region["slug"], region_name=region["name"], sizes=size_dicts)
+    await state.set_state(DigitalOceanVMCreateStates.choosing_size)
+    await _render_create_page(
+        callback, state, lang, texts.digitalocean_create_choose_size_text, _digitalocean_size_options(size_dicts),
+        0, "docreate:sizepage", "docreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("docreate:sizepage:"), DigitalOceanVMCreateStates.choosing_size)
+async def cb_digitalocean_create_size_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, state, lang, texts.digitalocean_create_choose_size_text, _digitalocean_size_options(data["sizes"]),
+        page, "docreate:sizepage", "docreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("docreate:size:"), DigitalOceanVMCreateStates.choosing_size)
+async def cb_digitalocean_create_pick_size(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    size = data["sizes"][index]
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+    try:
+        images = await digitalocean_list_available_images(_digitalocean_creds(account))
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    image_dicts = [{"slug": img.slug, "name": img.name} for img in images]
+    await state.update_data(size=size["slug"], images=image_dicts)
+    await state.set_state(DigitalOceanVMCreateStates.choosing_image)
+    await _render_create_page(
+        callback, state, lang, texts.digitalocean_create_choose_image_text, _digitalocean_image_options(image_dicts),
+        0, "docreate:imagepage", "docreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("docreate:imagepage:"), DigitalOceanVMCreateStates.choosing_image)
+async def cb_digitalocean_create_image_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    await _render_create_page(
+        callback, state, lang, texts.digitalocean_create_choose_image_text, _digitalocean_image_options(data["images"]),
+        page, "docreate:imagepage", "docreate:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("docreate:image:"), DigitalOceanVMCreateStates.choosing_image)
+async def cb_digitalocean_create_pick_image(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    image = data["images"][index]
+    await state.update_data(image=image["slug"], image_name=image["name"])
+    await state.set_state(DigitalOceanVMCreateStates.waiting_hostname)
+    await callback.message.edit_text(
+        texts.digitalocean_create_waiting_hostname_text(lang), reply_markup=digitalocean_create_cancel_keyboard(lang)
+    )
+    await track_prompt(callback, state)
+    await callback.answer()
+
+
+@router.message(DigitalOceanVMCreateStates.waiting_hostname)
+async def process_digitalocean_hostname(message: Message, state: FSMContext, lang: str) -> None:
+    hostname = message.text.strip() if message.text else ""
+    if not hostname or not HOSTNAME_RE.match(hostname) or len(hostname) > 63:
+        await advance_screen(
+            message, state, texts.digitalocean_create_invalid_hostname_text(lang),
+            reply_markup=digitalocean_create_cancel_keyboard(lang),
+        )
+        return
+
+    await state.update_data(hostname=hostname)
+    await state.set_state(DigitalOceanVMCreateStates.choosing_auth_method)
+    await advance_screen(
+        message, state, texts.digitalocean_create_choose_auth_method_text(lang),
+        reply_markup=digitalocean_create_auth_method_keyboard(lang),
+    )
+
+
+async def _show_digitalocean_create_confirmation(source, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.set_state(DigitalOceanVMCreateStates.confirming)
+    auth_method = "key" if data.get("ssh_public_key") else "password"
+    await show_screen(
+        source, state,
+        texts.digitalocean_create_confirm_text(
+            lang, data["hostname"], data["region_name"], data["size"], data["image_name"], auth_method,
+        ),
+        reply_markup=digitalocean_create_confirm_keyboard(lang),
+    )
+
+
+@router.callback_query(F.data == "docreate:auth:password", DigitalOceanVMCreateStates.choosing_auth_method)
+async def cb_digitalocean_create_choose_password_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.update_data(ssh_public_key=None)
+    await _show_digitalocean_create_confirmation(callback, state, lang)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "docreate:auth:key", DigitalOceanVMCreateStates.choosing_auth_method)
+async def cb_digitalocean_create_choose_key_auth(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    await state.set_state(DigitalOceanVMCreateStates.waiting_ssh_key)
+    await callback.message.edit_text(
+        texts.digitalocean_create_waiting_ssh_key_text(lang), reply_markup=digitalocean_create_cancel_keyboard(lang)
+    )
+    await track_prompt(callback, state)
+    await callback.answer()
+
+
+@router.message(DigitalOceanVMCreateStates.waiting_ssh_key)
+async def process_digitalocean_ssh_public_key(message: Message, state: FSMContext, lang: str) -> None:
+    public_key = message.text.strip() if message.text else ""
+    if not _is_valid_ssh_public_key(public_key):
+        await advance_screen(
+            message, state, texts.digitalocean_create_invalid_ssh_key_text(lang),
+            reply_markup=digitalocean_create_cancel_keyboard(lang),
+        )
+        return
+    await state.update_data(ssh_public_key=public_key)
+    await _show_digitalocean_create_confirmation(message, state, lang)
+
+
+@router.callback_query(F.data == "docreate:confirm", DigitalOceanVMCreateStates.confirming)
+async def cb_digitalocean_create_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await cloud_store.get(callback.from_user.id, data["account_id"])
+    if not account:
+        await state.clear()
+        await _show_provider_list(callback, lang)
+        await callback.answer()
+        return
+    await callback.answer()
+
+    status_message = callback.message
+    await status_message.edit_text(texts.digitalocean_progress_text(lang, "server"))
+
+    async def progress(step: str) -> None:
+        try:
+            await status_message.edit_text(texts.digitalocean_progress_text(lang, step))
+        except Exception:
+            pass
+
+    ssh_public_key = data.get("ssh_public_key")
+    try:
+        server = await digitalocean_create_server(
+            _digitalocean_creds(account),
+            name=data["hostname"],
+            region=data["region"],
+            size=data["size"],
+            image=data["image"],
+            ssh_public_key=ssh_public_key,
+            progress=progress,
+        )
+    except DigitalOceanAPIError as exc:
+        await state.clear()
+        await status_message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    await state.clear()
+    await status_message.edit_text(
+        texts.digitalocean_create_success_text(lang, server, ssh_key_used=bool(ssh_public_key)),
+        reply_markup=digitalocean_server_detail_keyboard(lang, data["account_id"], server),
+    )
+
+
+# --- DigitalOcean: plan change (resize) ---
+
+
+@router.callback_query(F.data.startswith("doplan:start:"))
+async def cb_digitalocean_plan_start(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    _, _, account_id, server_id_raw = callback.data.split(":", 3)
+    server_id = int(server_id_raw)
+    account = await _get_account(callback, lang, account_id)
+    if not account:
+        return
+    await callback.answer()
+    try:
+        server = await digitalocean_get_server(_digitalocean_creds(account), server_id)
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    if server.status != "off":
+        await callback.message.edit_text(
+            texts.plan_must_stop_text(lang), reply_markup=digitalocean_must_stop_keyboard(lang, account_id, server_id)
+        )
+        return
+
+    try:
+        sizes = await digitalocean_list_available_sizes(_digitalocean_creds(account), server.region)
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+
+    size_slugs = [s.slug for s in sizes]
+    await state.clear()
+    await state.update_data(account_id=account_id, server_id=server_id, current_size=server.size_slug, sizes=size_slugs)
+    await state.set_state(DigitalOceanPlanChangeStates.choosing_size)
+    options = [(slug, f"doplan:pick:{i}") for i, slug in enumerate(size_slugs)]
+    await _render_create_page(
+        callback,
+        state, lang,
+        lambda plan_lang, page, total: texts.plan_choose_text(plan_lang, server.size_slug, page, total),
+        options,
+        0,
+        "doplan:page",
+        "doplan:cancel",
+    )
+
+
+@router.callback_query(F.data.startswith("doplan:page:"), DigitalOceanPlanChangeStates.choosing_size)
+async def cb_digitalocean_plan_page(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    page = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    await callback.answer()
+    options = [(slug, f"doplan:pick:{i}") for i, slug in enumerate(data["sizes"])]
+    await _render_create_page(
+        callback,
+        state, lang,
+        lambda plan_lang, p, total: texts.plan_choose_text(plan_lang, data["current_size"], p, total),
+        options,
+        page,
+        "doplan:page",
+        "doplan:cancel",
+    )
+
+
+@router.callback_query(F.data == "doplan:cancel", StateFilter(DigitalOceanPlanChangeStates))
+async def cb_digitalocean_plan_cancel(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    await state.clear()
+    await callback.answer()
+    account_id = data.get("account_id")
+    account = await cloud_store.get(callback.from_user.id, account_id) if account_id else None
+    if not account:
+        await _show_provider_list(callback, lang)
+        return
+    try:
+        server = await digitalocean_get_server(_digitalocean_creds(account), data["server_id"])
+    except DigitalOceanAPIError as exc:
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, account_id, str(server.id))
+    await callback.message.edit_text(
+        texts.digitalocean_server_detail_text(lang, server, stored_password),
+        reply_markup=digitalocean_server_detail_keyboard(lang, account_id, server),
+    )
+
+
+@router.callback_query(F.data.startswith("doplan:pick:"), DigitalOceanPlanChangeStates.choosing_size)
+async def cb_digitalocean_plan_pick(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    index = int(callback.data.split(":", 2)[2])
+    data = await state.get_data()
+    new_size = data["sizes"][index]
+    await state.update_data(new_size=new_size)
+    await state.set_state(DigitalOceanPlanChangeStates.confirming)
+    await callback.message.edit_text(
+        texts.plan_confirm_text(lang, data["current_size"], new_size), reply_markup=digitalocean_plan_confirm_keyboard(lang)
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "doplan:confirm", DigitalOceanPlanChangeStates.confirming)
+async def cb_digitalocean_plan_confirm(callback: CallbackQuery, state: FSMContext, lang: str) -> None:
+    data = await state.get_data()
+    account = await _get_account(callback, lang, data["account_id"])
+    if not account:
+        await state.clear()
+        return
+    await callback.answer()
+    creds = _digitalocean_creds(account)
+    try:
+        await digitalocean_resize_server(creds, data["server_id"], data["new_size"])
+        server = await digitalocean_get_server(creds, data["server_id"])
+    except DigitalOceanAPIError as exc:
+        await state.clear()
+        await callback.message.edit_text(texts.action_error_text(lang, str(exc)), reply_markup=cloud_error_keyboard(lang))
+        return
+    await state.clear()
+    stored_password = await cloud_store.get_vm_secret(callback.from_user.id, data["account_id"], str(server.id))
+    await callback.message.edit_text(
+        f"{texts.plan_changed_text(lang)}\n\n{texts.digitalocean_server_detail_text(lang, server, stored_password)}",
+        reply_markup=digitalocean_server_detail_keyboard(lang, data["account_id"], server),
     )
