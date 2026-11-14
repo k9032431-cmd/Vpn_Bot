@@ -51,6 +51,9 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
     # --- Button labels ---
     "btn_node": {"ru": "Node", "en": "Node", "tk": "Node"},
+    "btn_proxy": {"ru": "Прокси", "en": "Proxy", "tk": "Proksi"},
+    "btn_tg_proxy": {"ru": "Telegram-прокси", "en": "Telegram proxy", "tk": "Telegram-proksi"},
+    "btn_proxy_menu": {"ru": "🛰 В меню Прокси", "en": "🛰 Proxy menu", "tk": "🛰 Proksi menýusy"},
     "btn_cloud_vps": {"ru": "Cloud VPS", "en": "Cloud VPS", "tk": "Cloud VPS"},
     "btn_cloud_account": {"ru": "Cloud Account", "en": "Cloud Account", "tk": "Cloud Account"},
     "btn_crypt": {"ru": "Crypt/Decrypt", "en": "Crypt/Decrypt", "tk": "Crypt/Decrypt"},
@@ -561,6 +564,173 @@ _STRINGS: dict[str, dict[str, str]] = {
         "en": "{icon} Starting the {container} container...",
         "tk": "{icon} {container} konteýneri işe girizilýär...",
     },
+
+    # --- Proxy flow (Telegram proxy via mtg) ---
+    "title_tg_proxy": {"ru": "Telegram-прокси", "en": "Telegram proxy", "tk": "Telegram-proksi"},
+    "proxy_menu": {
+        "ru": "{icon} <b>Прокси</b>\n<i>Telegram-прокси на вашем сервере за пару минут.</i>\n\n👇 Выберите тип",
+        "en": "{icon} <b>Proxy</b>\n<i>A Telegram proxy on your own server in a couple of minutes.</i>\n\n👇 Choose a type",
+        "tk": "{icon} <b>Proksi</b>\n<i>Birnäçe minutda öz serweriňizde Telegram-proksi.</i>\n\n👇 Görnüşini saýlaň",
+    },
+    "proxy_cancelled": {
+        "ru": "{icon} <b>Прокси</b>\n\n🚫 <i>Отменено — ничего не сохранено.</i> Можно начать заново.",
+        "en": "{icon} <b>Proxy</b>\n\n🚫 <i>Cancelled — nothing was saved.</i> Start again anytime.",
+        "tk": "{icon} <b>Proksi</b>\n\n🚫 <i>Ýatyryldy — hiç zat saklanmady.</i> Täzeden başlap bilersiňiz.",
+    },
+    "proxy_step_ip": {
+        "ru": "{header}\n<i>Шаг 1 из 3</i>\n\n{icon} Пришлите IP-адрес или домен сервера.",
+        "en": "{header}\n<i>Step 1 of 3</i>\n\n{icon} Send the server's IP address or domain.",
+        "tk": "{header}\n<i>1-nji ädim / 3</i>\n\n{icon} Serweriň IP salgysyny ýa-da domenini iberiň.",
+    },
+    "proxy_step_ssh_user": {
+        "ru": "{header}\n<i>Шаг 2 из 3</i>\n\nИмя SSH-пользователя (<code>root</code> или sudo — оба подойдут):",
+        "en": "{header}\n<i>Step 2 of 3</i>\n\nSSH username (<code>root</code> or sudo — both work):",
+        "tk": "{header}\n<i>2-nji ädim / 3</i>\n\nSSH ulanyjy ady (<code>root</code> ýa-da sudo — ikisi hem bolýar):",
+    },
+    "proxy_step_password": {
+        "ru": (
+            "{header}\n<i>Шаг 3 из 3</i>\n\n"
+            "Пароль от <b>{username}</b>.\n\n"
+            "{icon} <i>Ваше сообщение будет удалено сразу же — пароль нигде не сохраняется.</i>"
+        ),
+        "en": (
+            "{header}\n<i>Step 3 of 3</i>\n\n"
+            "Password for <b>{username}</b>.\n\n"
+            "{icon} <i>Your message is deleted right away — the password is never stored.</i>"
+        ),
+        "tk": (
+            "{header}\n<i>3-nji ädim / 3</i>\n\n"
+            "<b>{username}</b> üçin parol.\n\n"
+            "{icon} <i>Habaryňyz derrew pozular — parol hiç ýerde saklanmaýar.</i>"
+        ),
+    },
+    "proxy_step_auth_method": {
+        "ru": "{header}\n\n🔐 Как подключиться к серверу?",
+        "en": "{header}\n\n🔐 How should the bot connect to the server?",
+        "tk": "{header}\n\n🔐 Bot servere nädip birikmeli?",
+    },
+    "proxy_step_ssh_key": {
+        "ru": (
+            "{header}\n\n"
+            "🔑 Приватный SSH-ключ пользователя <code>{username}</code> "
+            "(начинается с <code>-----BEGIN ... PRIVATE KEY-----</code>).\n\n"
+            "⚠️ Без пароля (passphrase) — сообщение с ключом бот сразу удалит."
+        ),
+        "en": (
+            "{header}\n\n"
+            "🔑 Private SSH key for user <code>{username}</code> "
+            "(starts with <code>-----BEGIN ... PRIVATE KEY-----</code>).\n\n"
+            "⚠️ No passphrase — the bot deletes your message right away."
+        ),
+        "tk": (
+            "{header}\n\n"
+            "🔑 <code>{username}</code> ulanyjysynyň hususy SSH açary "
+            "(<code>-----BEGIN ... PRIVATE KEY-----</code> bilen başlaýar).\n\n"
+            "⚠️ Parolsyz (passphrase-siz) — bot habaryňyzy derrew pozar."
+        ),
+    },
+    "proxy_confirmation": {
+        "ru": (
+            "{header}\n\n"
+            "📋 <b>Проверьте данные:</b>\n"
+            "🌍 Сервер: <code>{host}</code>\n"
+            "👤 Пользователь: <code>{user}</code>\n"
+            "🔐 Вход: {auth_method}\n\n"
+            "🚀 Всё готово — начинаем установку?"
+        ),
+        "en": (
+            "{header}\n\n"
+            "📋 <b>Please confirm:</b>\n"
+            "🌍 Server: <code>{host}</code>\n"
+            "👤 User: <code>{user}</code>\n"
+            "🔐 Login via: {auth_method}\n\n"
+            "🚀 Ready — start the installation?"
+        ),
+        "tk": (
+            "{header}\n\n"
+            "📋 <b>Maglumatlary barlaň:</b>\n"
+            "🌍 Server: <code>{host}</code>\n"
+            "👤 Ulanyjy: <code>{user}</code>\n"
+            "🔐 Giriş: {auth_method}\n\n"
+            "🚀 Taýyn — ornaşdyrmaga başlaýarysmy?"
+        ),
+    },
+    "proxy_installing_started": {
+        "ru": "{icon} Начинаю установку...",
+        "en": "{icon} Starting the installation...",
+        "tk": "{icon} Ornaşdyrma başlanýar...",
+    },
+    "proxy_error": {
+        "ru": (
+            "{icon} <b>Не получилось установить прокси</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Попробуйте ещё раз или обратитесь в поддержку"
+        ),
+        "en": (
+            "{icon} <b>Couldn't set up the proxy</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Try again, or reach out to support"
+        ),
+        "tk": (
+            "{icon} <b>Proksi ornaşdyrylyp bilinmedi</b>\n\n"
+            "{reason}\n\n"
+            "🔁 Täzeden synanyşyň ýa-da goldawa ýüz tutuň"
+        ),
+    },
+    "proxy_unexpected_error": {
+        "ru": "{icon} <b>Непредвиденная ошибка</b>\n\n{reason}",
+        "en": "{icon} <b>Unexpected error</b>\n\n{reason}",
+        "tk": "{icon} <b>Garaşylmadyk ýalňyşlyk</b>\n\n{reason}",
+    },
+    "proxy_result": {
+        "ru": (
+            "{icon} {header} успешно запущен на <code>{host}</code> 🚀\n\n"
+            "🔌 Порт: <code>{port}</code>\n"
+            "🔑 Секрет: <code>{secret}</code>\n\n"
+            "👇 Ссылка для подключения (нажмите, чтобы добавить прокси в Telegram):\n"
+            "{link}"
+        ),
+        "en": (
+            "{icon} {header} is up and running on <code>{host}</code> 🚀\n\n"
+            "🔌 Port: <code>{port}</code>\n"
+            "🔑 Secret: <code>{secret}</code>\n\n"
+            "👇 Connection link (tap it to add the proxy in Telegram):\n"
+            "{link}"
+        ),
+        "tk": (
+            "{icon} {header} <code>{host}</code> serwerde üstünlikli işledildi 🚀\n\n"
+            "🔌 Port: <code>{port}</code>\n"
+            "🔑 Syr: <code>{secret}</code>\n\n"
+            "👇 Birikdiriş salgysy (Telegram-da proksini goşmak üçin basyň):\n"
+            "{link}"
+        ),
+    },
+    "proxy_progress_generating_secret": {
+        "ru": "{icon} Генерирую секрет прокси...",
+        "en": "{icon} Generating the proxy secret...",
+        "tk": "{icon} Proksi syry döredilýär...",
+    },
+    "proxy_progress_launching": {
+        "ru": "{icon} Запускаю прокси...",
+        "en": "{icon} Starting the proxy...",
+        "tk": "{icon} Proksi işe girizilýär...",
+    },
+    "err_proxy_secret": {
+        "ru": "Не удалось сгенерировать секрет для прокси.",
+        "en": "Couldn't generate the proxy secret.",
+        "tk": "Proksi üçin syr döredilip bilinmedi.",
+    },
+    "err_proxy_run": {
+        "ru": "Не удалось запустить контейнер прокси (проверьте, не занят ли порт 443 другим сервисом).",
+        "en": "Couldn't start the proxy container (check whether port 443 is already used by another service).",
+        "tk": "Proksi konteýneri işe girizilip bilinmedi (443 portunyň başga hyzmat tarapyndan ulanylýandygyny barlaň).",
+    },
+    "err_proxy_not_running": {
+        "ru": "Контейнер прокси запустился, но сразу остановился. Проверьте логи на сервере (<code>docker logs mtg</code>).",
+        "en": "The proxy container started but stopped right away. Check the logs on the server (<code>docker logs mtg</code>).",
+        "tk": "Proksi konteýneri işe başlady, ýöne derrew durdy. Serwerdäki žurnallary barlaň (<code>docker logs mtg</code>).",
+    },
+
     # --- Technical error hints (SSH / installer) ---
     "err_ssh_timeout": {
         "ru": "Не удалось подключиться по SSH: сервер не отвечает (таймаут). Проверьте IP-адрес, порт 22 и firewall.",

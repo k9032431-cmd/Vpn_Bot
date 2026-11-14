@@ -12,6 +12,7 @@ from .ssh_client import NodeInstallError, ProgressCallback, RemoteSession, SSHTa
 __all__ = [
     "NodeInstallError",
     "NodeInstallResult",
+    "ensure_docker",
     "install_marzban_node",
     "install_pasarguard_node",
 ]
@@ -56,7 +57,7 @@ class NodeInstallResult:
     extra: dict = field(default_factory=dict)
 
 
-async def _ensure_docker(session: RemoteSession, progress: ProgressCallback, lang: str) -> None:
+async def ensure_docker(session: RemoteSession, progress: ProgressCallback, lang: str) -> None:
     check = await session.run("command -v docker")
     if check.exit_status == 0:
         await session.run_checked(
@@ -101,7 +102,7 @@ async def install_marzban_node(
     session = await RemoteSession.connect(target)
     try:
         await progress(texts.progress_checking_docker(lang))
-        await _ensure_docker(session, progress, lang)
+        await ensure_docker(session, progress, lang)
 
         await progress(texts.progress_uploading_marzban(lang))
         await session.deploy_file(cert_pem, MARZBAN_CERT_FILENAME, MARZBAN_DIR, mode="600")
@@ -136,7 +137,7 @@ async def install_pasarguard_node(
     session = await RemoteSession.connect(target)
     try:
         await progress(texts.progress_checking_docker(lang))
-        await _ensure_docker(session, progress, lang)
+        await ensure_docker(session, progress, lang)
 
         certs_dir = f"{PASARGUARD_DIR}/certs"
         await session.run_checked(f"mkdir -p {shlex.quote(certs_dir)}", t(lang, "err_mkdir"))

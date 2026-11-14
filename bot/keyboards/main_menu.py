@@ -18,6 +18,7 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     # of one flat grid of same-sized buttons.
     builder.button(text=t(lang, "btn_cloud_vps"), callback_data="menu:cloud_vps", style="success", icon_custom_emoji_id=button_icon("cloud_vps"))
     builder.button(text=t(lang, "btn_node"), callback_data="menu:node", style="primary", icon_custom_emoji_id=button_icon("node"))
+    builder.button(text=t(lang, "btn_proxy"), callback_data="menu:proxy", style="primary", icon_custom_emoji_id=button_icon("proxy"))
     builder.button(text=t(lang, "btn_panel"), callback_data="menu:panel", style="primary", icon_custom_emoji_id=button_icon("panel"))
     builder.button(text=t(lang, "btn_profile"), callback_data="menu:profile", style="primary", icon_custom_emoji_id=button_icon("profile"))
     builder.button(text=t(lang, "btn_whois"), callback_data="menu:whois", style="primary", icon_custom_emoji_id=button_icon("whois"))
@@ -34,7 +35,7 @@ def main_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     else:
         builder.button(text=t(lang, "btn_sos"), callback_data="menu:sos", style="danger", icon_custom_emoji_id=button_icon("sos"))
 
-    builder.adjust(1, 2, 2, 2, 2, 1)
+    builder.adjust(1, 2, 2, 2, 2, 1, 1)
     return builder.as_markup()
 
 
