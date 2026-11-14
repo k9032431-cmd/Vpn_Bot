@@ -1509,6 +1509,35 @@ _DO_STATUS_EMOJI = {
     "archive": "⚪",
 }
 
+# DigitalOcean's /v2/regions response carries only a slug and a human name
+# ("New York 1", "Frankfurt 1", ...) -- no country code to build a flag
+# from directly, unlike Hetzner/Exoscale's own location data. Keyed by the
+# city with its trailing region number stripped, so "San Francisco 3" and
+# "San Francisco 2" both resolve the same way. An unlisted city (DO adds a
+# new region) just falls back to a generic globe via _flag_emoji's own
+# fallback -- never breaks, just less pretty until this list catches up.
+_DIGITALOCEAN_CITY_COUNTRY = {
+    "new york": "US",
+    "san francisco": "US",
+    "atlanta": "US",
+    "richmond": "US",
+    "kansas city": "US",
+    "chicago": "US",
+    "amsterdam": "NL",
+    "london": "GB",
+    "frankfurt": "DE",
+    "toronto": "CA",
+    "bangalore": "IN",
+    "singapore": "SG",
+    "sydney": "AU",
+}
+
+
+def digitalocean_region_display(name: str) -> str:
+    city = re.sub(r"\s*\d+$", "", name).strip().lower()
+    flag = _flag_emoji(_DIGITALOCEAN_CITY_COUNTRY.get(city, ""))
+    return f"{flag} {name}"
+
 
 def digitalocean_step_token_text(lang: str) -> str:
     return t(lang, "digitalocean_step_token")
@@ -1543,7 +1572,7 @@ def digitalocean_server_detail_text(lang: str, server, stored_password: str | No
         "digitalocean_server_detail",
         name=html.escape(server.name),
         state=f"{field_icon(_DO_STATUS_EMOJI.get(server.status, '⚪️'))} {server.status}",
-        region=server.region_name or server.region,
+        region=digitalocean_region_display(server.region_name or server.region),
         size=server.size_slug,
         vcpus=server.vcpus,
         memory=_format_memory(server.memory_mb),
@@ -1597,7 +1626,7 @@ def digitalocean_create_confirm_text(
         lang,
         "digitalocean_create_confirm",
         hostname=html.escape(hostname),
-        region=region_name,
+        region=digitalocean_region_display(region_name),
         size=size_label,
         image=image_label,
         auth_method=auth_label,
@@ -1624,7 +1653,7 @@ def digitalocean_create_success_text(lang: str, server, ssh_key_used: bool = Fal
         "digitalocean_create_success",
         icon=e("success", "✅"),
         name=html.escape(server.name),
-        region=server.region_name or server.region,
+        region=digitalocean_region_display(server.region_name or server.region),
         ip=server.ipv4 or t(lang, "cloud_server_no_ip"),
         password_line=password_line,
     )

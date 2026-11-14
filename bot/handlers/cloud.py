@@ -5087,7 +5087,7 @@ async def cb_digitalocean_server_delete(callback: CallbackQuery, lang: str) -> N
 
 
 def _digitalocean_region_options(regions: list[dict]) -> list[tuple[str, str]]:
-    return [(r["name"], f"docreate:region:{i}") for i, r in enumerate(regions)]
+    return [(texts.digitalocean_region_display(r["name"]), f"docreate:region:{i}") for i, r in enumerate(regions)]
 
 
 def _digitalocean_size_options(sizes: list[dict]) -> list[tuple[str, str]]:
